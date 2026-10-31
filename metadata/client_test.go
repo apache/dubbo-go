@@ -19,6 +19,7 @@ package metadata
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 )
@@ -27,6 +28,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/proto"
 )
 
 import (
@@ -63,6 +66,48 @@ var (
 )
 
 type metadataContextKey struct{}
+
+func TestLegacyMetadataPreservesMethodTimeout(t *testing.T) {
+	var service info.ServiceInfo
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"name":"com.example.Greeter",
+		"protocol":"tri",
+		"params":{"methods":"Greet,SayHello","Greet.timeout":"1000"}
+	}`), &service))
+	instance := &registry.DefaultServiceInstance{
+		Host: "127.0.0.1",
+		Port: 20035,
+		Metadata: map[string]string{
+			constant.ServiceInstanceEndpoints: "[]",
+		},
+	}
+	urls := instance.ToURLs(&service)
+	require.Len(t, urls, 1)
+	assert.Equal(t, []string{"Greet", "SayHello"}, urls[0].Methods)
+	assert.Equal(t, "1000", urls[0].GetMethodParam("Greet", constant.TimeoutKey, "3000"))
+}
+
+func TestMetadataV2PreservesMethodsAndTimeout(t *testing.T) {
+	service := info.NewServiceInfoWithURL(common.NewURLWithOptions(
+		common.WithProtocol("tri"),
+		common.WithInterface("com.example.Greeter"),
+		common.WithMethods([]string{"Greet", "SayHello"}),
+		common.WithParamsValue("methods.Greet.timeout", "1000"),
+	))
+	key := service.GetMatchKey()
+	outbound := &tripleapi.MetadataInfoV2{
+		App:      "test-app",
+		Services: convertV2(map[string]*info.ServiceInfo{key: service}),
+	}
+	wire, err := proto.Marshal(outbound)
+	require.NoError(t, err)
+	var inbound tripleapi.MetadataInfoV2
+	require.NoError(t, proto.Unmarshal(wire, &inbound))
+	received := convertMetadataInfoV2(&inbound).Services[key]
+	require.NotNil(t, received)
+	assert.Equal(t, []string{"Greet", "SayHello"}, received.GetMethods())
+	assert.Equal(t, "1000", received.GetParams().Get("methods.Greet.timeout"))
+}
 
 func TestConvertMetadataInfoV2PreservesTag(t *testing.T) {
 	got := convertMetadataInfoV2(&tripleapi.MetadataInfoV2{

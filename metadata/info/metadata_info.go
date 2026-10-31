@@ -18,7 +18,7 @@
 package info
 
 import (
-	"crypto/sha512"
+	"crypto/md5"
 	"fmt"
 	"maps"
 	"net/url"
@@ -49,7 +49,6 @@ func init() {
 var IncludeKeys = gxset.NewSet(
 	constant.ApplicationKey,
 	constant.GroupKey,
-	constant.TimestampKey,
 	constant.SerializationKey,
 	constant.ClusterKey,
 	constant.LoadbalanceKey,
@@ -416,83 +415,71 @@ func (si *ServiceInfo) DeepCopy() *ServiceInfo {
 }
 
 // toDescString returns a deterministic string representation of ServiceInfo
-// for revision calculation. Aligned with Java dubbo ServiceInfo.toDescString().
+// for revision calculation. It strictly mirrors the Java dubbo
+// ServiceInfo.toDescString() algorithm so that CalRevision produces the exact
+// same 32-char lowercase MD5 digest as the Java side.
 //
-// Format: name|group|version|protocol|port|path|params|methods
+// Format (no separators between segments):
 //
-// Empty fields use "" as placeholder to keep separator count stable.
-// Params are sorted by key alphabetically, joined as k=v&k=v.
-// The "methods" key is excluded from params and appended separately.
-// Methods are sorted alphabetically and comma-joined.
-// No escaping is performed on param values (aligned with Java behavior).
+//	getMatchKey() + port + path + sortedTreeMap(params).toString()
+//
+// where:
+//   - getMatchKey() = serviceKey + ":" + protocol (protocol must be non-empty)
+//   - port is the int value concatenated verbatim
+//   - path is concatenated verbatim
+//   - The params TreeMap string uses Java's TreeMap.toString() format:
+//     "{k1=v1, k2=v2}" — braces wrapped, "key=value" joined by ", ",
+//     keys in natural ascending order. An empty params map renders as "{}".
+//   - The methods entry remains in params and participates in the revision.
 func (si *ServiceInfo) toDescString() string {
-	var b strings.Builder
+	return si.GetMatchKey() + strconv.Itoa(si.Port) + si.Path + renderParams(si.Params)
+}
 
-	b.WriteString(si.Name)
-	b.WriteByte('|')
-	b.WriteString(si.Group)
-	b.WriteByte('|')
-	b.WriteString(si.Version)
-	b.WriteByte('|')
-	b.WriteString(si.Protocol)
-	b.WriteByte('|')
-	b.WriteString(strconv.Itoa(si.Port))
-	b.WriteByte('|')
-	b.WriteString(si.Path)
-	b.WriteByte('|')
-
-	// params: sorted keys, exclude methods key
-	keys := make([]string, 0, len(si.Params))
-	for k := range si.Params {
-		if k == constant.MethodsKey {
-			continue
-		}
+// renderParams renders a param map as a Java TreeMap.toString() equivalent:
+// "{k1=v1, k2=v2}" with keys in natural ascending order, joined by ", ".
+// An empty map renders as "{}". This mirrors Java's
+// `new TreeMap<>(params).toString()` used by ServiceInfo.toDescString(), which
+// is what makes the revision digest byte-for-byte identical to the Java side.
+func renderParams(params map[string]string) string {
+	keys := make([]string, 0, len(params))
+	for k := range params {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+
+	var b strings.Builder
+	b.WriteByte('{')
 	for i, k := range keys {
 		if i > 0 {
-			b.WriteByte('&')
+			b.WriteString(", ")
 		}
 		b.WriteString(k)
 		b.WriteByte('=')
-		b.WriteString(si.Params[k])
+		b.WriteString(params[k])
 	}
-
-	b.WriteByte('|')
-
-	// methods: sorted alphabetically, comma-joined
-	if methodsStr, ok := si.Params[constant.MethodsKey]; ok && len(methodsStr) > 0 {
-		methods := strings.Split(methodsStr, ",")
-		sort.Strings(methods)
-		for i, m := range methods {
-			if i > 0 {
-				b.WriteByte(',')
-			}
-			b.WriteString(m)
-		}
-	}
-
+	b.WriteByte('}')
 	return b.String()
 }
 
 // CalRevision calculates a deterministic revision string from canonical ServiceInfo objects.
 // Returns "0" if services is empty (aligned with Java EMPTY_REVISION).
-// Services are sorted by matchKey before serialization to ensure deterministic output.
-// The revision is a SHA-512 hex digest of: app + sorted toDescString of each ServiceInfo.
+// Services are sorted by matchKey before serialization to ensure deterministic output
+// (aligned with Java's TreeMap ordering by key).
+// The revision is a standard 32-char lowercase MD5 hex digest of:
+// app + sorted toDescString() of each ServiceInfo.
 func CalRevision(app string, services map[string]*ServiceInfo) string {
 	if len(services) == 0 {
 		return "0"
 	}
 
-	// collect and sort matchKeys for deterministic iteration
+	// collect and sort matchKeys for deterministic iteration (Java uses a TreeMap)
 	matchKeys := make([]string, 0, len(services))
 	for mk := range services {
 		matchKeys = append(matchKeys, mk)
 	}
 	sort.Strings(matchKeys)
 
-	h := sha512.New()
+	h := md5.New()
 	h.Write([]byte(app))
 	for _, mk := range matchKeys {
 		h.Write([]byte(services[mk].toDescString()))

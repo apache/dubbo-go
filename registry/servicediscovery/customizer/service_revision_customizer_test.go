@@ -94,7 +94,16 @@ func TestRevisionChangesOnParamsChange(t *testing.T) {
 	assert.NotEqual(t, r1, r2, "revision should change when params (timeout/loadbalance) change")
 }
 
-// 4. methods change → revision changes
+func TestRevisionIgnoresProviderTimestamp(t *testing.T) {
+	u1 := newTestURL("tri", "50051", "com.example.Greeter", "test-app", "", "", []string{"Greet"},
+		map[string]string{constant.TimestampKey: "1000", "methods.Greet.timestamp": "1001"})
+	u2 := newTestURL("tri", "50051", "com.example.Greeter", "test-app", "", "", []string{"Greet"},
+		map[string]string{constant.TimestampKey: "2000", "methods.Greet.timestamp": "2001"})
+	assert.Equal(t, resolveRevision([]*common.URL{u1}), resolveRevision([]*common.URL{u2}),
+		"Java excludes timestamps from service metadata, so provider restarts must not change revision")
+}
+
+// 4. The method list and method-level parameters both participate in revision.
 func TestRevisionChangesOnMethodChange(t *testing.T) {
 	u1 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello"}, nil)
 	u2 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello", "sayGoodbye"}, nil)
@@ -104,7 +113,17 @@ func TestRevisionChangesOnMethodChange(t *testing.T) {
 
 	assert.NotEmpty(t, r1)
 	assert.NotEmpty(t, r2)
-	assert.NotEqual(t, r1, r2, "revision should change when methods change")
+	assert.NotEqual(t, r1, r2, "method list changes must change revision, matching Java params serialization")
+
+	u3 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello"},
+		map[string]string{constant.MethodsKey + ".sayHello.timeout": "1000"})
+	u4 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello", "sayGoodbye"},
+		map[string]string{constant.MethodsKey + ".sayHello.timeout": "1000", constant.MethodsKey + ".sayGoodbye.timeout": "2000"})
+
+	r3 := resolveRevision([]*common.URL{u3})
+	r4 := resolveRevision([]*common.URL{u4})
+
+	assert.NotEqual(t, r3, r4, "method-level params must change the revision")
 }
 
 // 5. version change → revision changes
