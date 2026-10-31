@@ -19,12 +19,15 @@ package metrics
 
 import (
 	"context"
+	"strconv"
 	"time"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/metrics/rpc"
@@ -44,12 +47,24 @@ type metricsFilter struct{}
 
 // Invoke publish the BeforeInvokeEvent and AfterInvokeEvent to metrics bus
 func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
-	metrics.Publish(rpc.NewBeforeInvokeEvent(invoker, invocation))
+	var observation *rpcerror.Observation
+	if invoker.GetURL().GetParam(constant.RegistryRoleKey, "") == strconv.Itoa(common.CONSUMER) {
+		ctx, observation = rpcerror.WithInvocationObservation(ctx, invocation)
+	} else {
+		ctx, observation = rpcerror.WithObservation(ctx)
+	}
+	before := rpc.NewBeforeInvokeEvent(invoker, invocation)
+	metrics.Publish(before)
 	start := time.Now()
+	observation.OnComplete(func(c rpcerror.Completion) {
+		metrics.Publish(rpc.NewCompletionEvent(before, c.At.Sub(start), c))
+	})
 	res := invoker.Invoke(ctx, invocation)
-	end := time.Now()
-	duration := end.Sub(start)
-	metrics.Publish(rpc.NewAfterInvokeEvent(invoker, invocation, duration, res))
+	var err error
+	if res != nil {
+		err = res.Error()
+	}
+	observation.FinishInvoke(err, res != nil)
 	return res
 }
 

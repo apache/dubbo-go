@@ -27,6 +27,10 @@ import (
 	"sync"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+)
+
 // duplexHTTPCall is a full-duplex stream between the client and server. The
 // request body is the stream from client to server, and the response body is
 // the reverse.
@@ -291,6 +295,7 @@ func (d *duplexHTTPCall) makeRequest() {
 		err = wrapIfLikelyH2CNotConfiguredError(d.request, err)
 		err = wrapIfLikelyWithGRPCNotUsedError(err)
 		err = wrapIfRSTError(err)
+		err = rpcerror.FromNetworkOperation(err)
 		if _, ok := asError(err); !ok {
 			err = NewError(CodeUnavailable, err)
 		}

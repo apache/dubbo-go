@@ -30,6 +30,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -98,12 +100,17 @@ func (response *Response) Handle() {
 		return
 	}
 
-	pendingResponse.response = response
+	pendingResponse.SetResponse(response)
 
 	if pendingResponse.Callback == nil {
 		pendingResponse.Err = pendingResponse.response.Error
 		close(pendingResponse.Done)
 	} else {
+		err := response.Error
+		if res, ok := response.Result.(result.Result); ok && err == nil {
+			err = res.Error()
+		}
+		pendingResponse.Observation.Complete(err)
 		pendingResponse.Callback(pendingResponse.GetCallResponse())
 	}
 }
@@ -130,14 +137,16 @@ type AsyncCallbackResponse struct {
 // PendingResponse is the client sends request to server, there is one
 // pendingResponse at client side to wait the response from server.
 type PendingResponse struct {
-	seq       int64
-	Err       error
-	start     time.Time
-	ReadStart time.Time
-	Callback  common.AsyncCallback
-	response  *Response
-	Reply     any
-	Done      chan struct{}
+	responseMu  sync.RWMutex
+	seq         int64
+	Err         error
+	start       time.Time
+	ReadStart   time.Time
+	Callback    common.AsyncCallback
+	response    *Response
+	Reply       any
+	Done        chan struct{}
+	Observation *rpcerror.Observation
 }
 
 // NewPendingResponse aims to create PendingResponse.
@@ -152,17 +161,25 @@ func NewPendingResponse(id int64) *PendingResponse {
 }
 
 func (r *PendingResponse) SetResponse(response *Response) {
+	r.responseMu.Lock()
+	defer r.responseMu.Unlock()
 	r.response = response
+}
+
+func (r *PendingResponse) getResponse() *Response {
+	r.responseMu.RLock()
+	defer r.responseMu.RUnlock()
+	return r.response
 }
 
 // GetCallResponse is used for callback of async.
 // It is will return AsyncCallbackResponse.
-func (r PendingResponse) GetCallResponse() common.CallbackResponse {
+func (r *PendingResponse) GetCallResponse() common.CallbackResponse {
 	return AsyncCallbackResponse{
 		Cause:     r.Err,
 		Start:     r.start,
 		ReadStart: r.ReadStart,
-		Reply:     r.response,
+		Reply:     r.getResponse(),
 	}
 }
 
@@ -176,8 +193,7 @@ func RemovePendingResponse(seq SequenceType) *PendingResponse {
 	if pendingResponses == nil {
 		return nil
 	}
-	if presp, ok := pendingResponses.Load(seq); ok {
-		pendingResponses.Delete(seq)
+	if presp, ok := pendingResponses.LoadAndDelete(seq); ok {
 		return presp.(*PendingResponse)
 	}
 	return nil

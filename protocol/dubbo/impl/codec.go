@@ -34,15 +34,17 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type ProtocolCodec struct {
-	reader     *bufio.Reader
-	pkgType    PackageType
-	bodyLen    int
-	serializer Serializer
-	headerRead bool
+	reader         *bufio.Reader
+	pkgType        PackageType
+	bodyLen        int
+	serializer     Serializer
+	headerRead     bool
+	responseHeader bool
 }
 
 func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
@@ -104,8 +106,14 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 		return hessian.ErrBodyNotEnough
 	}
 	c.headerRead = true
+	c.responseHeader = buf[0] == MAGIC_HIGH && buf[1] == MAGIC_LOW &&
+		header.Type&PackageResponse != 0 && header.Type&PackageHeartbeat == 0
 	return perrors.WithStack(err)
 }
+
+// HasResponseHeader is true only after validating a complete non-event response
+// frame. Partial/malformed headers must never be used to attribute failures.
+func (c *ProtocolCodec) HasResponseHeader() bool { return c.responseHeader }
 
 func (c *ProtocolCodec) EncodeHeader(p DubboPackage) []byte {
 	header := p.Header
@@ -173,7 +181,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		p.Body = &ResponsePayload{}
 		exception, err := decoder.Decode()
 		if err != nil {
-			return perrors.WithStack(err)
+			return perrors.WithStack(rpcerror.Mark(err, rpcerror.Codec))
 		}
 		p.Body.(*ResponsePayload).Exception = fmt.Errorf("java exception:%s", exception.(string))
 		return nil
@@ -185,11 +193,18 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		return errors.New("codec serializer is nil")
 	}
 	if p.IsResponse() {
+		pending := remoting.GetPendingResponse(remoting.SequenceType(p.Header.ID))
+		if pending == nil {
+			// A response may arrive after timeout/cancellation removed its waiter.
+			// Consume the frame without decoding into a retired caller's Reply.
+			p.Body = &ResponsePayload{}
+			return nil
+		}
 		p.Body = &ResponsePayload{
-			RspObj: remoting.GetPendingResponse(remoting.SequenceType(p.Header.ID)).Reply,
+			RspObj: pending.Reply,
 		}
 	}
-	return c.serializer.Unmarshal(body, p)
+	return rpcerror.Mark(c.serializer.Unmarshal(body, p), rpcerror.Codec)
 }
 
 func (c *ProtocolCodec) SetSerializer(serializer Serializer) {
@@ -232,7 +247,7 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 	} else {
 		body, err := serializer.Marshal(p)
 		if err != nil {
-			return nil, err
+			return nil, rpcerror.Mark(err, rpcerror.Codec)
 		}
 		pkgLen = len(body)
 		if pkgLen > int(DEFAULT_LEN) { // recommand 8M
@@ -269,7 +284,7 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 	// body
 	body, err := serializer.Marshal(p)
 	if err != nil {
-		return nil, err
+		return nil, rpcerror.Mark(err, rpcerror.Codec)
 	}
 
 	pkgLen := len(body)

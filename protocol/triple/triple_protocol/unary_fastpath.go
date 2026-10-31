@@ -27,6 +27,10 @@ import (
 	"sync"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+)
+
 // unaryClientCall is the transport surface shared by grpcClientConn and
 // tripleUnaryClientConn. unary calls use unaryFastPathCall; streaming calls
 // keep using duplexHTTPCall.
@@ -221,6 +225,7 @@ func (c *unaryFastPathCall) makeRequest() {
 		err = wrapIfLikelyH2CNotConfiguredError(c.request, err)
 		err = wrapIfLikelyWithGRPCNotUsedError(err)
 		err = wrapIfRSTError(err)
+		err = rpcerror.FromNetworkOperation(err)
 		if _, ok := asError(err); !ok {
 			err = NewError(CodeUnavailable, err)
 		}

@@ -28,6 +28,10 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+)
+
 // flagEnvelopeCompressed indicates that the data is compressed. It has the
 // same meaning in the gRPC-Web, gRPC-HTTP2, and Triple protocols.
 const flagEnvelopeCompressed = 0b00000001
@@ -106,7 +110,7 @@ func (w *envelopeWriter) marshalWithFallback(codec Codec, message any) *Error {
 		raw, err = w.backupCodec.Marshal(message)
 	}
 	if err != nil {
-		return errorf(CodeInternal, "marshal message: %w", err)
+		return errorf(CodeInternal, "marshal message: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	// We can't avoid allocating the byte slice, so we may as well reuse it once
 	// we're done with it.
@@ -231,7 +235,7 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 			err = r.backupCodec.Unmarshal(data.Bytes(), message)
 		}
 		if err != nil {
-			return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, err)
+			return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, rpcerror.Mark(err, rpcerror.Codec))
 		}
 	}
 	return nil
