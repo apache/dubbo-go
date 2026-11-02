@@ -61,7 +61,7 @@ require (
 	go.uber.org/atomic v1.10.0
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.28.0
-	go.yaml.in/yaml/v4 v4.0.0-rc.6
+	go.yaml.in/yaml/v4 v4.0.0-rc.7
 	golang.org/x/net v0.58.0
 	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.2
