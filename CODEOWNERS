@@ -1,0 +1,42 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# dubbo-go CODEOWNERS
+# ---------------------------------------------------------------------------
+# 作用：PR 触碰对应路径时自动请求以下 owner 审查（见 CODE_REVIEW_GUIDE.md §6.3）。
+# 注意：下方 @dubbo-go/xxx 为「团队/个人 handle 占位符」，请替换为真实的
+#       GitHub team 名或 Committer 个人账号，否则 GitHub 不会路由审查。
+# 语法：<path> @owner1 @owner2
+# ---------------------------------------------------------------------------
+
+# 核心模块
+/cluster/                @dubbo-go/cluster-maintainers
+/protocol/               @dubbo-go/protocol-maintainers
+/registry/               @dubbo-go/registry-maintainers
+/config_center/          @dubbo-go/config-maintainers
+/common/                 @dubbo-go/core-maintainers
+/global/                 @dubbo-go/core-maintainers
+/metadata/               @dubbo-go/metadata-maintainers
+/remoting/               @dubbo-go/remoting-maintainers
+/filter/                 @dubbo-go/filter-maintainers
+/metrics/                @dubbo-go/observability-maintainers
+/otel/                   @dubbo-go/observability-maintainers
+
+# 工具与文档
+/tools/                  @dubbo-go/tooling-maintainers
+/doc/                    @dubbo-go/docs-maintainers
+
+# 兜底：未被上述路径覆盖的所有文件
+*                        @dubbo-go/committers
