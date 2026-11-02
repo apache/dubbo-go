@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/pb33f/go-yaml"
+
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/index"
