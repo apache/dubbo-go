@@ -31,6 +31,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 import (
@@ -335,7 +337,7 @@ func TestDescribableProtocols(t *testing.T) {
 	}{
 		{"dubbo", constant.DubboProtocol, false, true},
 		{"triple non-IDL", constant.TriProtocol, false, true},
-		{"triple IDL", constant.TriProtocol, true, false},
+		{"triple IDL", constant.TriProtocol, true, true},
 		{"rest", "rest", false, false},
 		{"grpc", "grpc", false, false},
 	}
@@ -354,14 +356,33 @@ func TestDescribableProtocols(t *testing.T) {
 	}
 }
 
-func TestTripleIDLIsNotPublished(t *testing.T) {
-	// A protobuf service's contract must come from the descriptor, not from the
-	// generated struct, so it is excluded until that builder exists.
-	backend := installCapableReport(t, nil)
-	u := exportService(t, constant.TriProtocol, true)
+type IDLDefinitionService struct{}
 
+func (*IDLDefinitionService) Unary(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+
+func TestTripleIDLUnaryIsPublished(t *testing.T) {
+	backend := installCapableReport(t, nil)
+	_, err := common.ServiceMap.Register(echoInterface, constant.TriProtocol, "", "", &IDLDefinitionService{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = common.ServiceMap.UnRegister(echoInterface, constant.TriProtocol, common.ServiceKey(echoInterface, "", ""))
+	})
+	u := common.NewURLWithOptions(common.WithProtocol(constant.TriProtocol), common.WithParamsValue(constant.InterfaceKey, echoInterface))
+	u.SetAttribute(constant.ServiceInfoKey, &common.ServiceInfo{InterfaceName: echoInterface, Methods: []common.MethodInfo{
+		{Name: "Unary", Type: constant.CallUnary, ReqInitFunc: func() any { return &emptypb.Empty{} }},
+		{Name: "ServerStream", Type: constant.CallServerStream},
+		{Name: "ClientStream", Type: constant.CallClientStream},
+		{Name: "BidiStream", Type: constant.CallBidiStream},
+	}})
 	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
-	assert.Empty(t, backend.snapshot())
+	published := backend.snapshot()
+	require.Len(t, published, 1)
+	var got definition.ServiceDefinition
+	require.NoError(t, json.Unmarshal([]byte(published[0].JSON), &got))
+	require.Equal(t, []definition.MethodDefinition{{Name: "Unary", ParameterTypes: []string{"google.protobuf.Empty"}, ReturnType: "google.protobuf.Empty"}}, got.Methods)
+	require.Equal(t, []definition.TypeDefinition{{Type: "google.protobuf.Empty"}}, got.Types)
 }
 
 func TestTripleNonIDLIsPublished(t *testing.T) {

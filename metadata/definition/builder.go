@@ -29,6 +29,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // SkippedMethod records a method the builder declined to publish.
@@ -64,6 +65,19 @@ func BuildFromURL(u *common.URL, svcType reflect.Type) (*ServiceDefinition, []Sk
 	canonicalName := u.Interface()
 	if canonicalName == "" {
 		return nil, nil, perrors.New("cannot build a service definition without an interface name")
+	}
+
+	// A Triple IDL export carries the generated ServiceInfo. Its contract is the
+	// .proto file, so it is described from protobuf descriptors instead of by
+	// reflecting the handler; see buildProtobufService.
+	if u.Protocol == constant.TriProtocol {
+		if raw, ok := u.GetAttribute(constant.ServiceInfoKey); ok {
+			info, valid := raw.(*common.ServiceInfo)
+			if !valid || info == nil {
+				return nil, nil, perrors.New("invalid Triple service info")
+			}
+			return buildProtobufService(u, svcType, info)
+		}
 	}
 
 	canonical := common.CanonicalMethods(svcType)
