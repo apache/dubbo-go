@@ -101,10 +101,25 @@ func (p *promMetricRegistry) GaugeFunc(m *metrics.MetricId, value func() float64
 }
 
 func (p *promMetricRegistry) Histogram(m *metrics.MetricId) metrics.ObservableMetric {
+	return p.HistogramWithOptions(m, nil)
+}
+
+var _ metrics.ConfigurableHistogramRegistry = (*promMetricRegistry)(nil)
+
+// HistogramWithOptions registers a histogram without changing the defaults of
+// Histogram. Invalid bounds fall back to the Prometheus defaults with a warning.
+func (p *promMetricRegistry) HistogramWithOptions(m *metrics.MetricId, opts *metrics.HistogramOpts) metrics.ObservableMetric {
 	vec := p.getOrComputeVec(m.Name, func() prom.Collector {
+		var buckets []float64
+		if err := opts.Validate(); err != nil {
+			logger.Warnf("[Metrics][Prometheus] invalid histogram buckets for %s: %v; using Prometheus defaults", m.Name, err)
+		} else if opts != nil {
+			buckets = append([]float64(nil), opts.Buckets...)
+		}
 		return prom.NewHistogramVec(prom.HistogramOpts{
-			Name: m.Name,
-			Help: m.Desc,
+			Name:    m.Name,
+			Help:    m.Desc,
+			Buckets: buckets,
 		}, m.TagKeys())
 	}).(*prom.HistogramVec)
 	return vec.With(m.Tags)

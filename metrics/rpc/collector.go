@@ -36,10 +36,7 @@ var (
 func init() {
 	collectorFunc := func(registry metrics.MetricRegistry, url *common.URL) {
 		if url.GetParamBool(constant.RpcEnabledKey, true) {
-			rc := &rpcCollector{
-				registry:  registry,
-				metricSet: buildMetricSet(registry),
-			}
+			rc := newRPCCollector(registry, url)
 			go rc.start()
 		}
 	}
@@ -49,8 +46,23 @@ func init() {
 
 // rpcCollector is a collector which will collect the rpc metrics
 type rpcCollector struct {
-	registry  metrics.MetricRegistry
-	metricSet *metricSet // metricSet is a struct which contains all metrics about rpc
+	registry          metrics.MetricRegistry
+	metricSet         *metricSet // metricSet is a struct which contains all metrics about rpc
+	histogramRegistry metrics.ConfigurableHistogramRegistry
+	histogramOpts     *metrics.HistogramOpts
+}
+
+func newRPCCollector(registry metrics.MetricRegistry, url *common.URL) *rpcCollector {
+	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
+	if url.GetParamBool(constant.HistogramEnabledKey, false) {
+		if configurable, ok := registry.(metrics.ConfigurableHistogramRegistry); ok {
+			c.histogramRegistry = configurable
+			c.histogramOpts = rpcHistogramOpts(url.GetParam(constant.HistogramBucketsKey, ""))
+		} else {
+			logger.Warnf("[Metrics][RPC] registry %T does not support configurable histograms; RPC histograms disabled, existing metrics unchanged", registry)
+		}
+	}
+	return c
 }
 
 // start will subscribe the rpc.metricsEvent from channel rpcMetricsChan, and handle the event from the channel
@@ -112,6 +124,7 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 		}
 	}
 	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
+	c.reportRTHistogram(role, labels, event.costTime.Seconds())
 }
 
 func (c *rpcCollector) recordQps(role string, labels map[string]string) {
