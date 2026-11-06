@@ -140,8 +140,53 @@ func TestAdminTagConfigCenterRPC(t *testing.T) {
 			require.Eventually(t, func() bool { _, exists := p.routerConfigs.Load(key); return !exists }, 15*time.Second, 50*time.Millisecond)
 			check("gray", false, invokers...)
 			check("", false, invokers...)
+			publish(fixture("enabled"))
+			check("gray", false, invokers[0]) // Created after the listener was registered.
 		})
 	}
+}
+
+// This opt-in diagnostic expects default ZooKeeper settings to read Admin's
+// location. A failure is kept visible separately from the configured test.
+func TestAdminTagZooKeeperDefaultRPC(t *testing.T) {
+	endpoint := os.Getenv("DUBBO_TAG_ZOOKEEPER")
+	if endpoint == "" {
+		t.Skip("set DUBBO_TAG_ZOOKEEPER to a disposable endpoint")
+	}
+	app := fmt.Sprintf("tag-default-%d", time.Now().UnixNano())
+	key := app + constant.TagRouterRuleSuffix
+	invokers := []base.Invoker{startAdminTagProvider(t, app), startAdminTagProvider(t, app)}
+	consumer, err := common.NewURL("consumer://127.0.0.1/org.example.TagIdentity?application=tag-default-consumer")
+	require.NoError(t, err)
+	_, write, remove := adminTagRealConfiguration(t, "zookeeper", endpoint, key)
+	t.Cleanup(remove)
+	u, err := common.NewURL("zookeeper://" + endpoint)
+	require.NoError(t, err)
+	factory, err := extension.GetConfigCenterFactory("zookeeper")
+	require.NoError(t, err)
+	dc, err := factory.GetDynamicConfiguration(u)
+	require.NoError(t, err)
+	t.Cleanup(dc.(interface {
+		ZkClient() *gxzookeeper.ZookeeperClient
+	}).ZkClient().Close)
+	env := conf.GetEnvInstance()
+	previous := env.GetDynamicConfiguration()
+	env.SetDynamicConfiguration(dc)
+	t.Cleanup(func() { env.SetDynamicConfiguration(previous) })
+	p, err := NewTagPriorityRouter()
+	require.NoError(t, err)
+	p.Notify(invokers)
+	t.Cleanup(func() { dc.RemoveListener(key, p) })
+	payload := strings.ReplaceAll(adminTagFixture(t, "enabled"), adminTagProvider, app)
+	payload = strings.ReplaceAll(payload, "127.0.0.1:20890", invokers[0].GetURL().Location)
+	write(payload)
+	t.Logf("Admin path=/dubbo/config/%s; SDK uses default root and namespace", key)
+	require.Eventually(t, func() bool {
+		call := invocation.NewRPCInvocation("Identity", nil, map[string]any{constant.Tagkey: "gray"})
+		selected := p.Route(invokers, consumer, call)
+		return len(selected) == 1 && selected[0] == invokers[0]
+	}, 5*time.Second, 50*time.Millisecond, "default configuration did not observe Admin rule creation")
+	require.Equal(t, invokers[0].GetURL().Location, invokeAdminTagProvider(t, invokers[0]))
 }
 
 func adminTagAddresses(invokers []base.Invoker) []string {
