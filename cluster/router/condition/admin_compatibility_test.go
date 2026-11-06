@@ -18,6 +18,7 @@
 package condition
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -184,4 +185,57 @@ func TestAdminConsumerApplicationConditionPresentBeforeSubscribe(t *testing.T) {
 	router.Notify(providers)
 	require.Equal(t, []string{"127.0.0.2"}, adminConditionSelected(router, consumer, providers))
 	require.Contains(t, c.calls, "get "+key)
+}
+
+// These hand-written parser fixtures exercise both matching and empty results.
+// They are not captured Admin writer output.
+func TestConditionVersionFlagRouting(t *testing.T) {
+	all := []string{"127.0.0.1", "127.0.0.2", "127.0.0.3"}
+	for _, tc := range []struct {
+		name, flags   string
+		match, absent []string
+	}{
+		{"enabled_force", "enabled: true\nforce: true\n", []string{"127.0.0.2"}, []string{}},
+		{"enabled_fallback", "enabled: true\nforce: false\n", []string{"127.0.0.2"}, all},
+		{"disabled_force", "enabled: false\nforce: true\n", all, all},
+		{"disabled_fallback", "enabled: false\nforce: false\n", all, all},
+		{"omitted_enabled", "force: true\n", []string{"127.0.0.2"}, []string{}},
+		{"omitted_force", "enabled: true\n", []string{"127.0.0.2"}, all},
+		{"omitted_both", "", []string{"127.0.0.2"}, all},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			consumer, providers := adminConditionURLs(t)
+			for _, scenario := range []struct {
+				host string
+				want []string
+			}{{"127.0.0.2", tc.match}, {"192.0.2.1", tc.absent}} {
+				rule := fmt.Sprintf("configVersion: v3.0\nscope: service\nkey: %s\nruntime: true\n%sconditions:\n  - '=>host=%s'\n", adminConditionInterface, tc.flags, scenario.host)
+				router := NewServiceRouter()
+				router.Process(&config_center.ConfigChangeEvent{Value: rule, ConfigType: remoting.EventTypeUpdate})
+				require.Equal(t, scenario.want, adminConditionSelected(router, consumer, providers), "host=%s", scenario.host)
+			}
+		})
+	}
+}
+
+func TestConditionVersion31Control(t *testing.T) {
+	consumer, providers := adminConditionURLs(t)
+	// Parser fixture, not an Admin writer payload. The v3.1 schema uses
+	// structured from/to conditions instead of v3.0 condition strings.
+	rule := `configVersion: v3.1
+scope: service
+key: org.apache.dubbo.condition.CompatService
+enabled: true
+force: false
+runtime: true
+conditions:
+  - from:
+      match: host=127.0.0.10
+    to:
+      - match: host=127.0.0.2
+        weight: 100
+`
+	router := NewServiceRouter()
+	router.Process(&config_center.ConfigChangeEvent{Value: rule, ConfigType: remoting.EventTypeUpdate})
+	require.Equal(t, []string{"127.0.0.2"}, adminConditionSelected(router, consumer, providers))
 }
