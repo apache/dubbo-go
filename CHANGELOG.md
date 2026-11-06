@@ -728,7 +728,7 @@ Milestone:
 - [Add read configuration path from the command line when start](https://github.com/apache/dubbo-go/pull/1039)
 - [Add use invoker with same ip as client first](https://github.com/apache/dubbo-go/pull/1023)
 - [Add an "api way" to set general configure](https://github.com/apache/dubbo-go/pull/1020)
-- [Add registry ip:port set from enviroment variable](https://github.com/apache/dubbo-go/pull/1036)
+- [Add registry ip:port set from environment variable](https://github.com/apache/dubbo-go/pull/1036)
 
 ### Enhancement
 
