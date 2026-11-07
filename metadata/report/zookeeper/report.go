@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 )
@@ -87,6 +88,51 @@ type zookeeperMetadataReport struct {
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
 	url           *common.URL
+}
+
+var _ report.ServiceDefinitionPublisher = (*zookeeperMetadataReport)(nil)
+
+// PublishServiceDefinition implements report.ServiceDefinitionPublisher. It
+// stores one interface-level service definition at the node Java's
+// ZookeeperMetadataReport writes for a provider MetadataIdentifier, which is
+// also the subtree Dubbo Admin watches:
+//
+//	{root}/metadata/{interface}/{version}/{group}/provider/{application}
+//
+// Admin takes the service name, version and group from the JSON body and only
+// uses the path to tell provider definitions apart ("provider" must be the
+// second-to-last segment). So the path shape and the interface escaping are
+// what must match Java; everything else travels in the body.
+//
+// The node is persistent and overwritten without a version check. Instances
+// of one application normally derive identical definitions, so last writer
+// wins is harmless. During a rolling upgrade old and new instances may
+// overwrite each other until the old ones are gone; a compare-and-set would
+// not decide which version is right either, so it is not worth the retries.
+func (m *zookeeperMetadataReport) PublishServiceDefinition(serviceInterface, version, group, application, definitionJSON string) error {
+	// Java escapes the interface with URLEncoder. url.QueryEscape matches it
+	// except that URLEncoder keeps '*' and escapes '~', so patch those two
+	// characters; otherwise names containing them would land on another node.
+	encoded := strings.ReplaceAll(strings.ReplaceAll(url.QueryEscape(serviceInterface), "%2A", "*"), "~", "%7E")
+	if serviceInterface == "*" {
+		encoded = "" // Java maps the wildcard interface to an empty segment.
+	}
+	root := strings.TrimSuffix(m.rootDir, "/")
+	// Skip empty version or group segments, as Java's PathUtils.buildPath
+	// does. Nothing else is removed, so provider/{application} always stays
+	// the last two segments.
+	path := root + "/metadata"
+	for _, segment := range []string{encoded, version, group, "provider", application} {
+		if segment != "" {
+			path += "/" + segment
+		}
+	}
+	data := []byte(definitionJSON)
+	err := m.client.CreateWithValue(path, data)
+	if errors.Is(err, zk.ErrNodeExists) {
+		_, err = m.client.SetContent(path, data, -1)
+	}
+	return err
 }
 
 // URL returns the URL used to create this metadata report.
