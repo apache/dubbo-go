@@ -141,15 +141,15 @@ func TestWellKnownProtoJSONSchema(t *testing.T) {
 		reasons[skip.Name] = skip.Reason
 	}
 	require.Equal(t, map[string]string{
-		"Stamp":     "google.protobuf.Timestamp serializes as java.lang.String under protojson and cannot be a method request or response",
-		"Wrap":      "google.protobuf.StringValue serializes as java.lang.String under protojson and cannot be a method request or response",
+		"Stamp":     "google.protobuf.Timestamp has scalar JSON representation java.lang.String, which ServiceDefinition cannot describe as a method body",
+		"Wrap":      "google.protobuf.StringValue has scalar JSON representation java.lang.String, which ServiceDefinition cannot describe as a method body",
 		"Any":       "google.protobuf.Any cannot be represented: protojson emits @type plus the packed message, which is not a fixed schema",
 		"DirectAny": "google.protobuf.Any cannot be represented: protojson emits @type plus the packed message, which is not a fixed schema",
 		"Struct":    "google.protobuf.Struct cannot be represented: protojson emits an arbitrary JSON object",
 		"Value":     "google.protobuf.Value cannot be represented: protojson emits any JSON value",
 		"List":      "google.protobuf.ListValue cannot be represented: protojson emits an arbitrary JSON array",
 		"Null":      "google.protobuf.NullValue cannot be represented: protojson emits JSON null",
-		"When":      "google.protobuf.Timestamp serializes as java.lang.String under protojson and cannot be a method request or response",
+		"When":      "google.protobuf.Timestamp has scalar JSON representation java.lang.String, which ServiceDefinition cannot describe as a method body",
 		"Watch":     "streaming is not supported",
 	}, reasons)
 
@@ -181,8 +181,7 @@ func TestWellKnownProtoJSONSchema(t *testing.T) {
 	require.NoError(t, protojson.Unmarshal(raw, second))
 	require.True(t, proto.Equal(first, second))
 
-	// Canonical protojson also accepts the int64 string form Admin's "long"
-	// spelling does not have to emit; both must unmarshal, the object form must not.
+	// protojson.Unmarshal accepts both numeric and decimal-string int64 inputs.
 	i64 := dynamicpb.NewMessage(payload)
 	require.NoError(t, protojson.Unmarshal([]byte(`{"i64":"64","u64":"65"}`), i64))
 
@@ -208,8 +207,7 @@ func TestWellKnownProtoJSONSchema(t *testing.T) {
 		require.Error(t, unmarshalErr, doc)
 	}
 
-	// Top-level scalar bodies are the protojson document itself, which is why
-	// those methods are skipped rather than given an object schema.
+	// Scalar bodies are valid protojson, but ServiceDefinition cannot describe their named method types.
 	require.NoError(t, protojson.Unmarshal([]byte(`"2017-01-15T01:30:15.01Z"`), &timestamppb.Timestamp{}))
 	require.Error(t, protojson.Unmarshal([]byte(`{"seconds":"1","nanos":1}`), &timestamppb.Timestamp{}))
 	require.NoError(t, protojson.Unmarshal([]byte(`"hello"`), &wrapperspb.StringValue{}))
@@ -239,6 +237,40 @@ func TestWellKnownProtoJSONSchema(t *testing.T) {
 	require.Zero(t, asObject.GetNumberValue())
 	require.Error(t, protojson.Unmarshal([]byte(`{"values":[1,"x"]}`), &structpb.ListValue{}))
 	require.NoError(t, protojson.Unmarshal([]byte(`[1,"x"]`), &structpb.ListValue{}))
+}
+
+func TestSkippedSchemaDoesNotLeakStagedTypes(t *testing.T) {
+	file := wktFile(t)
+	node := file.Messages().ByName("Node")
+	solo := file.Messages().ByName("Solo")
+	inner := file.Messages().ByName("Inner")
+	req := func(md protoreflect.MessageDescriptor) func() any {
+		return func() any { return dynamicpb.NewMessage(md) }
+	}
+	u := common.NewURLWithOptions(common.WithProtocol(constant.TriProtocol), common.WithParamsValue(constant.InterfaceKey, "wktfix.Api"))
+	u.SetAttribute(constant.ServiceInfoKey, &common.ServiceInfo{InterfaceName: "wktfix.Api", Methods: []common.MethodInfo{
+		{Name: "Note", Type: constant.CallUnary, ReqInitFunc: req(inner)},
+		{Name: "Loop", Type: constant.CallUnary, ReqInitFunc: req(node)},
+		{Name: "Leak", Type: constant.CallUnary, ReqInitFunc: req(solo)},
+	}})
+	def, skipped, err := BuildFromURL(u, reflect.TypeOf(struct{}{}))
+	require.NoError(t, err)
+	require.Equal(t, []MethodDefinition{{
+		Name: "Note", ParameterTypes: []string{"wktfix.Inner"}, ReturnType: "google.protobuf.Empty",
+	}}, def.Methods)
+	require.Equal(t, []SkippedMethod{
+		{Name: "Leak", Reason: "google.protobuf.Any cannot be represented: protojson emits @type plus the packed message, which is not a fixed schema"},
+		{Name: "Loop", Reason: "google.protobuf.Any cannot be represented: protojson emits @type plus the packed message, which is not a fixed schema"},
+	}, skipped)
+	got := make(map[string]TypeDefinition, len(def.Types))
+	for _, d := range def.Types {
+		got[d.Type] = d
+	}
+	require.Contains(t, got, "wktfix.Inner")
+	require.Contains(t, got, "google.protobuf.Empty")
+	for _, absent := range []string{"wktfix.Node", "java.util.List<wktfix.Node>", "wktfix.Solo", "google.protobuf.Any"} {
+		require.NotContains(t, got, absent)
+	}
 }
 
 type sayHelloHandler struct{}
@@ -443,6 +475,19 @@ func wktFileProto() *descriptorpb.FileDescriptorProto {
 			holder("ValueHolder", ".google.protobuf.Value", msg),
 			holder("ListHolder", ".google.protobuf.ListValue", msg),
 			holder("NullHolder", ".google.protobuf.NullValue", enum),
+			{
+				Name: proto.String("Node"),
+				Field: []*descriptorpb.FieldDescriptorProto{
+					field("children", "children", 1, rep, msg, ".wktfix.Node"),
+					field("bad", "bad", 2, opt, msg, ".google.protobuf.Any"),
+				},
+			},
+			{
+				Name: proto.String("Solo"),
+				Field: []*descriptorpb.FieldDescriptorProto{
+					field("label", "label", 1, opt, str, ""),
+				},
+			},
 		},
 		Service: []*descriptorpb.ServiceDescriptorProto{{
 			Name: proto.String("Api"),
@@ -461,6 +506,12 @@ func wktFileProto() *descriptorpb.FileDescriptorProto {
 					Name:       proto.String("When"),
 					InputType:  proto.String(".wktfix.Inner"),
 					OutputType: proto.String(".google.protobuf.Timestamp"),
+				},
+				method("Loop", ".wktfix.Node"),
+				{
+					Name:       proto.String("Leak"),
+					InputType:  proto.String(".wktfix.Solo"),
+					OutputType: proto.String(".google.protobuf.Any"),
 				},
 			},
 		}},

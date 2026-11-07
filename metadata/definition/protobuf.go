@@ -51,16 +51,8 @@ import (
 // fixed-width integers collapse to int and long, as they do in generated Java
 // code. bytes has no Java-vocabulary entry Admin understands and stays "bytes".
 //
-// Well-known messages follow protojson, not their proto fields. Timestamp,
-// Duration, FieldMask and StringValue are java.lang.String; the other wrappers
-// use the same Java scalar as the wrapped kind (BytesValue stays "bytes").
-// Admin builds JSON from these expressions, and protojson rejects the expanded
-// {seconds,nanos} or {value} object. Any, Struct, Value, ListValue and
-// NullValue have no fixed schema this document can describe, so a method that
-// reaches one is skipped. A method whose request or response is itself a
-// scalar well-known type is skipped too: the signature has to keep the
-// protobuf full name generic invocation sends, and this document cannot record
-// that a named message is a JSON scalar.
+// Well-known fields use their protojson scalar mappings. Methods whose JSON
+// representation cannot be expressed by ServiceDefinition are skipped.
 //
 // Only unary methods are published. Admin's generic invocation is unary-only, so
 // listing a streaming method would offer a call that cannot be made. Streaming
@@ -99,8 +91,6 @@ func buildProtobufService(u *common.URL, handler reflect.Type, info *common.Serv
 		// back to the handler's signature, which works only when its first result
 		// is a generated message pointer. The fallback is not used when a
 		// descriptor exists but disagrees with ReqInitFunc; that case is skipped.
-		// Name lookup is the same first-rune swap enhanceServiceInfo uses
-		// (sayHello reaches SayHello), not a general case fold.
 		if output == nil && service == nil {
 			if method, ok := handlerMethod(handler, m.Name); ok {
 				t := method.Type
@@ -146,11 +136,7 @@ func buildProtobufService(u *common.URL, handler reflect.Type, info *common.Serv
 	return &ServiceDefinition{CanonicalName: u.Interface(), Parameters: urlParameters(u), Methods: methods, Types: types.definitions()}, skips, nil
 }
 
-// handlerMethod resolves a ServiceInfo method name to an exported Go method.
-//
-// enhanceServiceInfo indexes each exported method under its name and under
-// SwapCaseFirstRune of that name, so a lowercase-first ServiceInfo name still
-// reaches the Go method. Only that pair is accepted here.
+// handlerMethod matches the exact name or the first-rune alias used by enhanceServiceInfo.
 func handlerMethod(handler reflect.Type, name string) (reflect.Method, bool) {
 	if method, ok := handler.MethodByName(name); ok {
 		return method, true
@@ -163,13 +149,12 @@ func handlerMethod(handler reflect.Type, name string) (reflect.Method, bool) {
 	return method, ok
 }
 
-// scalarRootSkip reports why a method request or response that protojson
-// renders as a scalar cannot be published under its protobuf full name.
+// scalarRootSkip rejects scalar method bodies that ServiceDefinition cannot describe under their protobuf full name.
 func scalarRootSkip(message protoreflect.MessageDescriptor, expr string) string {
 	if expr == string(message.FullName()) {
 		return ""
 	}
-	return fmt.Sprintf("%s serializes as %s under protojson and cannot be a method request or response", message.FullName(), expr)
+	return fmt.Sprintf("%s has scalar JSON representation %s, which ServiceDefinition cannot describe as a method body", message.FullName(), expr)
 }
 
 // protobufMessage registers a message definition and returns its type expression.
