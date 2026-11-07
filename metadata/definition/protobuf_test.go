@@ -54,14 +54,14 @@ func TestProtobufServiceDefinition(t *testing.T) {
 		got[d.Type] = d
 	}
 	require.Equal(t, map[string]string{
-		"displayName": "java.lang.String", "count": "int", "total": "long", "active": "boolean", "data": "bytes", "ratio": "double", "score": "float", "status": "fixture.Status", "children": "java.util.List<fixture.Request.Nested>", "lookup": "java.util.Map<java.lang.String,fixture.Request.Nested>", "text": "java.lang.String", "nested": "fixture.Request.Nested", "timestamp": "google.protobuf.Timestamp", "wrapper": "google.protobuf.StringValue", "next": "fixture.Request",
+		"displayName": "java.lang.String", "count": "int", "total": "long", "active": "boolean", "data": "bytes", "ratio": "double", "score": "float", "status": "fixture.Status", "children": "java.util.List<fixture.Request.Nested>", "lookup": "java.util.Map<java.lang.String,fixture.Request.Nested>", "text": "java.lang.String", "nested": "fixture.Request.Nested", "timestamp": "java.lang.String", "wrapper": "java.lang.String", "next": "fixture.Request",
 	}, got["fixture.Request"].Properties)
 	require.Equal(t, map[string]string{"value": "java.lang.String"}, got["fixture.Request.Nested"].Properties)
 	require.Equal(t, []string{"UNKNOWN", "READY"}, got["fixture.Status"].Enums)
 	require.Equal(t, []string{"fixture.Request.Nested"}, got["java.util.List<fixture.Request.Nested>"].Items)
 	require.Equal(t, []string{"java.lang.String", "fixture.Request.Nested"}, got["java.util.Map<java.lang.String,fixture.Request.Nested>"].Items)
-	require.Equal(t, map[string]string{"seconds": "long", "nanos": "int"}, got["google.protobuf.Timestamp"].Properties)
-	require.Equal(t, map[string]string{"value": "java.lang.String"}, got["google.protobuf.StringValue"].Properties)
+	require.NotContains(t, got, "google.protobuf.Timestamp")
+	require.NotContains(t, got, "google.protobuf.StringValue")
 	require.Contains(t, got, "google.protobuf.Empty")
 }
 
@@ -69,7 +69,8 @@ func TestProtobufContainerElementsAreBoxed(t *testing.T) {
 	// FileDescriptorProto.public_dependency is "repeated int32". A Java generic
 	// cannot hold a primitive, so the element must be the boxed type.
 	c := newTypeCollector()
-	c.protobufMessage((&descriptorpb.FileDescriptorProto{}).ProtoReflect().Descriptor())
+	_, err := c.protobufMessage((&descriptorpb.FileDescriptorProto{}).ProtoReflect().Descriptor())
+	require.NoError(t, err)
 	props := c.defs["google.protobuf.FileDescriptorProto"].Properties
 	require.Equal(t, "java.util.List<java.lang.Integer>", props["publicDependency"])
 	require.Equal(t, []string{"java.lang.Integer"}, c.defs["java.util.List<java.lang.Integer>"].Items)

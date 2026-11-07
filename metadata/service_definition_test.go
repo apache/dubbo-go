@@ -39,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition/testdata/fixture"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -383,6 +384,41 @@ func TestTripleIDLUnaryIsPublished(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(published[0].JSON), &got))
 	require.Equal(t, []definition.MethodDefinition{{Name: "Unary", ParameterTypes: []string{"google.protobuf.Empty"}, ReturnType: "google.protobuf.Empty"}}, got.Methods)
 	require.Equal(t, []definition.TypeDefinition{{Type: "google.protobuf.Empty"}}, got.Types)
+}
+
+type LowerInitialService struct{}
+
+func (*LowerInitialService) SayHello(context.Context, *fixture.Request) (*fixture.Request, error) {
+	return &fixture.Request{}, nil
+}
+
+func TestTripleIDLLowerInitialMethodIsPublished(t *testing.T) {
+	const iface = "org.example.LowerInitial"
+	backend := installCapableReport(t, nil)
+	_, err := common.ServiceMap.Register(iface, constant.TriProtocol, "", "", &LowerInitialService{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = common.ServiceMap.UnRegister(iface, constant.TriProtocol, common.ServiceKey(iface, "", ""))
+	})
+	u := common.NewURLWithOptions(common.WithProtocol(constant.TriProtocol), common.WithParamsValue(constant.InterfaceKey, iface))
+	u.SetAttribute(constant.ServiceInfoKey, &common.ServiceInfo{
+		InterfaceName: iface,
+		Methods: []common.MethodInfo{{
+			Name:        "sayHello",
+			Type:        constant.CallUnary,
+			ReqInitFunc: func() any { return &fixture.Request{} },
+		}},
+	})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
+	published := backend.snapshot()
+	require.Len(t, published, 1)
+	var got definition.ServiceDefinition
+	require.NoError(t, json.Unmarshal([]byte(published[0].JSON), &got))
+	require.Equal(t, []definition.MethodDefinition{{
+		Name:           "sayHello",
+		ParameterTypes: []string{"fixture.Request"},
+		ReturnType:     "fixture.Request",
+	}}, got.Methods)
 }
 
 func TestTripleNonIDLIsPublished(t *testing.T) {
