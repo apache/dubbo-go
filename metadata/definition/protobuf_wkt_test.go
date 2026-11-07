@@ -28,20 +28,22 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"google.golang.org/protobuf/encoding/protojson"
+
 	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/anypb"
+	_ "google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
+	_ "google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	_ "google.golang.org/protobuf/types/known/durationpb"
-	_ "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 import (
@@ -280,7 +282,7 @@ func (*sayHelloHandler) SayHello(context.Context, *fixture.Request) (*fixture.Re
 }
 
 func TestProtobufFallbackSwapsFirstRuneOnly(t *testing.T) {
-	handler := reflect.TypeOf(&sayHelloHandler{})
+	handler := reflect.TypeFor[*sayHelloHandler]()
 	cases := []struct {
 		name    string
 		method  string
