@@ -1,0 +1,295 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package definition
+
+import (
+	"fmt"
+	"reflect"
+	"sort"
+)
+
+import (
+	"google.golang.org/protobuf/proto"
+
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+)
+
+// buildProtobufService describes a Triple IDL service from protobuf descriptors.
+//
+// Type names: method parameter and return types, and every message and enum,
+// use the protobuf full name (greet.GreetRequest, google.protobuf.Empty). That
+// is the name Triple IDL generic invocation uses for a message, and the
+// definition's purpose is to let Admin build such calls. Scalar and container
+// fields use the Java vocabulary the reflection builder already uses
+// (java.lang.String, int, long, java.util.List<T>, java.util.Map<K,V>) rather
+// than proto names like "string" or "int64". Admin resolves types by exact
+// string and its debug form only knows default values for that vocabulary, so
+// proto scalar names would render as null. Java Dubbo's ProtobufTypeBuilder
+// produces the same shape from the generated Java classes. Unsigned and
+// fixed-width integers collapse to int and long, as they do in generated Java
+// code. bytes has no Java-vocabulary entry Admin understands and stays "bytes".
+//
+// Well-known fields use their protojson scalar mappings. Methods whose JSON
+// representation cannot be expressed by ServiceDefinition are skipped.
+//
+// Only unary methods are published. Admin's generic invocation is unary-only, so
+// listing a streaming method would offer a call that cannot be made. Streaming
+// methods are reported as skipped.
+//
+// The request type comes from the method's ReqInitFunc. The response type comes
+// from the service descriptor that the generated .pb.go registers under the
+// ServiceInfo interface name. If that descriptor's input type disagrees with
+// ReqInitFunc, the method is skipped rather than guessed.
+func buildProtobufService(u *common.URL, handler reflect.Type, info *common.ServiceInfo) (*ServiceDefinition, []SkippedMethod, error) {
+	types := newTypeCollector()
+	methods := make([]MethodDefinition, 0, len(info.Methods))
+	var skips []SkippedMethod
+	var service protoreflect.ServiceDescriptor
+	if d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(info.InterfaceName)); err == nil {
+		service, _ = d.(protoreflect.ServiceDescriptor)
+	}
+	for _, m := range info.Methods {
+		if m.Type != constant.CallUnary {
+			skips = append(skips, SkippedMethod{Name: m.Name, Reason: "streaming is not supported"})
+			continue
+		}
+		var input, output protoreflect.MessageDescriptor
+		if m.ReqInitFunc != nil {
+			if req, ok := m.ReqInitFunc().(proto.Message); ok && req != nil && req.ProtoReflect().IsValid() {
+				input = req.ProtoReflect().Descriptor()
+			}
+		}
+		if service != nil {
+			if method := service.Methods().ByName(protoreflect.Name(m.Name)); method != nil && !method.IsStreamingClient() && !method.IsStreamingServer() && input != nil && method.Input().FullName() == input.FullName() {
+				output = method.Output()
+			}
+		}
+		// No registered service descriptor means the ServiceInfo was written by
+		// hand, or its interface name is not the proto service's full name. Fall
+		// back to the handler's signature, which works only when its first result
+		// is a generated message pointer. The fallback is not used when a
+		// descriptor exists but disagrees with ReqInitFunc; that case is skipped.
+		if output == nil && service == nil {
+			if method, ok := handlerMethod(handler, m.Name); ok {
+				t := method.Type
+				if t.NumOut() > 0 {
+					result := t.Out(0)
+					if result.Kind() == reflect.Pointer && result.Implements(reflect.TypeFor[proto.Message]()) {
+						output = reflect.New(result.Elem()).Interface().(proto.Message).ProtoReflect().Descriptor()
+					}
+				}
+			}
+		}
+		if input == nil || output == nil {
+			skips = append(skips, SkippedMethod{Name: m.Name, Reason: "protobuf request or response descriptor unavailable"})
+			continue
+		}
+		// Resolve into a staging collector so a skipped method does not publish
+		// types only its schema reached, including a message walked before an
+		// unrepresentable field was found.
+		staging := newTypeCollector()
+		inExpr, err := staging.protobufMessage(input)
+		if err != nil {
+			skips = append(skips, SkippedMethod{Name: m.Name, Reason: err.Error()})
+			continue
+		}
+		if reason := scalarRootSkip(input, inExpr); reason != "" {
+			skips = append(skips, SkippedMethod{Name: m.Name, Reason: reason})
+			continue
+		}
+		outExpr, err := staging.protobufMessage(output)
+		if err != nil {
+			skips = append(skips, SkippedMethod{Name: m.Name, Reason: err.Error()})
+			continue
+		}
+		if reason := scalarRootSkip(output, outExpr); reason != "" {
+			skips = append(skips, SkippedMethod{Name: m.Name, Reason: reason})
+			continue
+		}
+		types.merge(staging)
+		methods = append(methods, MethodDefinition{Name: m.Name, ParameterTypes: []string{inExpr}, ReturnType: outExpr})
+	}
+	sort.Slice(methods, func(i, j int) bool { return methods[i].Name < methods[j].Name })
+	sort.Slice(skips, func(i, j int) bool { return skips[i].Name < skips[j].Name })
+	return &ServiceDefinition{CanonicalName: u.Interface(), Parameters: urlParameters(u), Methods: methods, Types: types.definitions()}, skips, nil
+}
+
+// handlerMethod matches the exact name or the first-rune alias used by enhanceServiceInfo.
+func handlerMethod(handler reflect.Type, name string) (reflect.Method, bool) {
+	if method, ok := handler.MethodByName(name); ok {
+		return method, true
+	}
+	swapped := dubboutil.SwapCaseFirstRune(name)
+	if swapped == name {
+		return reflect.Method{}, false
+	}
+	method, ok := handler.MethodByName(swapped)
+	return method, ok
+}
+
+// scalarRootSkip rejects scalar method bodies that ServiceDefinition cannot describe under their protobuf full name.
+func scalarRootSkip(message protoreflect.MessageDescriptor, expr string) string {
+	if expr == string(message.FullName()) {
+		return ""
+	}
+	return fmt.Sprintf("%s has scalar JSON representation %s, which ServiceDefinition cannot describe as a method body", message.FullName(), expr)
+}
+
+// protobufMessage registers a message definition and returns its type expression.
+//
+// A normal message is registered under its full name before its fields are
+// walked, so a message that refers back to itself terminates. Every field
+// becomes a property keyed by its JSON name, including each member of a oneof.
+// The document format cannot say "at most one of", so oneof exclusivity is not
+// expressed. A well-known message that protojson renders as a scalar returns
+// that scalar and is not registered. A well-known message with no fixed schema
+// returns an error.
+func (c *typeCollector) protobufMessage(message protoreflect.MessageDescriptor) (string, error) {
+	if expr, special, err := wellKnownJSON(message); special {
+		return expr, err
+	}
+	name := string(message.FullName())
+	if _, ok := c.defs[name]; ok {
+		return name, nil
+	}
+	def := &TypeDefinition{Type: name, Properties: make(map[string]string)}
+	c.defs[name] = def
+	fields := message.Fields()
+	for i := 0; i < fields.Len(); i++ {
+		field := fields.Get(i)
+		expr, err := c.protobufField(field)
+		if err != nil {
+			return "", err
+		}
+		def.Properties[field.JSONName()] = expr
+	}
+	return name, nil
+}
+
+// wellKnownJSON reports the ServiceDefinition expression of a protojson
+// well-known mapping. special is false for an ordinary message, including
+// google.protobuf.Empty, whose JSON object has no fields.
+func wellKnownJSON(message protoreflect.MessageDescriptor) (expr string, special bool, err error) {
+	switch message.FullName() {
+	case "google.protobuf.Timestamp", "google.protobuf.Duration", "google.protobuf.FieldMask", "google.protobuf.StringValue":
+		return javaString, true, nil
+	case "google.protobuf.BytesValue":
+		return "bytes", true, nil
+	case "google.protobuf.BoolValue":
+		return javaBoolean, true, nil
+	case "google.protobuf.Int32Value", "google.protobuf.UInt32Value":
+		return javaInt, true, nil
+	case "google.protobuf.Int64Value", "google.protobuf.UInt64Value":
+		return javaLong, true, nil
+	case "google.protobuf.FloatValue":
+		return javaFloat, true, nil
+	case "google.protobuf.DoubleValue":
+		return javaDouble, true, nil
+	case "google.protobuf.Any":
+		return "", true, fmt.Errorf("google.protobuf.Any cannot be represented: protojson emits @type plus the packed message, which is not a fixed schema")
+	case "google.protobuf.Struct":
+		return "", true, fmt.Errorf("google.protobuf.Struct cannot be represented: protojson emits an arbitrary JSON object")
+	case "google.protobuf.Value":
+		return "", true, fmt.Errorf("google.protobuf.Value cannot be represented: protojson emits any JSON value")
+	case "google.protobuf.ListValue":
+		return "", true, fmt.Errorf("google.protobuf.ListValue cannot be represented: protojson emits an arbitrary JSON array")
+	default:
+		return "", false, nil
+	}
+}
+
+// protobufField returns a field's type expression and registers any container
+// definition it needs.
+//
+// Repeated fields are java.util.List<T>, not the T[] the reflection builder
+// writes for slices, because generated Java code exposes them as List<T> and
+// Java Dubbo describes them that way. Container elements are boxed
+// (java.lang.Integer, not int), since a Java generic cannot hold a primitive.
+// The Map spelling has no space after the comma, matching the reflection builder.
+func (c *typeCollector) protobufField(field protoreflect.FieldDescriptor) (string, error) {
+	if field.IsMap() {
+		key, err := c.protobufSingular(field.MapKey())
+		if err != nil {
+			return "", err
+		}
+		value, err := c.protobufSingular(field.MapValue())
+		if err != nil {
+			return "", err
+		}
+		key = boxed(key)
+		value = boxed(value)
+		name := fmt.Sprintf("%s<%s,%s>", javaMap, key, value)
+		c.defs[name] = &TypeDefinition{Type: name, Items: []string{key, value}}
+		return name, nil
+	}
+	item, err := c.protobufSingular(field)
+	if err != nil {
+		return "", err
+	}
+	if field.IsList() {
+		item = boxed(item)
+		name := fmt.Sprintf("java.util.List<%s>", item)
+		c.defs[name] = &TypeDefinition{Type: name, Items: []string{item}}
+		return name, nil
+	}
+	return item, nil
+}
+
+func (c *typeCollector) protobufSingular(field protoreflect.FieldDescriptor) (string, error) {
+	switch field.Kind() {
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		return c.protobufMessage(field.Message())
+	case protoreflect.EnumKind:
+		enum := field.Enum()
+		if enum.FullName() == "google.protobuf.NullValue" {
+			return "", fmt.Errorf("google.protobuf.NullValue cannot be represented: protojson emits JSON null")
+		}
+		name := string(enum.FullName())
+		if _, ok := c.defs[name]; !ok {
+			def := &TypeDefinition{Type: name}
+			for i := 0; i < enum.Values().Len(); i++ {
+				def.Enums = append(def.Enums, string(enum.Values().Get(i).Name()))
+			}
+			c.defs[name] = def
+		}
+		return name, nil
+	case protoreflect.StringKind:
+		return javaString, nil
+	case protoreflect.BoolKind:
+		return javaBoolean, nil
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind, protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return javaInt, nil
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind, protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return javaLong, nil
+	case protoreflect.FloatKind:
+		return javaFloat, nil
+	case protoreflect.DoubleKind:
+		return javaDouble, nil
+	case protoreflect.BytesKind:
+		return "bytes", nil
+	default:
+		return field.Kind().String(), nil
+	}
+}

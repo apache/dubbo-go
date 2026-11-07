@@ -1,0 +1,42 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License. You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package fixture;
+option go_package = "dubbo.apache.org/dubbo-go/v3/metadata/definition/testdata/fixture";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+service Greeter {
+  rpc Greet(Request) returns (google.protobuf.Empty);
+  rpc Watch(Request) returns (stream Request);
+}
+message Request {
+  string display_name = 1;
+  int32 count = 2;
+  int64 total = 3;
+  bool active = 4;
+  bytes data = 5;
+  double ratio = 6;
+  float score = 7;
+  Status status = 8;
+  repeated Nested children = 9;
+  map<string, Nested> lookup = 10;
+  oneof choice { string text = 11; Nested nested = 12; }
+  google.protobuf.Timestamp timestamp = 13;
+  google.protobuf.StringValue wrapper = 14;
+  Request next = 15;
+  message Nested { string value = 1; }
+}
+enum Status { UNKNOWN = 0; READY = 1; }

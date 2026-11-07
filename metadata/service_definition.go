@@ -150,13 +150,17 @@ func serviceDefinitionPublisher(r report.MetadataReport) (report.ServiceDefiniti
 //
 // A service exported over several protocols produces several URLs, but the
 // definition key holds no protocol, so publishing each would have them
-// overwrite one another in an order that depends on map iteration. The contract
-// is identical across protocols anyway — the method set comes from one handler's
-// reflection — so one document per service is the whole truth. Protocol belongs
-// to the instance's exported-services revision, which Admin reads separately.
+// overwrite one another in an order that depends on map iteration. One handler
+// backs every protocol a service is exported over, so one document per service
+// is enough. Protocol belongs to the instance's exported-services revision,
+// which Admin reads separately.
 //
 // Selection is by lowest protocol name so restarts converge on the same URL,
-// which puts "dubbo" ahead of "tri" for a dual-exported service.
+// which puts "dubbo" ahead of "tri" for a dual-exported service. For a Triple
+// IDL service also exported over Dubbo, that means the reflection-built
+// document wins over the descriptor-built one. This is accepted to keep
+// selection a pure function of the URLs; the combination is rare, and both
+// documents list the same methods.
 func dedupeByService(urls []*common.URL) []*common.URL {
 	selected := make(map[string]*common.URL, len(urls))
 	for _, u := range urls {
@@ -183,29 +187,25 @@ func dedupeByService(urls []*common.URL) []*common.URL {
 	return out
 }
 
-// describable reports whether a URL's export carries a contract this package can
-// derive from Go reflection.
+// describable reports whether a URL's export carries a contract this package
+// knows how to describe.
 //
-// Only two exports qualify: Dubbo/Hessian2, and Triple in non-IDL mode. An IDL
-// (protobuf) service must not be published from reflection — the generated
-// struct is a lossy view of the proto, missing real field names, enums, oneofs
-// and well-known type semantics — so its contract needs a descriptor-based
-// builder that does not exist yet.
+// Dubbo/Hessian2 and non-IDL Triple exports are described by Go reflection over
+// the handler. Triple IDL (protobuf) exports are described from protobuf
+// descriptors instead (see definition.BuildFromURL), because the generated
+// struct is a lossy view of the proto: reflection misses the real field names,
+// enums, oneofs and well-known type semantics.
 //
-// Non-IDL is detected by the absence of the ServiceInfo attribute rather than
-// the IDL-mode URL parameter the proposal suggested. Server.Register threads a
-// *common.ServiceInfo through for IDL services and Server.RegisterService
-// passes nil for non-IDL ones, and enhanceServiceInfo preserves that nil, so the
-// attribute is set exactly for IDL exports. The IDL-mode parameter would work
-// today but is marked for removal along with constant.IDLMode, constant.NONIDL
-// and WithIDLMode.
+// IDL is detected by the presence of the ServiceInfo attribute rather than the
+// IDL-mode URL parameter. Server.Register threads a *common.ServiceInfo through
+// for IDL services and Server.RegisterService passes nil for non-IDL ones, and
+// enhanceServiceInfo preserves that nil, so the attribute is set exactly for IDL
+// exports. The IDL-mode parameter would work today but is marked for removal
+// along with constant.IDLMode, constant.NONIDL and WithIDLMode.
 func describable(u *common.URL) bool {
 	switch u.Protocol {
-	case constant.DubboProtocol:
+	case constant.DubboProtocol, constant.TriProtocol:
 		return true
-	case constant.TriProtocol:
-		_, isIDL := u.GetAttribute(constant.ServiceInfoKey)
-		return !isIDL
 	default:
 		// REST, gRPC and anything else either has its own contract format or no
 		// generic-invocation path for Admin to call through.
