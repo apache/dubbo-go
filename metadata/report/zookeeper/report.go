@@ -118,12 +118,6 @@ func (m *zookeeperMetadataReport) PublishServiceDefinition(serviceInterface, ver
 		encoded = "" // Java maps the wildcard interface to an empty segment.
 	}
 	root := strings.TrimSuffix(m.rootDir, "/")
-	// dubbo-go writes app metadata directly under rootDir, while Java keeps it
-	// under {root}/metadata, so some users set the group to "dubbo/metadata".
-	// Java would then write .../metadata/metadata/..., which Admin never
-	// watches. We deliberately strip the suffix so definitions still land
-	// under /dubbo/metadata; with the default root the path equals Java's.
-	root = strings.TrimSuffix(root, "/metadata")
 	// Skip empty version or group segments, as Java's PathUtils.buildPath
 	// does. Nothing else is removed, so provider/{application} always stays
 	// the last two segments.

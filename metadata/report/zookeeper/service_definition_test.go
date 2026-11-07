@@ -50,7 +50,7 @@ func TestPublishServiceDefinition(t *testing.T) {
 		{"duplicate segments", "/dubbo/", "com.example.Foo", "same", "same", "/dubbo/metadata/com.example.Foo/same/same/provider/my-app"},
 		{"provider group", "/dubbo/", "com.example.Foo", "", "provider", "/dubbo/metadata/com.example.Foo/provider/provider/my-app"},
 		{"root slash", "/", "com.example.Foo", "", "", "/metadata/com.example.Foo/provider/my-app"},
-		{"metadata root", "/dubbo/metadata/", "com.example.Foo", "", "", "/dubbo/metadata/com.example.Foo/provider/my-app"},
+		{"metadata root", "/dubbo/metadata/", "com.example.Foo", "", "", "/dubbo/metadata/metadata/com.example.Foo/provider/my-app"},
 	}
 	const payload = `{"canonicalName":"com.example.Foo","methods":[],"parameters":{},"types":[]}`
 	for _, tt := range tests {
@@ -59,8 +59,28 @@ func TestPublishServiceDefinition(t *testing.T) {
 			r.rootDir = tt.root
 			require.NoError(t, r.PublishServiceDefinition(tt.iface, tt.version, tt.group, "my-app", payload))
 			require.Len(t, client.data, 1)
-			assert.Equal(t, []byte(payload), client.data[tt.want])
+			assert.JSONEq(t, payload, string(client.data[tt.want]))
 		})
+	}
+}
+
+func TestPublishServiceDefinitionKeepsConfiguredRoot(t *testing.T) {
+	client := newMockZkClient()
+	const iface, version, group, app = "com.example.Foo", "1.0.0", "my-group", "my-app"
+	cases := []struct {
+		root, payload, path string
+	}{
+		{"/dubbo/", `{"canonicalName":"com.example.Foo","parameters":{"root":"/dubbo"}}`, "/dubbo/metadata/com.example.Foo/1.0.0/my-group/provider/my-app"},
+		{"/team/", `{"canonicalName":"com.example.Foo","parameters":{"root":"/team"}}`, "/team/metadata/com.example.Foo/1.0.0/my-group/provider/my-app"},
+		{"/team/metadata/", `{"canonicalName":"com.example.Foo","parameters":{"root":"/team/metadata"}}`, "/team/metadata/metadata/com.example.Foo/1.0.0/my-group/provider/my-app"},
+	}
+	for _, tt := range cases {
+		r := &zookeeperMetadataReport{client: client, rootDir: tt.root}
+		require.NoError(t, r.PublishServiceDefinition(iface, version, group, app, tt.payload))
+	}
+	assert.Len(t, client.data, len(cases))
+	for _, tt := range cases {
+		assert.JSONEq(t, tt.payload, string(client.data[tt.path]))
 	}
 }
 
@@ -94,8 +114,8 @@ func TestPublishServiceDefinitionLiveZooKeeper(t *testing.T) {
 	path := root + "/metadata/com.example.Foo/1/group/provider/app"
 	t.Cleanup(func() {
 		for p := path; strings.HasPrefix(p, root); p = p[:strings.LastIndex(p, "/")] {
-			if err := client.Delete(p); err != nil && !errors.Is(err, zk.ErrNoNode) {
-				t.Errorf("cleanup %s: %v", p, err)
+			if deleteErr := client.Delete(p); deleteErr != nil && !errors.Is(deleteErr, zk.ErrNoNode) {
+				t.Errorf("cleanup %s: %v", p, deleteErr)
 			}
 		}
 	})
