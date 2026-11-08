@@ -20,6 +20,8 @@ package accesslog
 import (
 	"context"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -37,7 +39,7 @@ import (
 )
 
 // newShutdownTestFilter builds a Filter without starting processLogs, so the
-// send/close synchronisation can be tested deterministically, without global
+// send/close synchronization can be tested deterministically, without global
 // state or background goroutines leaking into other tests.
 func newShutdownTestFilter(buffer int) *Filter {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -116,4 +118,43 @@ func TestInvokeConcurrentWithShutdownDoesNotPanic(t *testing.T) {
 	wg.Wait()
 
 	assert.Zero(t, panicCount.Load(), "Invoke must not panic while shutdown closes logChan")
+}
+
+// Shutdown must not close cached file handles while the consumer is still
+// draining. Without the wait, a drain write can target an already closed
+// *os.File (dropped log), or reopen the file after fileCache was emptied and
+// leave a handle nobody closes.
+func TestShutdownWaitsForConsumerBeforeClosingFiles(t *testing.T) {
+	tmp := filepath.Join(t.TempDir(), "access.log")
+	ctx, cancel := context.WithCancel(context.Background())
+	f := &Filter{
+		logChan:   make(chan Data, 8),
+		fileCache: make(map[string]*os.File),
+		drainDone: make(chan struct{}),
+		ctx:       ctx,
+		cancel:    cancel,
+	}
+	go f.processLogs()
+
+	const entries = 5
+	for range entries {
+		f.logIntoChannel(Data{accessLog: tmp, data: map[string]string{"key": "value"}})
+	}
+
+	f.shutdown()
+
+	select {
+	case <-f.drainDone:
+	default:
+		t.Fatal("shutdown returned before the consumer finished draining")
+	}
+
+	content, err := os.ReadFile(tmp)
+	require.NoError(t, err)
+	assert.Equal(t, entries, strings.Count(string(content), "\n"),
+		"logs queued before shutdown must be flushed before file handles are closed")
+
+	f.fileLock.RLock()
+	defer f.fileLock.RUnlock()
+	assert.Empty(t, f.fileCache, "fileCache must be empty after shutdown")
 }

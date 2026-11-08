@@ -91,6 +91,7 @@ type Filter struct {
 	fileCache    map[string]*os.File
 	ctx          context.Context
 	cancel       context.CancelFunc
+	drainDone    chan struct{} // closed when processLogs (including drainLogs) returns
 	shutdownOnce sync.Once
 }
 
@@ -103,6 +104,7 @@ func newFilter() filter.Filter {
 				fileCache: make(map[string]*os.File),
 				ctx:       ctx,
 				cancel:    cancel,
+				drainDone: make(chan struct{}),
 			}
 			go accessLogFilter.processLogs()
 		})
@@ -210,6 +212,14 @@ func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invo
 
 // processLogs runs in a background goroutine to process log data
 func (f *Filter) processLogs() {
+	// Signal shutdown() only after drainLogs has finished. Keep this as a
+	// separate deferred closure so the signal is still sent if drainLogs
+	// panics; otherwise shutdown() could block forever.
+	defer func() {
+		if f.drainDone != nil {
+			close(f.drainDone)
+		}
+	}()
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("[Filter][AccessLog] accessLog processLogs panic, err=%v", r)
@@ -448,6 +458,15 @@ func (f *Filter) shutdown() {
 			close(f.logChan)
 		}
 		f.logChanLock.Unlock()
+
+		// Wait for the consumer to finish draining before closing cached file
+		// handles. Otherwise a drain write can target an already closed
+		// *os.File (dropped log), or reopen the file after fileCache was
+		// emptied and leave a handle nobody closes. cancel() and the channel
+		// close above guarantee processLogs returns, so this wait is bounded.
+		if f.drainDone != nil {
+			<-f.drainDone
+		}
 
 		// Close all cached file handles
 		f.fileLock.Lock()
