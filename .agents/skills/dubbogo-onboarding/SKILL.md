@@ -1,6 +1,6 @@
 ---
 name: dubbogo-onboarding
-description: "Dubbo-go 新手/初学者上手助手。帮助刚接触本仓库的用户快速理解项目结构、构建测试方式、扩展(SPI)机制，并指导完成『添加 filter / protocol / registry / 跑通测试』等常见任务。当用户提到 \"dubbogo 怎么上手\"、\"dubbo-go 入门\"、\"新人 onboarding\"、\"项目结构\"、\"怎么跑起来\"、\"怎么测试\"、\"怎么加一个 filter/protocol\"、\"extension 机制\"、\"explore dubbo-go\"、\"dubbogo architecture\" 时使用。触发前先确认用户是否在本仓库根目录。"
+description: "dubbo-go 新手上手助手：解释项目结构、构建与测试方式、扩展(SPI)注册机制，并指导添加 filter / protocol / registry。当用户询问 onboarding、项目结构、怎么跑测试、怎么加扩展时使用；触发前先确认工作目录是仓库根。"
 metadata:
   display_name: "dubbogo-onboarding"
   display_name_en: "dubbogo-onboarding"
