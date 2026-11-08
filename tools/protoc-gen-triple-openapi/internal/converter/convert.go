@@ -25,12 +25,12 @@ import (
 )
 
 import (
+	"github.com/pb33f/go-yaml"
+
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/index"
 	"github.com/pb33f/libopenapi/orderedmap"
-
-	"go.yaml.in/yaml/v4"
 
 	"google.golang.org/protobuf/proto"
 

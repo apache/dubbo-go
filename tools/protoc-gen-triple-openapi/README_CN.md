@@ -6,7 +6,7 @@
 
 ## 环境要求
 
-- Go 1.23 或更高版本
+- Go 1.26 或更高版本
 - `protoc`
 - 定义了 Triple 服务的 protobuf 文件
 

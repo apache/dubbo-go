@@ -6,7 +6,7 @@ English | [中文](README_CN.md)
 
 ## Requirements
 
-- Go 1.23 or later
+- Go 1.26 or later
 - `protoc`
 - protobuf files that define Triple services
 
