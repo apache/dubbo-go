@@ -51,3 +51,18 @@ Signed-off-by: Example <example@example.com>
 
 The signed-off message will be appended automaticaly if the developers commit
 with `-s` option, for example, `git commit -s`.
+
+## AI coding agents
+
+A repository-local onboarding skill lives at
+`.agents/skills/dubbogo-onboarding/SKILL.md`. It uses the
+[Agent Skills open format](https://agentskills.io/specification), and
+`.agents/skills/` is the shared discovery path used by several agent clients
+(Codex, Cursor, GitHub Copilot / VS Code, Gemini CLI, among others), so those
+tools pick it up without any per-tool configuration. Contributors using other
+tools can load the file explicitly.
+
+The skill is a map of the repository and its validation commands, not an
+authoritative specification: when it disagrees with the source tree, the
+source tree wins. Please update it when Makefile targets, module layout, or
+the extension registration APIs change.

@@ -1,10 +1,7 @@
 ---
 name: dubbogo-onboarding
 description: "dubbo-go 新手上手助手：解释项目结构、构建与测试方式、扩展(SPI)注册机制，并指导添加 filter / protocol / registry。当用户询问 onboarding、项目结构、怎么跑测试、怎么加扩展时使用；触发前先确认工作目录是仓库根。"
-metadata:
-  display_name: "dubbogo-onboarding"
-  display_name_en: "dubbogo-onboarding"
-  visibility: "public"
+license: Apache-2.0
 ---
 
 # Dubbo-go 上手 Skill（面向初学者 + AI Coding Agent）
@@ -17,7 +14,7 @@ metadata:
 
 - 用户刚 clone 本仓库，想了解「这是什么、怎么组织、怎么跑」
 - 用户问：怎么 build / test / 加一个 filter / 加一个 protocol / 看懂 extension 机制
-- 关键词：dubbogo 入门、onboarding、上手、项目结构、架构、怎么跑、怎么测、添加filter、添加protocol、SPI、扩展机制
+- 触发以文件头部 `description` 为准（onboarding / 项目结构 / 怎么跑测试 / 怎么加扩展）。支持 Agent Skills 格式的客户端只读取 `name` + `description` 来决定是否加载本文件，命中后才读入正文；正文中的关键词不参与触发，无需在此重复罗列。
 
 **前置确认**：先确认当前工作目录是 dubbo-go 仓库根（`go.mod` 的 module 为 `dubbo.apache.org/dubbo-go/v3`）。若不在，提示用户切到仓库根再继续。
 
