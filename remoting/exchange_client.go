@@ -19,6 +19,7 @@ package remoting
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -62,11 +63,17 @@ type ExchangeClient struct {
 	ConnectTimeout time.Duration  // timeout for connecting server
 	address        string         // server address for dialing. The format: ip:port
 	client         Client         // dealing with the transport
-	initState      uatomic.Int32  // init state: 0=uninitialized, 1=initializing, 2=initialized
+	initState      uatomic.Int32  // initialization state
 	initCond       *sync.Cond     // signals waiters when init completes (success or failure)
 	initErr        error          // stored init error for waiters to observe (guarded by initCond.L)
 	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
 }
+
+const (
+	initUninitialized int32 = iota
+	initInitializing
+	initInitialized
+)
 
 // NewExchangeClient returns a ExchangeClient.
 func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
@@ -87,14 +94,14 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 
 func (cl *ExchangeClient) doInit(url *common.URL) error {
 	// Fast path: already initialized.
-	if cl.initState.Load() == 2 {
+	if cl.initState.Load() == initInitialized {
 		return nil
 	}
-	// Try to become the initializer: transition 0 -> 1 (uninitialized -> initializing).
-	if !cl.initState.CAS(0, 1) {
+	// Try to become the initializer.
+	if !cl.initState.CAS(initUninitialized, initInitializing) {
 		// Another goroutine is initializing. Wait for it to complete.
 		cl.initCond.L.Lock()
-		for cl.initState.Load() == 1 {
+		for cl.initState.Load() == initInitializing {
 			cl.initCond.Wait()
 		}
 		err := cl.initErr
@@ -103,6 +110,26 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 	}
 	// This goroutine won the CAS — perform the actual initialization.
 	var initErr error
+	defer func() {
+		panicValue := recover()
+		if panicValue != nil {
+			initErr = fmt.Errorf("exchange client init panic: %v", panicValue)
+		}
+		cl.initCond.L.Lock()
+		cl.initErr = initErr
+		if initErr != nil {
+			// Reset to uninitialized so future calls can retry.
+			cl.initState.Store(initUninitialized)
+		} else {
+			cl.initState.Store(initInitialized)
+		}
+		cl.initCond.L.Unlock()
+		cl.initCond.Broadcast()
+		if panicValue != nil {
+			// Release waiters while preserving the initializer's panic.
+			panic(panicValue)
+		}
+	}()
 	if cl.client.Connect(url) != nil {
 		// retry for a while
 		time.Sleep(100 * time.Millisecond)
@@ -111,17 +138,6 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 			initErr = errors.New("Failed to connect server " + url.Location)
 		}
 	}
-	cl.initCond.L.Lock()
-	if initErr != nil {
-		// Reset to uninitialized so future calls can retry.
-		cl.initState.Store(0)
-		cl.initErr = initErr
-	} else {
-		cl.initState.Store(2)
-		cl.initErr = nil
-	}
-	cl.initCond.L.Unlock()
-	cl.initCond.Broadcast()
 	return initErr
 }
 
@@ -225,7 +241,7 @@ func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL,
 func (client *ExchangeClient) Close() {
 	client.client.Close()
 	client.initCond.L.Lock()
-	client.initState.Store(0)
+	client.initState.Store(initUninitialized)
 	client.initErr = nil
 	client.initCond.L.Unlock()
 	client.initCond.Broadcast()
