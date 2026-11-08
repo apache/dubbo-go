@@ -1,8 +1,5 @@
 # Admin tag-rule fixtures
 
-See [the version evidence](../../../condition/testdata/admin/VERSION-EVIDENCE.md)
-for formal-tag results, fixture provenance, and default-path diagnostics.
-
 The `enabled.yaml`, `updated.yaml`, `force.yaml`, and
 `legacy-disabled-omitted.yaml` payloads were read back from ZooKeeper after
 `RuleGovernor.CreateRule` / `UpdateRule` in dubbo-admin

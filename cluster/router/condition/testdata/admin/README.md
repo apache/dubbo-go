@@ -1,8 +1,5 @@
 # Admin condition-route fixtures
 
-See [VERSION-EVIDENCE.md](VERSION-EVIDENCE.md) for fixture provenance,
-formal-tag results, configured versus default paths, and replay commands.
-
 The service/application rules use Admin's existing `ConditionRoute` API. The
 service resource name is checked with `BaseServiceReq.ServiceKey()`; the YAML
 `key` contains only the interface name, as in Admin's form submission. The
