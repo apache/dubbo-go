@@ -85,6 +85,8 @@ func init() {
  */
 type Filter struct {
 	logChan      chan Data
+	logChanLock  sync.RWMutex // guards logChan sends against shutdown closing it
+	logClosed    bool         // read/written only under logChanLock
 	fileLock     sync.RWMutex // protects fileCache
 	fileCache    map[string]*os.File
 	ctx          context.Context
@@ -121,8 +123,18 @@ func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation ba
 	return invoker.Invoke(ctx, invocation)
 }
 
-// logIntoChannel won't block the invocation
+// logIntoChannel won't block the invocation.
+// The read lock keeps a send from racing with shutdown: shutdown takes the
+// write lock before closing logChan, so every in-flight send completes first
+// and every later send is rejected by logClosed. A select with default does
+// NOT protect against a send on a closed channel - such a send is considered
+// ready and panics.
 func (f *Filter) logIntoChannel(accessLogData Data) {
+	f.logChanLock.RLock()
+	defer f.logChanLock.RUnlock()
+	if f.logClosed {
+		return
+	}
 	select {
 	case f.logChan <- accessLogData:
 		return
@@ -425,10 +437,17 @@ func (f *Filter) shutdown() {
 			f.cancel()
 		}
 
-		// Close the channel to stop accepting new logs
+		// Stop accepting new logs and close the channel under the write lock.
+		// Acquiring it waits for all in-flight logIntoChannel sends to finish,
+		// so no request goroutine can send on the channel after it is closed.
+		// The channel must still be closed: drainLogs (see #3564) relies on
+		// ok == false to finish draining the buffered logs.
+		f.logChanLock.Lock()
+		f.logClosed = true
 		if f.logChan != nil {
 			close(f.logChan)
 		}
+		f.logChanLock.Unlock()
 
 		// Close all cached file handles
 		f.fileLock.Lock()
