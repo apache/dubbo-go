@@ -3,7 +3,7 @@
 > 适用对象：`dubbo.apache.org/dubbo-go/v3`（本仓库）
 > 维护者：Committer / Maintainer 团队
 > 版本：v1.0 · 2026-07-30
-> 配套文档： [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`security-review-2026-07-30.md`](./security-review-2026-07-30.md)
+> 配套文档： [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 
 ---
 
@@ -14,7 +14,7 @@ dubbo-go 是一个**面向网络的 Go RPC 框架**，被上游业务作为基�
 1. **并发是默认状态**：连接池（getty）、注册中心监听、配置中心订阅、每请求 goroutine，几乎每一行都在并发环境里跑。
 2. **信任边界复杂**：配置中心（ZK/Nacos/Apollo/File）、反序列化（Hessian2）、脚本路由（goja JS）、metrics/probe 端点、TLS 都是典型的攻击面。
 
-我们在 [`security-review-2026-07-30.md`](./security-review-2026-07-30.md) 中已经发现若干真实风险（脚本路由无执行超时、metrics 端点默认无认证、TLS 未设 `MinVersion`、`exec` 拼 `$USER`、File 配置中心路径可穿越）。**自动化工具（golangci / CodeQL）无法替代人对这些语义风险的判断**，因此必须建立一套可执行的人工审查标准。
+本指南把以下已识别的语义风险作为审查基线：脚本路由无执行超时（对应 issue #3566，见 `cluster/router/script/instance/js_instance.go`）、metrics 端点默认无认证、TLS 未设 `MinVersion`、`exec` 拼 `$USER`、File 配置中心路径可穿越（逐项核查见 §4.2.1–§4.2.7）。**自动化工具（golangci / CodeQL）无法替代人对这些语义风险的判断**，因此必须建立一套可执行的人工审查标准。
 
 本指南目标：让任何一次 PR 的审查结果**可预期、可对齐、可复盘**，而不是依赖 reviewer 的个人经验。
 
@@ -29,7 +29,7 @@ dubbo-go 是一个**面向网络的 Go RPC 框架**，被上游业务作为基�
 | **Maintainer / Approver** | 拥有合并权限的 Committer；负责最终把关**兼容性破坏**、跨模块影响、与发行版本（release 分支）的一致性；可要求额外批准。 |
 | **CI（自动门禁）** | 跑 fmt / test / lint / CodeQL / codecov，作为**合并的最低门槛**，不等于人工审查。 |
 
-> ⚠️ 当前仓库**没有 `CODEOWNERS` 文件**。强烈建议建立（见 §6.3），否则 reviewer 分配完全靠手动，容易出现「无人审」或「不懂的人审」。
+> ⚠️ 当前仓库**尚未启用 `CODEOWNERS`**（模板见 §6.3，owner 需按实际团队确认后由独立 PR 引入）。在此之前 reviewer 分配完全靠手动，容易出现「无人审」或「不懂的人审」。
 
 ---
 
@@ -208,23 +208,25 @@ dubbo-go 是一个**面向网络的 Go RPC 框架**，被上游业务作为基�
 | `go test -race` | 检测数据竞争 | ✅ 已接入 | 沿用上游 CI 的 `make test-race`；存量排除项由 `Makefile` 维护 |
 | `gosec` | 安全 lint（注入/明文/弱加密/子进程/路径穿越） | 待接入 | 先核对存量告警并单独推进，避免脚本超时修复同时改变全仓 lint 门禁 |
 | `govulncheck` | 依赖已知漏洞 | 待接入 | 依赖漏洞基线与扫描工具版本需要单独评估，本次不新增全仓扫描步骤 |
-| `CODEOWNERS` | reviewer 路由 | ✅ 已建立 | 仓库根 `CODEOWNERS`（按模块分配，**owner 占位符需替换为真实 handle**） |
+| `CODEOWNERS` | reviewer 路由 | 待建立 | 模板见 §6.3；owner 必须是本仓库有 write 权限的真实用户或 team，确认后由独立 PR 引入 |
 | `staticcheck` SA/ST 告警 | 已部分排除 `SA1019/ST1001` | 保留 | 仅对 legacy 路径排除，新代码不豁免 |
 
 > **接入前提**：新增全仓安全门禁前，先核对存量告警、工具版本和误报，再通过独立 PR 处理基线与启用策略。现有格式、单测、lint、race 和 CodeQL 门禁继续执行，不使用 `continue-on-error` 绕过失败。
 
-### 6.3 CODEOWNERS 模板（请按实际 owner 填充）
+### 6.3 CODEOWNERS 模板（尚未启用，owner 需按实际情况填充）
+
+> 本模板仅供后续独立 PR 参考，**当前仓库没有 `CODEOWNERS` 文件**。owner 必须是本仓库有 write 权限的真实 GitHub 用户（`@username`）或 team（`@org/team-name`）；无法解析的 owner 不会触发审查请求，因此不要把占位符直接合入仓库。
 ```
-# 模块负责人（示例，需替换为真实 GitHub 账号）
-/cluster/                @dubbo-go/cluster-maintainers
-/protocol/               @dubbo-go/protocol-maintainers
-/registry/               @dubbo-go/registry-maintainers
-/config_center/          @dubbo-go/config-maintainers
-/common/                 @dubbo-go/core-maintainers
-/global/                 @dubbo-go/core-maintainers
-/metrics/                @dubbo-go/observability-maintainers
-/filter/                 @dubbo-go/filter-maintainers
-*                        @dubbo-go/committers
+# 模块负责人（示例；<org>/<team-name> 为占位符，须替换为真实 handle）
+/cluster/                @<org>/<cluster-team>
+/protocol/               @<org>/<protocol-team>
+/registry/               @<org>/<registry-team>
+/config_center/          @<org>/<config-team>
+/common/                 @<org>/<core-team>
+/global/                 @<org>/<core-team>
+/metrics/                @<org>/<observability-team>
+/filter/                 @<org>/<filter-team>
+*                        @<org>/<committers-team>
 ```
 
 ---
