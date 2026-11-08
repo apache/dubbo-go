@@ -99,9 +99,7 @@ func TestInvokeConcurrentWithShutdownDoesNotPanic(t *testing.T) {
 	)
 	start := make(chan struct{})
 	for range goroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			defer func() {
 				if r := recover(); r != nil {
 					panicCount.Add(1)
@@ -111,7 +109,7 @@ func TestInvokeConcurrentWithShutdownDoesNotPanic(t *testing.T) {
 			for range iterations {
 				f.Invoke(context.Background(), invoker, inv)
 			}
-		}()
+		})
 	}
 	close(start)
 	f.shutdown()

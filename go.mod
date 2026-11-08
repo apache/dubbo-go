@@ -40,6 +40,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/polarismesh/polaris-go v1.3.0
 	github.com/prometheus/client_golang v1.19.1
+	github.com/prometheus/client_model v0.5.0
 	github.com/prometheus/common v0.48.0
 	github.com/quic-go/quic-go v0.59.1
 	github.com/shirou/gopsutil/v3 v3.22.2
@@ -131,7 +132,6 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
