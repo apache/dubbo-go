@@ -38,12 +38,12 @@ license: Apache-2.0
 | `metrics/` / `otel/` | 可观测性（Prometheus / OpenTelemetry） |
 | `protocol/` | 协议层（dubbo/triple/grpc…） |
 | `proxy/` | 代理生成（invoker 包装） |
-| `registry/` | 注册中心（zookeeper/nacos/etcd…） |
-| `remoting/` | 底层通信（getty/exchange） |
+| `registry/` | 注册中心（zookeeper/nacos/etcdv3/polaris…） |
+| `remoting/` | 底层通信：`remoting/getty/` 传输、`remoting/exchange_client.go` / `remoting/exchange_server.go` 交换层 |
 | `graceful_shutdown/` | 优雅下线 |
 | `imports/` | **聚合所有扩展的 `init()` 注册**（让扩展在二进制里生效） |
-| `doc/` | 架构图（PNG）与说明 |
-| `tools/` | 仓库内部工具（如 variadic rpc 检查） |
+| `doc/imgs/` | 架构图 `arc.png` 与 use-case 图片 |
+| `tools/` | 独立 CLI 模块与工具链：`tools/dubbogo-cli/`、`tools/imports-formatter/`、`tools/protoc-gen-*`、`tools/dubbo-go-schema/`、`tools/benchmark/` |
 
 ---
 
@@ -54,7 +54,7 @@ license: Apache-2.0
   - 跑单测：`make test`（根模块生成覆盖率文件，并测试 `tools/dubbogo-cli` 独立模块）
   - 全量竞态测试：`make test-race`（含 Makefile 中列明的存量测试排除项）
   - 静态检查：`make lint`（使用 Makefile 固定版本的 golangci-lint）
-  - 格式化及语法更新：`make fmt`；CI 用 `make check-fmt` 校验 gofmt 结果
+  - 格式化：`make fmt`（**会改写工作区**：modernize -fix、`go fmt`、imports-formatter，执行前先确认本地改动已提交）。CI 的 `.github/workflows/tools.yml` 跑同一 target 后用 `git diff --exit-code -- '*.go'` 校验；只想只读检查可用 `make check-fmt`（CI 当前未调用）
   - 集成测试：`./integrate_test.sh`；先读 `.github/workflows/github-actions.yml` 和脚本，确认参数及外部依赖
 - **按修改范围选择验证**：Go 代码先运行受影响包的测试和 `go test -race ./<changed-package>`，再按风险扩大检查。文档改动核对路径、命令和接口说明；报告实际运行的检查及未验证项。
 
@@ -90,7 +90,7 @@ dubbo-go 用**全局注册表 + `init()` 自注册**做依赖注入，而不是�
 ## 常见任务（Common Tasks）— 给 agent 的执行步骤
 
 ### 任务 A：加一个 Filter
-1. `Grep` 现有 filter（如 `filter/`（目录下 `accesslog`、`tps` 等）理解接口签名 `filter.Filter`）。
+1. 先读 `filter/filter.go` 的 `filter.Filter` 接口（`Invoke` / `OnResponse`），再参考 `filter/accesslog/`、`filter/tps/` 等现有实现。
 2. 在 `filter/` 下新建子包，实现 `filter.Filter` 的 `Invoke`/`OnResponse`。
 3. `init()` 中 `extension.SetFilter("my-filter", newMyFilter)`。
 4. 在 `imports/` 增加 blank import。
@@ -108,7 +108,7 @@ dubbo-go 用**全局注册表 + `init()` 自注册**做依赖注入，而不是�
 3. `imports/` 引用。
 
 ### 任务 D：看架构 / 画调用链
-1. 先读 `doc/` 下的 PNG 架构图。
+1. 先读 `doc/imgs/arc.png`（仓库内唯一的整体架构图；同目录其余为 use-case 与邀请图片）。
 2. 用 `Grep` 在 `common/extension` 找目标能力的注册/获取点，顺藤摸瓜到实现。
 
 ---
@@ -118,8 +118,8 @@ dubbo-go 用**全局注册表 + `init()` 自注册**做依赖注入，而不是�
 - `README.md` / `README_CN.md`：项目总览与快速开始
 - `CONTRIBUTING.md`：贡献与 PR 流程
 - `Makefile`、`.github/workflows/`：当前构建、测试和 CI 的实际入口
-- `doc/`：架构图与说明
-- `metrics/`、`otel/`：可观测性接入方式
+- `doc/imgs/arc.png`：整体架构图
+- `metrics/`、`otel/`：可观测性实现（Prometheus / OpenTelemetry）
 
 ---
 
