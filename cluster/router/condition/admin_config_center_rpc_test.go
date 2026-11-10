@@ -77,12 +77,9 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 				u.SetParam(constant.NacosLogDirKey, t.TempDir())
 				u.SetParam(constant.NacosCacheDirKey, t.TempDir())
 				u.SetParam(constant.NacosLogLevelKey, "error")
-			} else {
-				// Admin's existing governor writes /dubbo/config/<resource-name>.
-				// Go defaults to /dubbo/config/dubbo/<key>; these existing options align them.
-				u.SetParam(constant.ConfigRootPathParamKey, "/dubbo")
-				u.SetParam(constant.ConfigNamespaceKey, "config")
 			}
+			// ZooKeeper uses Go's defaults: Admin writes /dubbo/config/dubbo/<resource-name>
+			// since apache/dubbo-admin#1553, which is the default read path.
 			factory, err := extension.GetConfigCenterFactory(backend.name)
 			require.NoError(t, err)
 			dc, err := factory.GetDynamicConfiguration(u)
@@ -255,11 +252,13 @@ func adminConditionRawWriter(t *testing.T, backend string, dc config_center.Dyna
 	conn := dc.(interface {
 		ZkClient() *gxzookeeper.ZookeeperClient
 	}).ZkClient().Conn
-	if _, err := conn.Create("/dubbo/config", nil, 0, zk.WorldACL(zk.PermAll)); err != nil && err != zk.ErrNodeExists {
-		require.NoError(t, err)
+	for _, path := range []string{"/dubbo", "/dubbo/config", "/dubbo/config/dubbo"} {
+		if _, err := conn.Create(path, nil, 0, zk.WorldACL(zk.PermAll)); err != nil && err != zk.ErrNodeExists {
+			require.NoError(t, err)
+		}
 	}
 	return func(key, value string) error {
-		path := "/dubbo/config/" + key
+		path := "/dubbo/config/dubbo/" + key
 		_, err := conn.Create(path, []byte(value), 0, zk.WorldACL(zk.PermAll))
 		if err == zk.ErrNodeExists {
 			_, err = conn.Set(path, []byte(value), -1)
@@ -272,7 +271,7 @@ func adminConditionRawWriter(t *testing.T, backend string, dc config_center.Dyna
 			return fmt.Errorf("ZooKeeper path=%s content mismatch", path)
 		}
 		return err
-	}, func(key string) error { return conn.Delete("/dubbo/config/"+key, -1) }
+	}, func(key string) error { return conn.Delete("/dubbo/config/dubbo/"+key, -1) }
 }
 
 func adminConditionRPCProviders(t *testing.T, group, providerApp, consumerApp string) (*common.URL, []base.Invoker) {

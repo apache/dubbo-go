@@ -1,5 +1,3 @@
-//go:build adminintegration
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -146,8 +144,9 @@ func TestAdminTagConfigCenterRPC(t *testing.T) {
 	}
 }
 
-// This opt-in diagnostic expects default ZooKeeper settings to read Admin's
-// location. A failure is kept visible separately from the configured test.
+// Admin writes ZooKeeper rules to /dubbo/config/dubbo/<key> since
+// apache/dubbo-admin#1553. A config center with no root-path or namespace
+// settings must observe a newly created rule there.
 func TestAdminTagZooKeeperDefaultRPC(t *testing.T) {
 	endpoint := os.Getenv("DUBBO_TAG_ZOOKEEPER")
 	if endpoint == "" {
@@ -158,17 +157,8 @@ func TestAdminTagZooKeeperDefaultRPC(t *testing.T) {
 	invokers := []base.Invoker{startAdminTagProvider(t, app), startAdminTagProvider(t, app)}
 	consumer, err := common.NewURL("consumer://127.0.0.1/org.example.TagIdentity?application=tag-default-consumer")
 	require.NoError(t, err)
-	_, write, remove := adminTagRealConfiguration(t, "zookeeper", endpoint, key)
+	dc, write, remove := adminTagRealConfiguration(t, "zookeeper", endpoint, key)
 	t.Cleanup(remove)
-	u, err := common.NewURL("zookeeper://" + endpoint)
-	require.NoError(t, err)
-	factory, err := extension.GetConfigCenterFactory("zookeeper")
-	require.NoError(t, err)
-	dc, err := factory.GetDynamicConfiguration(u)
-	require.NoError(t, err)
-	t.Cleanup(dc.(interface {
-		ZkClient() *gxzookeeper.ZookeeperClient
-	}).ZkClient().Close)
 	env := conf.GetEnvInstance()
 	previous := env.GetDynamicConfiguration()
 	env.SetDynamicConfiguration(dc)
@@ -180,7 +170,6 @@ func TestAdminTagZooKeeperDefaultRPC(t *testing.T) {
 	payload := strings.ReplaceAll(adminTagFixture(t, "enabled"), adminTagProvider, app)
 	payload = strings.ReplaceAll(payload, "127.0.0.1:20890", invokers[0].GetURL().Location)
 	write(payload)
-	t.Logf("Admin path=/dubbo/config/%s; SDK uses default root and namespace", key)
 	require.Eventually(t, func() bool {
 		call := invocation.NewRPCInvocation("Identity", nil, map[string]any{constant.Tagkey: "gray"})
 		selected := p.Route(invokers, consumer, call)
@@ -271,10 +260,8 @@ func adminTagRealConfiguration(t *testing.T, backend, endpoint, key string) (con
 		remove = func() { mutate(http.MethodDelete, "") }
 		t.Logf("Admin Nacos location: group=dubbo dataId=%s", key)
 	case "zookeeper":
-		// Admin writes /dubbo/config/<name>. Go's defaults add another /dubbo
-		// component, so use these supported settings to read the Admin location.
-		u.SetParam(constant.ConfigRootPathParamKey, "/dubbo")
-		u.SetParam(constant.ConfigNamespaceKey, "config")
+		// Admin writes /dubbo/config/dubbo/<name> (apache/dubbo-admin#1553),
+		// which is Go's default root and namespace. No path settings are needed.
 		conn, events, err := zk.Connect([]string{endpoint}, 5*time.Second)
 		require.NoError(t, err)
 		t.Cleanup(conn.Close)
@@ -286,13 +273,13 @@ func adminTagRealConfiguration(t *testing.T, backend, endpoint, key string) (con
 				return conn.State() == zk.StateHasSession
 			}
 		}, 10*time.Second, 20*time.Millisecond)
-		for _, path := range []string{"/dubbo", "/dubbo/config"} {
+		for _, path := range []string{"/dubbo", "/dubbo/config", "/dubbo/config/dubbo"} {
 			_, err = conn.Create(path, nil, 0, zk.WorldACL(zk.PermAll))
 			if err != zk.ErrNodeExists {
 				require.NoError(t, err)
 			}
 		}
-		path := "/dubbo/config/" + key
+		path := "/dubbo/config/dubbo/" + key
 		publish = func(content string) {
 			_, err := conn.Set(path, []byte(content), -1)
 			if err == zk.ErrNoNode {
@@ -306,7 +293,7 @@ func adminTagRealConfiguration(t *testing.T, backend, endpoint, key string) (con
 				require.NoError(t, err)
 			}
 		}
-		t.Logf("Admin ZooKeeper location: %s; Go root-path=/dubbo namespace=config", path)
+		t.Logf("Admin ZooKeeper location: %s; Go uses default root and namespace", path)
 	}
 	factory, err := extension.GetConfigCenterFactory(backend)
 	require.NoError(t, err)
