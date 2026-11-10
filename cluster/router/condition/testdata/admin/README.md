@@ -48,10 +48,10 @@ IP, so A and B cannot share a host with different ports. C uses `env=canary` to
 prove that restoring A retains the unrelated `env=stable` condition.
 
 The raw writes use Admin's transport contract: Nacos data ID = resource name and
-`group=dubbo`; ZooKeeper path = `/dubbo/config/<resource-name>`. The Go ZooKeeper
-client is configured with `dubbo.config-center.root-path=/dubbo` and
-`config-center.namespace=config`. Its defaults read
-`/dubbo/config/dubbo/<key>` and do not match this Admin revision.
+`group=dubbo`; ZooKeeper path = `/dubbo/config/dubbo/<resource-name>`, as written
+since [Admin #1553](https://github.com/apache/dubbo-admin/pull/1553). The Go
+ZooKeeper client reads that path with its default root and namespace. Admin
+0.7.0-pre and earlier wrote `/dubbo/config/<resource-name>`.
 
 Full lifecycle checks also need [the Nacos SDK deletion fix](https://github.com/apache/dubbo-go/pull/3771)
 (`v2.3.5`) and [GOST's watch-event dispatch fix](https://github.com/dubbogo/gost/pull/155)
