@@ -172,7 +172,7 @@ func TestExchangeClientConcurrentDoInit(t *testing.T) {
 	const goroutines = 20
 	errCh := make(chan error, goroutines)
 	wg.Add(goroutines)
-	for i := 0; i < goroutines; i++ {
+	for range goroutines {
 		go func() {
 			defer wg.Done()
 			errCh <- ec.doInit(testURL())
@@ -220,7 +220,7 @@ func TestExchangeClientConcurrentDoInitPropagatesError(t *testing.T) {
 	const goroutines = 10
 	errCh := make(chan error, goroutines)
 	wg.Add(goroutines)
-	for i := 0; i < goroutines; i++ {
+	for range goroutines {
 		go func() {
 			defer wg.Done()
 			errCh <- ec.doInit(testURL())
