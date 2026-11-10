@@ -59,8 +59,7 @@ func TestForkingInvokeCancelsOutstandingCalls(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel() // Also release the test providers if an assertion fails.
+			ctx := t.Context() // Also release the test providers if an assertion fails.
 
 			u := common.NewURLWithOptions(common.WithProtocol("dubbo"))
 			u.AddParam(constant.ForksKey, "-1") // Invoke every provider without load balancing.
