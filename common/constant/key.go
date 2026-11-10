@@ -52,6 +52,9 @@ const (
 	ReleaseKey                  = "release"
 	AnyhostKey                  = "anyhost"
 	PortKey                     = "port"
+	HostKey                     = "host"
+	UsernameKey                 = "username"
+	PasswordKey                 = "password"
 	ProtocolKey                 = "protocol"
 	PathSeparator               = "/"
 	DotSeparator                = "."
@@ -63,12 +66,13 @@ const (
 	MaxServerSendMsgSize        = "max-server-send-msg-size"
 	MaxCallRecvMsgSize          = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize        = "max-server-recv-msg-size"
-
-	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
-	KeepAliveInterval = "keep-alive-interval"
-	KeepAliveTimeout  = "keep-alive-timeout"
+	KeepAliveInterval           = "keep-alive-interval"
+	KeepAliveTimeout            = "keep-alive-timeout"
 
 	// TODO: remove IDLMode after old triple removed
+	//
+	// Deprecated: this constant will be removed in the next version. The IDL
+	// mode switch is no longer supported by dubbo-go.
 	IDLMode = "IDL-mode"
 
 	TripleConfigKey     = "triple-config"
@@ -79,6 +83,9 @@ const (
 
 // TODO: remove this after old triple removed
 // IDLMode
+//
+// Deprecated: these constants will be removed in the next version. The IDL
+// mode switch is no longer supported by dubbo-go.
 const (
 	IDL    = "IDL"
 	NONIDL = "non-IDL"
@@ -188,6 +195,14 @@ const (
 	MetadataReportUsernameKey  = "metadata-report.username"
 	MetadataReportPasswordKey  = "metadata-report.password"
 	MetadataReportProtocolKey  = "metadata-report.protocol"
+
+	// MetadataReportReportDefinitionKey toggles publishing of interface-level
+	// service definitions to this metadata report. Defaults to true.
+	//
+	// Named after Java's REPORT_DEFINITION_KEY, which is the same switch with
+	// the same default (AbstractMetadataReport reads "report-definition" from
+	// the metadata-report URL), so an operator's mental model carries over.
+	MetadataReportReportDefinitionKey = "metadata-report.report-definition"
 )
 
 // registry keys
@@ -254,6 +269,7 @@ const (
 	ConfigSecretKey           = "config-center.secret"
 	ConfigBackupConfigKey     = "config-center.isBackupConfig"
 	ConfigBackupConfigPathKey = "config-center.backupConfigPath"
+	ConfigCacheTTLKey         = "config-center.cache-ttl"
 	ConfigRootPathParamKey    = "dubbo.config-center.root-path"
 )
 

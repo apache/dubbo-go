@@ -22,23 +22,37 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// Protocol Deprecated： base.Protocol type alias, just for compatible with old generate pb.go file
+// Protocol is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use base.Protocol instead.
 type Protocol = base.Protocol
 
-// Invoker Deprecated： base.Invoker type alias, just for compatible with old generate pb.go file
+// Invoker is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use base.Invoker instead.
 type Invoker = base.Invoker
 
-// Exporter Deprecated： base.Exporter type alias, just for compatible with old generate pb.go file
+// Exporter is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use base.Exporter instead.
 type Exporter = base.Exporter
 
-// Invocation Deprecated： base.Invocation type alias, just for compatible with old generate pb.go file
+// Invocation is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use base.Invocation instead.
 type Invocation = base.Invocation
 
-// Result Deprecated： base.Result type alias, just for compatible with old generate pb.go file
+// Result is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use result.Result instead.
 type Result = result.Result
 
-// RPCResult Deprecated： base.RPCResult type alias, just for compatible with old generate pb.go file
+// RPCResult is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use result.RPCResult instead.
 type RPCResult = result.RPCResult
 
-// RPCStatue Deprecated： base.RPCStatue type alias, just for compatible with old generate pb.go file
+// RPCStatue is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use base.RPCStatus instead.
 type RPCStatue = base.RPCStatus

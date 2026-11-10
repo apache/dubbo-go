@@ -44,27 +44,27 @@ func (InstallFormatter) GetCmdName() string {
 	return "formatter"
 }
 func (InstallFormatter) GetPackage() string {
-	return "github.com/dubbogo/tools/cmd/imports-formatter@latest"
+	return "dubbo.apache.org/dubbo-go/v3/tools/imports-formatter@latest"
 }
 
-type InstallDubbo3Grpc struct {
+type InstallTriple struct {
 }
 
-func (InstallDubbo3Grpc) GetCmdName() string {
-	return "dubbo3grpc"
-}
-func (InstallDubbo3Grpc) GetPackage() string {
-	return "github.com/dubbogo/tools/cmd/protoc-gen-dubbo3grpc@latest"
-}
-
-type Installtriple struct {
-}
-
-func (Installtriple) GetCmdName() string {
+func (InstallTriple) GetCmdName() string {
 	return "triple"
 }
-func (Installtriple) GetPackage() string {
-	return "github.com/dubbogo/protoc-gen-go-triple/v3@latest"
+func (InstallTriple) GetPackage() string {
+	return "dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple@latest"
+}
+
+type InstallTripleOpenAPI struct {
+}
+
+func (InstallTripleOpenAPI) GetCmdName() string {
+	return "triple-openapi"
+}
+func (InstallTripleOpenAPI) GetPackage() string {
+	return "dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi@latest"
 }
 
 var installFactory = make(map[string]InstallFactory)
@@ -76,8 +76,8 @@ func registerInstallFactory(f InstallFactory) {
 func init() {
 	rootCmd.AddCommand(installCmd)
 	registerInstallFactory(&InstallFormatter{})
-	registerInstallFactory(&InstallDubbo3Grpc{})
-	registerInstallFactory(&Installtriple{})
+	registerInstallFactory(&InstallTriple{})
+	registerInstallFactory(&InstallTripleOpenAPI{})
 }
 
 func InstallCommand(cmd *cobra.Command, args []string) {

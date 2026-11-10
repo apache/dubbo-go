@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -123,6 +124,8 @@ func GetMetadataReports() []report.MetadataReport {
 }
 
 func GetMetadataType() string {
+	metadataOptionsMu.RLock()
+	defer metadataOptionsMu.RUnlock()
 	if metadataOptions == nil || metadataOptions.metadataType == "" {
 		return constant.DefaultMetadataStorageType
 	}
@@ -146,6 +149,10 @@ func (d *DelegateMetadataReport) PublishAppMetadata(application, revision string
 	event.Succ = err == nil
 	event.End = time.Now()
 	metrics.Publish(event)
+	if err != nil {
+		return fmt.Errorf("metadata_report failed: operation=publish app=%s revision=%s storage_type=%s: %w",
+			application, revision, constant.RemoteMetadataStorageType, err)
+	}
 	return err
 }
 
@@ -156,6 +163,10 @@ func (d *DelegateMetadataReport) GetAppMetadata(application, revision string) (*
 	event.Succ = err == nil
 	event.End = time.Now()
 	metrics.Publish(event)
+	if err != nil {
+		return meta, fmt.Errorf("metadata_report failed: operation=get app=%s revision=%s storage_type=%s: %w",
+			application, revision, constant.RemoteMetadataStorageType, err)
+	}
 	return meta, err
 }
 
@@ -173,10 +184,37 @@ func (d *DelegateMetadataReport) RemoveServiceAppMappingListener(interfaceName, 
 
 // UnPublishAppMetadata delegate unpublish metadata info
 func (d *DelegateMetadataReport) UnPublishAppMetadata(application, revision string) error {
-	return d.instance.UnPublishAppMetadata(application, revision)
+	err := d.instance.UnPublishAppMetadata(application, revision)
+	if err != nil {
+		return fmt.Errorf("metadata_report failed: operation=unpublish app=%s revision=%s storage_type=%s: %w",
+			application, revision, constant.RemoteMetadataStorageType, err)
+	}
+	return nil
 }
 
 // ListAppRevisions delegate list app revisions
 func (d *DelegateMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
-	return d.instance.ListAppRevisions(application)
+	revisions, err := d.instance.ListAppRevisions(application)
+	if err != nil {
+		return revisions, fmt.Errorf("metadata_report failed: operation=list_revisions app=%s storage_type=%s: %w",
+			application, constant.RemoteMetadataStorageType, err)
+	}
+	return revisions, nil
+}
+
+// ServiceDefinitionPublisher reports whether the wrapped backend can store
+// interface-level service definitions, returning it if so.
+//
+// This exists because the instance table holds *DelegateMetadataReport values:
+// asserting report.ServiceDefinitionPublisher against one would always fail,
+// hiding a Nacos backend that does implement it. Making the wrapper itself
+// implement the interface unconditionally would be worse — every backend would
+// then pass the assertion and only report "unsupported" after a caller had
+// already tried to publish.
+//
+// Backends without the capability (zookeeper, etcd, third-party reports) simply
+// return false and are unaffected.
+func (d *DelegateMetadataReport) ServiceDefinitionPublisher() (report.ServiceDefinitionPublisher, bool) {
+	publisher, ok := d.instance.(report.ServiceDefinitionPublisher)
+	return publisher, ok
 }

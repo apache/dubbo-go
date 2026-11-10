@@ -19,15 +19,17 @@ package metadata
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"testing"
 )
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/proto"
 )
 
 import (
@@ -63,6 +65,50 @@ var (
 	}
 )
 
+type metadataContextKey struct{}
+
+func TestLegacyMetadataPreservesMethodTimeout(t *testing.T) {
+	var service info.ServiceInfo
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"name":"com.example.Greeter",
+		"protocol":"tri",
+		"params":{"methods":"Greet,SayHello","Greet.timeout":"1000"}
+	}`), &service))
+	instance := &registry.DefaultServiceInstance{
+		Host: "127.0.0.1",
+		Port: 20035,
+		Metadata: map[string]string{
+			constant.ServiceInstanceEndpoints: "[]",
+		},
+	}
+	urls := instance.ToURLs(&service)
+	require.Len(t, urls, 1)
+	assert.Equal(t, []string{"Greet", "SayHello"}, urls[0].Methods)
+	assert.Equal(t, "1000", urls[0].GetMethodParam("Greet", constant.TimeoutKey, "3000"))
+}
+
+func TestMetadataV2PreservesMethodsAndTimeout(t *testing.T) {
+	service := info.NewServiceInfoWithURL(common.NewURLWithOptions(
+		common.WithProtocol("tri"),
+		common.WithInterface("com.example.Greeter"),
+		common.WithMethods([]string{"Greet", "SayHello"}),
+		common.WithParamsValue("methods.Greet.timeout", "1000"),
+	))
+	key := service.GetMatchKey()
+	outbound := &tripleapi.MetadataInfoV2{
+		App:      "test-app",
+		Services: convertV2(map[string]*info.ServiceInfo{key: service}),
+	}
+	wire, err := proto.Marshal(outbound)
+	require.NoError(t, err)
+	var inbound tripleapi.MetadataInfoV2
+	require.NoError(t, proto.Unmarshal(wire, &inbound))
+	received := convertMetadataInfoV2(&inbound).Services[key]
+	require.NotNil(t, received)
+	assert.Equal(t, []string{"Greet", "SayHello"}, received.GetMethods())
+	assert.Equal(t, "1000", received.GetParams().Get("methods.Greet.timeout"))
+}
+
 func TestConvertMetadataInfoV2PreservesTag(t *testing.T) {
 	got := convertMetadataInfoV2(&tripleapi.MetadataInfoV2{
 		App:     "dubbo-app",
@@ -90,6 +136,20 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 		instances = make(map[string]report.MetadataReport)
 		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=get")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "registry_id=default")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+	})
+
+	t.Run("no report instance with empty registry id", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		_, err := GetMetadataFromMetadataReport("1", ins, "")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "registry_id=")
 	})
 
 	t.Run("default registry routes to default report", func(t *testing.T) {
@@ -138,11 +198,19 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 		instances = make(map[string]report.MetadataReport)
 		mockReport := new(mockMetadataReport)
 		defer mockReport.AssertExpectations(t)
-		instances["default"] = mockReport
+		instances["default"] = &DelegateMetadataReport{instance: mockReport}
 
-		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("GetAppMetadata").Return(metadataInfo, sourceErr).Once()
 		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=get")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "registry_id=default")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+		require.ErrorIs(t, err, sourceErr)
 	})
 }
 
@@ -172,18 +240,80 @@ func TestGetMetadataFromRpc(t *testing.T) {
 		mockProtocol.On("Refer").Return(nil).Once()
 		_, err := GetMetadataFromRpc("111", ins)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "rpc_metadata failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=111")
+		assert.Contains(t, err.Error(), "instance_id=1")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
 	})
 	t.Run("invoke timeout", func(t *testing.T) {
+		sourceErr := errors.New("timeout error")
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
 		mockInvoker.On("Invoke").Return(&result.RPCResult{
 			Attrs: map[string]any{},
-			Err:   errors.New("timeout error"),
+			Err:   sourceErr,
 			Rest:  metadataInfo,
 		}).Once()
 		mockInvoker.On("Destroy").Once()
 		_, err := GetMetadataFromRpc("111", ins)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "rpc_metadata failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=111")
+		assert.Contains(t, err.Error(), "instance_id=1")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
+		require.ErrorIs(t, err, sourceErr)
 	})
+}
+
+func TestGetMetadataFromRpcWithContext(t *testing.T) {
+	mockInvoker := new(mockInvoker)
+	mockProtocol := new(mockProtocol)
+	extension.SetProtocol("dubbo", func() base.Protocol {
+		return mockProtocol
+	})
+
+	mockProtocol.On("Refer").Return(mockInvoker).Once()
+	mockInvoker.On("Invoke").Return(&result.RPCResult{
+		Attrs: map[string]any{},
+		Rest:  metadataInfo,
+	}).Once()
+	mockInvoker.On("Destroy").Once()
+
+	ctx := context.WithValue(context.Background(), metadataContextKey{}, "request-value")
+	metadata, err := GetMetadataFromRpcWithContext(ctx, "111", ins)
+	require.NoError(t, err)
+	assert.Equal(t, metadataInfo, metadata)
+	assert.Same(t, ctx, mockInvoker.invokedContext)
+}
+
+func TestGetMetadataFromRpcWithCanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := GetMetadataFromRpcWithContext(ctx, "111", ins)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "rpc_metadata failed:")
+	assert.Contains(t, err.Error(), "app=dubbo-app")
+	assert.Contains(t, err.Error(), "revision=111")
+	assert.Contains(t, err.Error(), "instance_id=1")
+	assert.Contains(t, err.Error(), "host=dubbo.io")
+	assert.Contains(t, err.Error(), "storage_type=local")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestTriMetadataServiceWithContext(t *testing.T) {
+	mockInvoker := new(mockInvoker)
+	mockInvoker.url = common.NewURLWithOptions(common.WithProtocol(constant.TriProtocol))
+	mockInvoker.On("Invoke").Return(&result.RPCResult{Attrs: map[string]any{}}).Once()
+
+	ctx := context.WithValue(context.Background(), metadataContextKey{}, "request-value")
+	metadata, err := (&triMetadataServiceV2{invoker: mockInvoker}).getMetadataInfo(ctx, "111")
+	require.NoError(t, err)
+	require.NotNil(t, metadata)
+	assert.Same(t, ctx, mockInvoker.invokedContext)
 }
 
 func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
@@ -196,6 +326,12 @@ func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
 		}
 		_, err := GetMetadataFromRpc("1", insNoProto)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "url_construction failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "instance_id=2")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
 		assert.Contains(t, err.Error(), "protocol is empty")
 	})
 
@@ -210,6 +346,12 @@ func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
 		}
 		_, err := GetMetadataFromRpc("1", insNoPort)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "url_construction failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "instance_id=3")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
 		assert.Contains(t, err.Error(), "port is empty")
 	})
 }
@@ -377,9 +519,14 @@ func (m *mockProtocol) Destroy() {
 
 type mockInvoker struct {
 	mock.Mock
+	invokedContext context.Context
+	url            *common.URL
 }
 
 func (m *mockInvoker) GetURL() *common.URL {
+	if m.url != nil {
+		return m.url
+	}
 	return common.NewURLWithOptions(common.WithProtocol(constant.DefaultProtocol))
 }
 
@@ -392,6 +539,7 @@ func (m *mockInvoker) Destroy() {
 }
 
 func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
+	m.invokedContext = ctx
 	args := m.Called()
 	res := args.Get(0).(result.Result)
 

@@ -19,6 +19,8 @@ package hessian2
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -34,20 +36,14 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// DubboResponse dubbo response
-type DubboResponse struct {
-	RspObj      any
-	Exception   error
-	Attachments map[string]any
-}
-
-// GenericException keeps Java exception class and message.
+// GenericException is a legacy-compatible type.
+//
+// Deprecated: Use hessian.GenericException from github.com/apache/dubbo-go-hessian2 instead.
 type GenericException struct {
 	ExceptionClass   string
 	ExceptionMessage string
 }
 
-// Error returns a readable error string.
 func (e GenericException) Error() string {
 	if e.ExceptionClass == "" {
 		return e.ExceptionMessage
@@ -59,6 +55,8 @@ func (e GenericException) Error() string {
 }
 
 // ToGenericException converts decoded exception to GenericException when possible.
+//
+// Deprecated: Use hessian.ToGenericException from github.com/apache/dubbo-go-hessian2 instead.
 func ToGenericException(expt any) (*GenericException, bool) {
 	switch v := expt.(type) {
 	case *GenericException:
@@ -84,6 +82,13 @@ func parseLegacyException(exStr string) *GenericException {
 		msg = strings.TrimSpace(after)
 	}
 	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
+}
+
+// DubboResponse dubbo response
+type DubboResponse struct {
+	RspObj      any
+	Exception   error
+	Attachments map[string]any
 }
 
 // NewResponse create a new DubboResponse
@@ -160,12 +165,12 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 			if response.Exception != nil { // throw error
 				err := encoder.Encode(resWithException)
 				if err != nil {
-					return nil, perrors.Errorf("encoding response failed: %v", err)
+					return nil, fmt.Errorf("encoding response failed: %v", err)
 				}
 				switch ex := response.Exception.(type) {
-				case *GenericException:
+				case *hessian.GenericException:
 					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case GenericException:
+				case hessian.GenericException:
 					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
 				case java_exception.Throwabler:
 					err = encoder.Encode(ex)
@@ -173,19 +178,19 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 					err = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
 				}
 				if err != nil {
-					return nil, perrors.Errorf("encoding exception failed: %v", err)
+					return nil, fmt.Errorf("encoding exception failed: %v", err)
 				}
 			} else {
 				if response.RspObj == nil {
 					if err := encoder.Encode(resNullValue); err != nil {
-						return nil, perrors.Errorf("encoding null value failed: %v", err)
+						return nil, fmt.Errorf("encoding null value failed: %v", err)
 					}
 				} else {
 					if err := encoder.Encode(resValue); err != nil {
-						return nil, perrors.Errorf("encoding response value failed: %v", err)
+						return nil, fmt.Errorf("encoding response value failed: %v", err)
 					}
 					if err := encoder.Encode(response.RspObj); err != nil {
-						return nil, perrors.Errorf("encoding response failed: %v", err)
+						return nil, fmt.Errorf("encoding response failed: %v", err)
 					}
 				}
 			}
@@ -193,7 +198,7 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 			// attachments
 			if atta {
 				if err := encoder.Encode(response.Attachments); err != nil {
-					return nil, perrors.Errorf("encoding response attachements failed: %v", err)
+					return nil, fmt.Errorf("encoding response attachements failed: %v", err)
 				}
 			}
 		}
@@ -205,7 +210,7 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 			err = encoder.Encode(response.RspObj)
 		}
 		if err != nil {
-			return nil, perrors.Errorf("encoding error failed: %v", err)
+			return nil, fmt.Errorf("encoding error failed: %v", err)
 		}
 	}
 
@@ -225,7 +230,7 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 	// body
 	if decoder == nil {
-		return perrors.Errorf("@decoder is nil")
+		return fmt.Errorf("@decoder is nil")
 	}
 	rspType, err := decoder.Decode()
 	if err != nil {
@@ -249,16 +254,16 @@ func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
-				return perrors.Errorf("get wrong attachments: %+v", attachments)
+				return fmt.Errorf("get wrong attachments: %+v", attachments)
 			}
 		}
 
-		if g, ok := ToGenericException(expt); ok {
+		if g, ok := hessian.ToGenericException(expt); ok {
 			response.Exception = g
 		} else if e, ok := expt.(error); ok {
 			response.Exception = e
 		} else {
-			response.Exception = perrors.Errorf("got exception: %+v", expt)
+			response.Exception = fmt.Errorf("got exception: %+v", expt)
 		}
 		return nil
 
@@ -275,7 +280,7 @@ func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 			if v, ok := attachments.(map[any]any); ok {
 				response.Attachments = ToMapStringInterface(v)
 			} else {
-				return perrors.Errorf("get wrong attachments: %+v", attachments)
+				return fmt.Errorf("get wrong attachments: %+v", attachments)
 			}
 		}
 
@@ -293,7 +298,7 @@ func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
-				return perrors.Errorf("get wrong attachments: %+v", attachments)
+				return fmt.Errorf("get wrong attachments: %+v", attachments)
 			}
 		}
 		return nil
@@ -305,10 +310,10 @@ func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 // CopySlice copy from inSlice to outSlice
 func CopySlice(inSlice, outSlice reflect.Value) error {
 	if inSlice.IsNil() {
-		return perrors.New("@in is nil")
+		return errors.New("@in is nil")
 	}
 	if inSlice.Kind() != reflect.Slice {
-		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
+		return fmt.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
 	for outSlice.Kind() == reflect.Pointer {
@@ -321,7 +326,7 @@ func CopySlice(inSlice, outSlice reflect.Value) error {
 	for i := range size {
 		inSliceValue := inSlice.Index(i)
 		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
-			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",
+			return fmt.Errorf("in element type [%s] can not assign to out element type [%s]",
 				inSliceValue.Type().String(), outSlice.Type().String())
 		}
 		outSlice.Index(i).Set(inSliceValue)
@@ -333,13 +338,13 @@ func CopySlice(inSlice, outSlice reflect.Value) error {
 // CopyMap copy from in map to out map
 func CopyMap(inMapValue, outMapValue reflect.Value) error {
 	if inMapValue.IsNil() {
-		return perrors.New("@in is nil")
+		return errors.New("@in is nil")
 	}
 	if !inMapValue.CanInterface() {
-		return perrors.New("@in's Interface can not be used.")
+		return errors.New("@in's Interface can not be used")
 	}
 	if inMapValue.Kind() != reflect.Map {
-		return perrors.Errorf("@in is not map, but %v", inMapValue.Kind())
+		return fmt.Errorf("@in is not map, but %v", inMapValue.Kind())
 	}
 
 	outMapType := hessian.UnpackPtrType(outMapValue.Type())
@@ -354,11 +359,11 @@ func CopyMap(inMapValue, outMapValue reflect.Value) error {
 		inValue := inMapValue.MapIndex(inKey)
 
 		if !inKey.Type().AssignableTo(outKeyType) {
-			return perrors.Errorf("in Key:{type:%s, value:%#v} can not assign to out Key:{type:%s} ",
+			return fmt.Errorf("in Key:{type:%s, value:%#v} can not assign to out Key:{type:%s} ",
 				inKey.Type().String(), inKey, outKeyType.String())
 		}
 		if !inValue.Type().AssignableTo(outValueType) {
-			return perrors.Errorf("in Value:{type:%s, value:%#v} can not assign to out value:{type:%s}",
+			return fmt.Errorf("in Value:{type:%s, value:%#v} can not assign to out value:{type:%s}",
 				inValue.Type().String(), inValue, outValueType.String())
 		}
 		outMapValue.SetMapIndex(inKey, inValue)
@@ -371,14 +376,14 @@ func CopyMap(inMapValue, outMapValue reflect.Value) error {
 // TODO response object should not be copied again to another object, it should be the exact type of the object
 func ReflectResponse(in any, out any) error {
 	if in == nil {
-		return perrors.Errorf("@in is nil")
+		return fmt.Errorf("@in is nil")
 	}
 
 	if out == nil {
-		return perrors.Errorf("@out is nil")
+		return fmt.Errorf("@out is nil")
 	}
 	if reflect.TypeOf(out).Kind() != reflect.Pointer {
-		return perrors.Errorf("@out should be a pointer")
+		return fmt.Errorf("@out should be a pointer")
 	}
 
 	inValue := hessian.EnsurePackValue(in)

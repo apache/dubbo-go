@@ -89,6 +89,12 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 	t.Cleanup(unblock)
 	received := make(chan struct{})
 	sent := make(chan struct{})
+	// This test drives the stream into a known in-flight state through a handler
+	// signal rather than through Receive, and a bidi client never closes its own
+	// request side. With write buffering on, the setup message would sit in the
+	// buffer and the server would never see it, so the test runs on the
+	// unbuffered write path. CloseResponse semantics are what it covers; the
+	// buffered path has its own coverage in write_buffering_bidi_ext_test.go.
 	client := newCloseLifecyclePingClient(t, &pluggablePingServer{
 		cumSum: func(ctx context.Context, stream *triple.BidiStream) error {
 			req := &pingv1.CumSumRequest{}
@@ -103,7 +109,7 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 			<-release
 			return nil
 		},
-	})
+	}, triple.WithoutWriteBuffering())
 
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
@@ -144,6 +150,9 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 func TestBidiStreamCloseResponseAfterServerStopsReading(t *testing.T) {
 	serverReceived := make(chan struct{})
 	serverReturn := make(chan struct{})
+	// Same reason as TestBidiStreamCloseResponseDoesNotDrainResponse: the setup
+	// request is sequenced by a handler signal, so it needs the unbuffered write
+	// path to reach the server before the close verification starts.
 	client := newCloseLifecyclePingClient(t, &pluggablePingServer{
 		cumSum: func(ctx context.Context, stream *triple.BidiStream) error {
 			req := &pingv1.CumSumRequest{}
@@ -154,7 +163,7 @@ func TestBidiStreamCloseResponseAfterServerStopsReading(t *testing.T) {
 			<-serverReturn
 			return triple.NewError(triple.CodeUnavailable, errors.New("server stopped reading"))
 		},
-	})
+	}, triple.WithoutWriteBuffering())
 
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
@@ -207,7 +216,7 @@ func TestClientStreamCloseAndReceiveAfterServerReturnsError(t *testing.T) {
 	assert.Equal(t, triple.CodeOf(err), triple.CodeUnavailable)
 }
 
-func newCloseLifecyclePingClient(t *testing.T, pingServer pingv1connect.PingServiceHandler) pingv1connect.PingServiceClient {
+func newCloseLifecyclePingClient(t *testing.T, pingServer pingv1connect.PingServiceHandler, opts ...triple.ClientOption) pingv1connect.PingServiceClient {
 	t.Helper()
 	mux := http.NewServeMux()
 	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer))
@@ -215,7 +224,7 @@ func newCloseLifecyclePingClient(t *testing.T, pingServer pingv1connect.PingServ
 	server.EnableHTTP2 = true
 	server.StartTLS()
 	t.Cleanup(server.Close)
-	return pingv1connect.NewPingServiceClient(server.Client(), server.URL)
+	return pingv1connect.NewPingServiceClient(server.Client(), server.URL, opts...)
 }
 
 // newCloseRelease returns a channel that lets tests keep the server handler

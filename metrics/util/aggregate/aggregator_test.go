@@ -60,7 +60,7 @@ func TestTimeWindowAggregatorAddAndResult(t *testing.T) {
 func BenchmarkTimeWindowAggregatorAdd(b *testing.B) {
 	wg := sync.WaitGroup{}
 	tw := NewTimeWindowAggregator(10, 1)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		wg.Go(func() {
 			tw.Add(rand.Float64() * 100) //NOSONAR
 		})
@@ -71,7 +71,7 @@ func BenchmarkTimeWindowAggregatorAdd(b *testing.B) {
 func BenchmarkTimeWindowAggregatorResult(b *testing.B) {
 	wg := sync.WaitGroup{}
 	tw := NewTimeWindowAggregator(10, 1)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		wg.Add(1)
 		go func() {
 			tw.Add(rand.Float64() * 100) //NOSONAR

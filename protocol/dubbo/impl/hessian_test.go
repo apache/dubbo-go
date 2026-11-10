@@ -34,7 +34,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 const (
@@ -450,6 +449,38 @@ func TestMarshalResponse(t *testing.T) {
 		assert.NotNil(t, data)
 	})
 
+	t.Run("response with unsupported value", func(t *testing.T) {
+		encoder := hessian.NewEncoder()
+		pkg := DubboPackage{
+			Header: DubboHeader{ResponseStatus: Response_OK},
+			Body: &ResponsePayload{
+				RspObj:      func() {},
+				Attachments: map[string]any{},
+			},
+		}
+
+		data, err := marshalResponse(encoder, pkg)
+		require.Error(t, err)
+		assert.Nil(t, data)
+	})
+
+	t.Run("response with unsupported attachment", func(t *testing.T) {
+		encoder := hessian.NewEncoder()
+		pkg := DubboPackage{
+			Header: DubboHeader{ResponseStatus: Response_OK},
+			Body: &ResponsePayload{
+				Attachments: map[string]any{
+					DUBBO_VERSION_KEY: "2.7.0",
+					"unsupported":     func() {},
+				},
+			},
+		}
+
+		data, err := marshalResponse(encoder, pkg)
+		require.Error(t, err)
+		assert.Nil(t, data)
+	})
+
 	t.Run("response with value", func(t *testing.T) {
 		encoder := hessian.NewEncoder()
 		pkg := DubboPackage{
@@ -512,7 +543,7 @@ func TestMarshalResponse(t *testing.T) {
 				ResponseStatus: Response_OK,
 			},
 			Body: &ResponsePayload{
-				Exception: hessian2.GenericException{
+				Exception: hessian.GenericException{
 					ExceptionClass:   "com.example.UserNotFoundException",
 					ExceptionMessage: "user not found",
 				},
@@ -721,7 +752,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*hessian.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)
@@ -787,7 +818,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*hessian.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "java.lang.Exception", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)

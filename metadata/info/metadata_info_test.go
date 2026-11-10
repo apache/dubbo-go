@@ -147,6 +147,23 @@ func TestNewMetadataInfo(t *testing.T) {
 	info := NewMetadataInfo("dubbo", "tag")
 	assert.Equal(t, "dubbo", info.App)
 	assert.Equal(t, "tag", info.Tag)
+	assert.NotNil(t, info.Services)
+	assert.Empty(t, info.Services)
+	assert.NotNil(t, info.exportedServiceURLs)
+	assert.NotNil(t, info.subscribedServiceURLs)
+}
+
+func TestNewAppMetadataInfo(t *testing.T) {
+	info := NewAppMetadataInfo("dubbo")
+	assert.Equal(t, "dubbo", info.App)
+	assert.Empty(t, info.Tag)
+	assert.Empty(t, info.Revision)
+	assert.NotNil(t, info.Services)
+	assert.Empty(t, info.Services)
+	assert.NotNil(t, info.exportedServiceURLs)
+	assert.Empty(t, info.GetExportedServiceURLs())
+	assert.NotNil(t, info.subscribedServiceURLs)
+	assert.Empty(t, info.GetSubscribedURLs())
 }
 
 func TestNewMetadataInfoWithParams(t *testing.T) {
@@ -169,14 +186,48 @@ func TestNewServiceInfoWithURL(t *testing.T) {
 	assert.Equal(t, "1000", info.Params["Greet.timeout"])
 }
 
+func TestNewServiceInfo(t *testing.T) {
+	params := map[string]string{"timeout": "3000"}
+	si := NewServiceInfo("test", "test", "1.0.0", "dubbo", "/org.apache.dubbo.samples.proto.GreetService", params)
+	assert.Equal(t, "test", si.Name)
+	assert.Equal(t, "test", si.Group)
+	assert.Equal(t, "1.0.0", si.Version)
+	assert.Equal(t, "dubbo", si.Protocol)
+	assert.Equal(t, "org.apache.dubbo.samples.proto.GreetService", si.Path)
+	assert.Equal(t, params, si.Params)
+	assert.Equal(t, "test/test:1.0.0", si.ServiceKey)
+	assert.Equal(t, "test/test:1.0.0:dubbo", si.MatchKey)
+}
+
+func TestNewServiceInfoWithEmptyPath(t *testing.T) {
+	si := NewServiceInfo("test", "", "", "dubbo", "", nil)
+	assert.Empty(t, si.Path)
+	assert.Equal(t, "test", si.ServiceKey)
+	assert.Equal(t, "test:dubbo", si.MatchKey)
+}
+
 func TestServiceInfoGetMethods(t *testing.T) {
 	service := NewServiceInfoWithURL(serviceUrl)
 	assert.Equal(t, []string{"Greet", "SayHello"}, service.GetMethods())
 }
 
+func TestServiceInfoGetMethodsWithEmptyMap(t *testing.T) {
+	si := NewServiceInfo("", "", "", "", "", nil)
+	assert.Equal(t, []string{""}, si.GetMethods())
+	si.Params = map[string]string{constant.MethodsKey: ""}
+	assert.Equal(t, []string{""}, si.GetMethods())
+}
+
 func TestServiceInfoGetParams(t *testing.T) {
 	service := NewServiceInfoWithURL(serviceUrl)
 	assert.Equal(t, []string{"random"}, service.GetParams()["loadbalance"])
+}
+
+func TestServiceInfoGetParamWithEmptyMap(t *testing.T) {
+	si := NewServiceInfo("", "", "", "", "", nil)
+	assert.Empty(t, si.GetParams())
+	si.Params = map[string]string{}
+	assert.Empty(t, si.GetParams())
 }
 
 func TestServiceInfoExcludesInstanceLevelParams(t *testing.T) {
@@ -205,6 +256,11 @@ func TestServiceInfoGetMatchKey(t *testing.T) {
 	assert.NotEmpty(t, si.GetMatchKey())
 }
 
+func TestCalRevisionWithEmptyServices(t *testing.T) {
+	assert.Equal(t, "0", CalRevision("dubbo", nil))
+	assert.Equal(t, "0", CalRevision("dubbo", map[string]*ServiceInfo{}))
+}
+
 func TestMetadataInfoGetServices(t *testing.T) {
 	metadataInfo := &MetadataInfo{
 		Services:              make(map[string]*ServiceInfo),
@@ -228,4 +284,75 @@ func TestMetadataInfoGetServices(t *testing.T) {
 
 func TestServiceInfoJavaClassName(t *testing.T) {
 	assert.Equalf(t, "org.apache.dubbo.metadata.MetadataInfo", NewAppMetadataInfo("dubbo").JavaClassName(), "JavaClassName()")
+}
+
+// goldenRevision was computed with Java 17 TreeMap.toString(), UTF-8 and MD5
+// using Dubbo's app + sorted service descriptions formula, including methods.
+//
+// Input:
+//
+//	app = "dubbo-go-app"
+//	service #1: name=com.foo.Bar group="" version=1.0.0 protocol=dubbo port=20880
+//	           path=com.foo.Bar params={methods=sayHello,sayGoodbye, timeout=3000, weight=100}
+//	service #2: name=com.foo.Baz group=g1 version=2.0.0 protocol=tri port=50051
+//	           path=com.foo.Baz params={cluster=failfast}
+//
+// Concatenated (app + sorted-by-matchKey toDescString):
+//
+//	dubbo-go-app
+//	+ com.foo.Bar:1.0.0:dubbo20880com.foo.Bar{methods=sayHello,sayGoodbye, timeout=3000, weight=100}
+//	+ g1/com.foo.Baz:2.0.0:tri50051com.foo.Baz{cluster=failfast}
+const goldenRevision = "47b3fb9aba75846310c970cee9daefcf"
+
+// TestCalRevisionJavaAlignmentGolden verifies that info.CalRevision produces exactly
+// the same revision as the Java dubbo implementation for identical service definitions.
+func TestCalRevisionJavaAlignmentGolden(t *testing.T) {
+	app := "dubbo-go-app"
+
+	s1 := NewServiceInfo("com.foo.Bar", "", "1.0.0", "dubbo", "com.foo.Bar", map[string]string{
+		"methods": "sayHello,sayGoodbye",
+		"timeout": "3000",
+		"weight":  "100",
+	})
+	s1.Port = 20880
+
+	s2 := NewServiceInfo("com.foo.Baz", "g1", "2.0.0", "tri", "com.foo.Baz", map[string]string{
+		"cluster": "failfast",
+	})
+	s2.Port = 50051
+
+	services := map[string]*ServiceInfo{
+		s1.GetMatchKey(): s1,
+		s2.GetMatchKey(): s2,
+	}
+
+	got := CalRevision(app, services)
+	assert.Equal(t, goldenRevision, got, "revision must equal the Java-derived golden vector")
+}
+
+// TestCalRevisionEmptyServicesReturnsZero guards the Java EMPTY_REVISION contract:
+// an empty service set yields "0".
+func TestCalRevisionEmptyServicesReturnsZero(t *testing.T) {
+	assert.Equal(t, "0", CalRevision("app", nil))
+	assert.Equal(t, "0", CalRevision("app", map[string]*ServiceInfo{}))
+}
+
+// TestServiceInfoToDescStringFormat verifies the exact Java toDescString() format
+// (matchKey + port + path + TreeMap(params).toString()), including methods in params.
+func TestServiceInfoToDescStringFormat(t *testing.T) {
+	si := NewServiceInfo("com.foo.Bar", "", "1.0.0", "dubbo", "com.foo.Bar", map[string]string{
+		"timeout": "3000",
+		"weight":  "100",
+		"methods": "sayHello,sayGoodbye",
+	})
+	si.Port = 20880
+
+	assert.Equal(t, "com.foo.Bar:1.0.0:dubbo20880com.foo.Bar{methods=sayHello,sayGoodbye, timeout=3000, weight=100}", si.toDescString())
+}
+
+// TestServiceInfoToDescStringEmptyParams verifies an empty params map renders as "{}".
+func TestServiceInfoToDescStringEmptyParams(t *testing.T) {
+	si := NewServiceInfo("com.foo.Bar", "", "1.0.0", "dubbo", "com.foo.Bar", map[string]string{})
+	si.Port = 20880
+	assert.Equal(t, "com.foo.Bar:1.0.0:dubbo20880com.foo.Bar{}", si.toDescString())
 }

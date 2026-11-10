@@ -18,6 +18,11 @@
 package store
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sync"
 	"testing"
 	"time"
 )
@@ -149,4 +154,282 @@ func TestMetaInfoCacheManager(t *testing.T) {
 	cm3.destroy()
 	cm2.destroy()
 	cm.destroy() // clear cache file
+}
+
+func TestCacheManagerConcurrentAccess(t *testing.T) {
+	cacheFile := filepath.Join(t.TempDir(), "race_cache")
+	cm, err := NewCacheManager("raceTest", cacheFile, time.Millisecond, 32, true)
+	if err != nil {
+		t.Fatalf("failed to create cache manager: %v", err)
+	}
+	defer cm.destroy()
+
+	runConcurrentCacheAccess(cm)
+	waitForCacheDump(t, cacheFile)
+	cm.StopDump()
+
+	loaded, err := NewCacheManager("raceTestReloaded", cacheFile, time.Hour, 32, false)
+	if err != nil {
+		t.Fatalf("failed to reload cache manager: %v", err)
+	}
+	defer loaded.destroy()
+
+	assertCacheEntries(t, loaded.GetAll())
+}
+
+func runConcurrentCacheAccess(cm *CacheManager) {
+	var wg sync.WaitGroup
+	for i := range 16 {
+		wg.Add(1)
+		go func(worker int) {
+			defer wg.Done()
+			exerciseCacheManager(cm, worker)
+		}(i)
+	}
+	wg.Wait()
+}
+
+func exerciseCacheManager(cm *CacheManager, worker int) {
+	for j := range 500 {
+		key := fmt.Sprintf("key-%d", j%64)
+		cm.Set(key, fmt.Sprintf("value-%d-%d", worker, j))
+		cm.Get(key)
+		if j%3 == 0 {
+			cm.Delete(fmt.Sprintf("key-%d", (j+worker)%64))
+		}
+		if j%7 == 0 {
+			cm.GetAll()
+		}
+	}
+}
+
+func waitForCacheDump(t *testing.T, cacheFile string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		info, statErr := os.Stat(cacheFile)
+		if statErr == nil && info.Size() > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("cache dump was not created: %v", statErr)
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func assertCacheEntries(t *testing.T, items map[string]any) {
+	t.Helper()
+	if len(items) == 0 {
+		t.Fatal("reloaded cache dump contained no entries")
+	}
+	for key, value := range items {
+		if value == nil {
+			t.Fatalf("reloaded cache entry %q contained a nil value", key)
+		}
+		if _, ok := value.(string); !ok {
+			t.Fatalf("reloaded cache entry %q had unexpected type %T", key, value)
+		}
+	}
+}
+
+func TestCacheManagerGetAllReturnsAtomicSnapshotDuringReplacement(t *testing.T) {
+	previousGOMAXPROCS := runtime.GOMAXPROCS(4)
+	defer runtime.GOMAXPROCS(previousGOMAXPROCS)
+
+	cm, err := NewCacheManager("snapshotTest", filepath.Join(t.TempDir(), "snapshot_cache"), time.Hour, 1, false)
+	if err != nil {
+		t.Fatalf("failed to create cache manager: %v", err)
+	}
+	defer cm.destroy()
+
+	cm.Set("a", "value-a")
+
+	stop, errCh, waitReaders := startSnapshotReaders(cm, 8)
+	replaceCapacityOneEntries(cm, 100000)
+	close(stop)
+	waitReaders()
+
+	if msg := snapshotError(errCh); msg != "" {
+		t.Fatal(msg)
+	}
+}
+
+func startSnapshotReaders(cm *CacheManager, readers int) (chan struct{}, chan string, func()) {
+	start := make(chan struct{})
+	stop := make(chan struct{})
+	errCh := make(chan string, 1)
+
+	var wg sync.WaitGroup
+	for range readers {
+		wg.Go(func() {
+			readSnapshotsUntilStopped(cm, start, stop, errCh)
+		})
+	}
+	close(start)
+
+	return stop, errCh, wg.Wait
+}
+
+func readSnapshotsUntilStopped(cm *CacheManager, start, stop <-chan struct{}, errCh chan<- string) {
+	<-start
+	for !snapshotStopped(stop) {
+		if msg := validateCapacityOneSnapshot(cm.GetAll()); msg != "" {
+			reportSnapshotError(errCh, msg)
+			return
+		}
+	}
+}
+
+func snapshotStopped(stop <-chan struct{}) bool {
+	select {
+	case <-stop:
+		return true
+	default:
+		return false
+	}
+}
+
+func replaceCapacityOneEntries(cm *CacheManager, replacements int) {
+	for i := range replacements {
+		if i%2 == 0 {
+			cm.Set("b", "value-b")
+		} else {
+			cm.Set("a", "value-a")
+		}
+	}
+}
+
+func validateCapacityOneSnapshot(items map[string]any) string {
+	if len(items) != 1 {
+		return fmt.Sprintf("GetAll returned %d entries during capacity-1 replacement: %#v", len(items), items)
+	}
+
+	if value, ok := items["a"]; ok {
+		return validateSnapshotEntry("a", value, "value-a")
+	}
+	if value, ok := items["b"]; ok {
+		return validateSnapshotEntry("b", value, "value-b")
+	}
+	return fmt.Sprintf("GetAll returned unexpected snapshot: %#v", items)
+}
+
+func validateSnapshotEntry(key string, value, expected any) string {
+	if value == expected {
+		return ""
+	}
+	return fmt.Sprintf("GetAll returned unexpected entry %q=%#v", key, value)
+}
+
+func snapshotError(errCh <-chan string) string {
+	select {
+	case msg := <-errCh:
+		return msg
+	default:
+		return ""
+	}
+}
+
+func reportSnapshotError(errCh chan<- string, msg string) {
+	select {
+	case errCh <- msg:
+	default:
+	}
+}
+
+func TestCacheManagerConcurrentStopDump(t *testing.T) {
+	tests := []struct {
+		name       string
+		enableDump bool
+	}{
+		{name: "enabled", enableDump: true},
+		{name: "disabled", enableDump: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cm, err := NewCacheManager("stopTest", filepath.Join(t.TempDir(), "stop_cache"), time.Hour, 8, tt.enableDump)
+			if err != nil {
+				t.Fatalf("failed to create cache manager: %v", err)
+			}
+			defer cm.destroy()
+
+			const callers = 64
+			start := make(chan struct{})
+			var wg sync.WaitGroup
+			for range callers {
+				wg.Go(func() {
+					<-start
+					cm.StopDump()
+				})
+			}
+			close(start)
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(2 * time.Second):
+				t.Fatal("concurrent StopDump calls did not complete")
+			}
+
+			cm.StopDump()
+		})
+	}
+}
+
+func TestCacheManagerStopDumpCompletesAfterDumpTickSelected(t *testing.T) {
+	dumpSelected := make(chan struct{})
+	releaseDump := make(chan struct{})
+	var selectedOnce sync.Once
+	var releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() {
+			close(releaseDump)
+		})
+	}
+
+	cacheManagerBeforeDumpCache = func() {
+		selectedOnce.Do(func() {
+			close(dumpSelected)
+		})
+		<-releaseDump
+	}
+	t.Cleanup(func() {
+		release()
+		cacheManagerBeforeDumpCache = nil
+	})
+
+	cm, err := NewCacheManager("stopTickTest", filepath.Join(t.TempDir(), "stop_tick_cache"), 100*time.Millisecond, 8, true)
+	if err != nil {
+		t.Fatalf("failed to create cache manager: %v", err)
+	}
+	cm.Set("key", "value")
+
+	select {
+	case <-dumpSelected:
+	case <-time.After(2 * time.Second):
+		t.Fatal("dump task did not select ticker")
+	}
+
+	done := make(chan struct{})
+	cm.lock.Lock()
+	go func() {
+		cm.StopDump()
+		close(done)
+	}()
+	time.Sleep(20 * time.Millisecond)
+
+	release()
+	cm.lock.Unlock()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("StopDump did not complete after selected dump was released")
+	}
 }

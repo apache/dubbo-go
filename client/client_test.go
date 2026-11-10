@@ -30,17 +30,71 @@ import (
 )
 
 import (
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
 type fakeInvoker struct {
 	lastCtx        context.Context
 	lastInvocation base.Invocation
 	res            result.Result
+}
+
+type genericClientTestUser struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+func (genericClientTestUser) JavaClassName() string {
+	return "org.apache.dubbo.test.User"
+}
+
+type genericResultProtocol struct {
+	*base.BaseProtocol
+}
+
+func (p *genericResultProtocol) Refer(url *common.URL) base.Invoker {
+	return &genericResultInvoker{BaseInvoker: base.NewBaseInvoker(url)}
+}
+
+type genericResultInvoker struct {
+	*base.BaseInvoker
+}
+
+func (i *genericResultInvoker) Invoke(_ context.Context, inv base.Invocation) result.Result {
+	mode := inv.GetAttachmentWithDefaultValue(
+		constant.GenericKey,
+		i.GetURL().GetParam(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+	var response any
+	switch mode {
+	case constant.GenericSerializationGson, constant.GenericSerializationProtobufJson:
+		response = `{"name":"gsonUser","age":42}`
+	default:
+		response = map[string]any{"name": "mapUser", "age": 41}
+	}
+	reply := inv.Reply().(*any)
+	*reply = response
+	return &result.RPCResult{Rest: inv.Reply()}
+}
+
+func registerGenericResultProtocol(t *testing.T, protocolName string) {
+	t.Helper()
+	extension.SetProtocol(protocolName, func() base.Protocol {
+		proto := base.NewBaseProtocol()
+		return &genericResultProtocol{BaseProtocol: &proto}
+	})
+	t.Cleanup(func() {
+		extension.UnregisterProtocol(protocolName)
+	})
 }
 
 func (f *fakeInvoker) GetURL() *common.URL {
@@ -179,6 +233,66 @@ func TestConnectionCallPassesOptions(t *testing.T) {
 	trailerTarget, ok := inv.GetAttribute(constant.ResponseTrailerKey)
 	require.True(t, ok)
 	require.Same(t, &responseTrailer, trailerTarget)
+}
+
+func TestNewGenericServicePropagatesGenericTypeToTypedInvoke(t *testing.T) {
+	const protocolName = "generic-client-test"
+	registerGenericResultProtocol(t, protocolName)
+
+	cli, err := NewClient()
+	require.NoError(t, err)
+
+	service, err := cli.NewGenericService(
+		"org.apache.dubbo.test.UserProvider",
+		WithProtocol(protocolName),
+		WithURL(protocolName+"://127.0.0.1:1"),
+		WithClusterAvailable(),
+		WithGenericType(constant.GenericSerializationGson),
+	)
+	require.NoError(t, err)
+	if service.GenericType() != constant.GenericSerializationGson {
+		t.Errorf("generic service mode = %q, want %q", service.GenericType(), constant.GenericSerializationGson)
+	}
+
+	var user *genericClientTestUser
+	err = service.InvokeWithType(context.Background(), "getUser", nil, nil, &user)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, "gsonUser", user.Name)
+	require.Equal(t, 42, user.Age)
+}
+
+func TestNewGenericServiceInvokeKeepsRawResult(t *testing.T) {
+	tests := []struct {
+		name         string
+		protocolName string
+		generic      string
+	}{
+		{name: "gson", protocolName: "generic-client-raw-gson-test", generic: constant.GenericSerializationGson},
+		{name: "protobuf-json", protocolName: "generic-client-raw-protobuf-test", generic: constant.GenericSerializationProtobufJson},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registerGenericResultProtocol(t, tt.protocolName)
+			cli, err := NewClient()
+			require.NoError(t, err)
+
+			service, err := cli.NewGenericService(
+				"org.apache.dubbo.test.UserProvider",
+				WithProtocol(tt.protocolName),
+				WithURL(tt.protocolName+"://127.0.0.1:1"),
+				WithClusterAvailable(),
+				WithGenericType(tt.generic),
+			)
+			require.NoError(t, err)
+
+			res, err := service.Invoke(context.Background(), "getUser", nil, nil)
+
+			require.NoError(t, err)
+			require.JSONEq(t, `{"name":"gsonUser","age":42}`, res.(string))
+		})
+	}
 }
 
 func TestCallUnary(t *testing.T) {

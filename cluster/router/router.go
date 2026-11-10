@@ -63,6 +63,7 @@ type PriorityRouter interface {
 // updates still go through each router's own Notify/Process path and override the router's
 // current rule.
 type StaticConfigSetter interface {
+	// SetStaticConfig applies static configuration accepted by the router.
 	SetStaticConfig(cfg *global.RouterConfig)
 }
 
@@ -110,5 +111,6 @@ type Cache interface {
 // Implemented by Poolable routers so that RouterChain can pass the cache
 // reference after it is built in SetInvokers.
 type CacheAccessor interface {
+	// SetCache supplies the cache owned by the router chain.
 	SetCache(Cache)
 }

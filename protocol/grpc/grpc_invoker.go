@@ -19,17 +19,14 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
 )
 
 import (
-	hessian2 "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
 
 	"google.golang.org/grpc/connectivity"
 
@@ -40,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
@@ -124,8 +122,10 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 	// check err
 	if !res[1].IsNil() {
 		result.SetError(res[1].Interface().(error))
-	} else {
-		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
+	} else if invocation.Reply() != nil {
+		if err := hessian2.ReflectResponse(res[0], invocation.Reply()); err != nil {
+			result.SetError(err)
+		}
 	}
 
 	return &result

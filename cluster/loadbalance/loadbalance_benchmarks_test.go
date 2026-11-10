@@ -103,8 +103,8 @@ func BenchmarkGetWeight(b *testing.B) {
 	invokers := Generate()
 	inv := &invocation.RPCInvocation{}
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for i := 0; b.Loop(); i++ {
 		loadbalance.GetWeight(invokers[i%len(invokers)], inv)
 	}
 }
@@ -114,8 +114,8 @@ func BenchmarkGetWeightAt(b *testing.B) {
 	inv := &invocation.RPCInvocation{}
 	now := time.Now().Unix()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for i := 0; b.Loop(); i++ {
 		loadbalance.GetWeightAt(invokers[i%len(invokers)], inv, now)
 	}
 }

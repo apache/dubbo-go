@@ -30,7 +30,8 @@ import (
 
 func GenerateFileSchemas(tt protoreflect.FileDescriptor) *orderedmap.Map[string, *base.SchemaProxy] {
 	messages := make(map[protoreflect.MessageDescriptor]struct{})
-	collectMessages(tt, messages)
+	enums := make(map[protoreflect.EnumDescriptor]struct{})
+	collectMessages(tt, messages, enums)
 
 	schemas := orderedmap.New[string, *base.SchemaProxy]()
 
@@ -51,27 +52,40 @@ func GenerateFileSchemas(tt protoreflect.FileDescriptor) *orderedmap.Map[string,
 		}
 	}
 
+	sortedEnums := make([]protoreflect.EnumDescriptor, 0, len(enums))
+	for enum := range enums {
+		sortedEnums = append(sortedEnums, enum)
+	}
+	sort.Slice(sortedEnums, func(i, j int) bool {
+		return sortedEnums[i].FullName() < sortedEnums[j].FullName()
+	})
+
+	for _, enum := range sortedEnums {
+		id, schema := enumToSchema(enum)
+		schemas.Set(id, base.CreateSchemaProxy(schema))
+	}
+
 	return schemas
 }
 
-func collectMessages(fd protoreflect.FileDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
+func collectMessages(fd protoreflect.FileDescriptor, messages map[protoreflect.MessageDescriptor]struct{}, enums map[protoreflect.EnumDescriptor]struct{}) {
 	services := fd.Services()
 	for i := 0; i < services.Len(); i++ {
 		service := services.Get(i)
 		methods := service.Methods()
 		for j := 0; j < methods.Len(); j++ {
 			method := methods.Get(j)
-			collectMethodMessages(method, messages)
+			collectMethodMessages(method, messages, enums)
 		}
 	}
 }
 
-func collectMethodMessages(md protoreflect.MethodDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
-	collectMessage(md.Input(), messages)
-	collectMessage(md.Output(), messages)
+func collectMethodMessages(md protoreflect.MethodDescriptor, messages map[protoreflect.MessageDescriptor]struct{}, enums map[protoreflect.EnumDescriptor]struct{}) {
+	collectMessage(md.Input(), messages, enums)
+	collectMessage(md.Output(), messages, enums)
 }
 
-func collectMessage(md protoreflect.MessageDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
+func collectMessage(md protoreflect.MessageDescriptor, messages map[protoreflect.MessageDescriptor]struct{}, enums map[protoreflect.EnumDescriptor]struct{}) {
 	if md == nil {
 		return
 	}
@@ -83,18 +97,22 @@ func collectMessage(md protoreflect.MessageDescriptor, messages map[protoreflect
 
 	fields := md.Fields()
 	for i := 0; i < fields.Len(); i++ {
-		collectField(fields.Get(i), messages)
+		collectField(fields.Get(i), messages, enums)
 	}
 
 	nestedMessages := md.Messages()
 	for i := 0; i < nestedMessages.Len(); i++ {
-		collectMessage(nestedMessages.Get(i), messages)
+		collectMessage(nestedMessages.Get(i), messages, enums)
 	}
 }
 
-func collectField(fd protoreflect.FieldDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
+func collectField(fd protoreflect.FieldDescriptor, messages map[protoreflect.MessageDescriptor]struct{}, enums map[protoreflect.EnumDescriptor]struct{}) {
 	if fd == nil {
 		return
 	}
-	collectMessage(fd.Message(), messages)
+	if fd.Kind() == protoreflect.EnumKind {
+		enums[fd.Enum()] = struct{}{}
+		return
+	}
+	collectMessage(fd.Message(), messages, enums)
 }

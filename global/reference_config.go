@@ -51,13 +51,20 @@ type ReferenceConfig struct {
 	// TODO: rename protocol_config to protocol when publish 4.0.0.
 	ProtocolClientConfig *ClientProtocolConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
 
-	// TODO: Deprecated：use TripleConfig
-	// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0.
+	//
+	// Deprecated: use ClientProtocolConfig.TripleConfig.KeepAliveInterval or the
+	// "protocol_config/triple/keep-alive-interval" configuration key instead.
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
-	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+	// Deprecated: use ClientProtocolConfig.TripleConfig.KeepAliveTimeout or the
+	// "protocol_config/triple/keep-alive-timeout" configuration key instead.
+	KeepAliveTimeout string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 
 	// just for new triple non-IDL mode
 	// TODO: remove IDLMode when config package is removed
+	//
+	// Deprecated: this field will be removed in the next version. The IDL mode
+	// switch is no longer supported by dubbo-go.
 	IDLMode string
 }
 
@@ -333,12 +340,18 @@ func WithReference_MeshProviderPort(port int) ReferenceOption {
 	}
 }
 
+// WithReference_KeepAliveInterval configures the legacy keepalive interval.
+//
+// Deprecated: configure ClientProtocolConfig.TripleConfig.KeepAliveInterval instead.
 func WithReference_KeepAliveInterval(interval string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.KeepAliveInterval = interval
 	}
 }
 
+// WithReference_KeepAliveTimeout configures the legacy keepalive timeout.
+//
+// Deprecated: configure ClientProtocolConfig.TripleConfig.KeepAliveTimeout instead.
 func WithReference_KeepAliveTimeout(timeout string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.KeepAliveTimeout = timeout

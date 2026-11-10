@@ -20,6 +20,8 @@ package filter
 // TpsLimitStrategy is the interface which defines how to do the TPS limiting in method level.
 //
 // IsAllowable will return true if this invocation is not over limitation.
+//
+//go:generate go run go.uber.org/mock/mockgen@v0.6.0 -copyright_file ../.github/mockgen-copyright.txt -source tps_strategy.go -destination tps/strategy/mock.go -package strategy -exclude_interfaces TpsLimitStrategyCreator
 type TpsLimitStrategy interface {
 	IsAllowable() bool
 }

@@ -74,7 +74,7 @@ func NewExporter(config *ExporterConfig, customFunc func() (sdktrace.SpanExporte
 
 	exporter, err := customFunc()
 	if err != nil {
-		err = fmt.Errorf("failed to create %s exporter: %v", config.Exporter, err)
+		err = fmt.Errorf("failed to create %s exporter: %w", config.Exporter, err)
 		logger.Errorf("[OTel][Trace] failed to create %s exporter, err=%v", config.Exporter, err)
 		return
 	}

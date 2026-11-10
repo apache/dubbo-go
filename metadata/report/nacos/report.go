@@ -20,6 +20,7 @@ package nacos
 import (
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -30,14 +31,13 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -55,9 +55,10 @@ func init() {
 // nacosMetadataReport is the implementation
 // of MetadataReport based on nacos.
 type nacosMetadataReport struct {
-	client *nacosClient.NacosConfigClient
-	group  string
-	url    *common.URL
+	client          *nacosClient.NacosConfigClient
+	group           string
+	definitionGroup string
+	url             *common.URL
 }
 
 // URL returns the URL used to create this metadata report.
@@ -121,10 +122,10 @@ func (n *nacosMetadataReport) PublishAppMetadata(application, revision string, m
 func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
 	res, err := n.client.Client().PublishConfig(param)
 	if err != nil {
-		return perrors.WithMessage(err, "Could not publish the metadata")
+		return fmt.Errorf("could not publish the metadata: %w", err)
 	}
 	if !res {
-		return perrors.New("Publish the metadata failed.")
+		return errors.New("publish the metadata failed")
 	}
 	return nil
 }
@@ -233,7 +234,7 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 		return nil, err
 	}
 	if v == "" {
-		return nil, perrors.New("There is no service app mapping data.")
+		return nil, errors.New("there is no service app mapping data")
 	}
 	return report.DecodeServiceAppNames(v), nil
 }
@@ -252,7 +253,7 @@ func (n *nacosMetadataReport) UnPublishAppMetadata(application, revision string)
 		Group:  revision,
 	})
 	if err != nil {
-		return perrors.WithMessage(err, "Could not delete the metadata")
+		return fmt.Errorf("could not delete the metadata: %w", err)
 	}
 	// Delete legacy config (compatible with dubbo-go 3.1.x).
 	if _, err = n.client.Client().DeleteConfig(vo.ConfigParam{
@@ -278,7 +279,7 @@ func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.App
 			PageSize: pageSize,
 		})
 		if err != nil {
-			return nil, perrors.WithMessage(err, "Could not search configs for ListAppRevisions")
+			return nil, fmt.Errorf("could not search configs for ListAppRevisions: %w", err)
 		}
 		if configs == nil || len(configs.PageItems) == 0 {
 			break
@@ -307,13 +308,57 @@ func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.App
 	return result, nil
 }
 
+// PublishServiceDefinition stores one interface-level service definition,
+// implementing report.ServiceDefinitionPublisher.
+//
+// The logical dataId is byte-compatible with Java's
+// MetadataIdentifier.getUniqueKey. At the Nacos boundary, dataId and group get
+// the same special-character normalization as Java's
+// NacosConfigServiceWrapper. The definition group defaults to "dubbo", which
+// Dubbo Admin watches by default, and follows metadata-report.group when
+// configured. It is kept separate from n.group because the
+// application-metadata compatibility path still defaults that field to
+// DEFAULT_GROUP.
+//
+// PublishConfig overwrites in place, so republishing on every provider start is
+// idempotent: the key is derived only from the service identity, never from the
+// instance.
+func (n *nacosMetadataReport) PublishServiceDefinition(serviceInterface, version, group, application, definitionJSON string) error {
+	dataID := normalizeNacosMetadataKey(definition.DataID(serviceInterface, version, group, application))
+	definitionGroup := normalizeNacosMetadataKey(n.definitionGroup)
+	if err := n.storeMetadata(vo.ConfigParam{
+		DataId:  dataID,
+		Group:   definitionGroup,
+		Content: definitionJSON,
+	}); err != nil {
+		return fmt.Errorf("publishing service definition %s: %w", dataID, err)
+	}
+	logger.Debugf("[Metadata][Nacos] published service definition, dataId=%s group=%s",
+		dataID, definitionGroup)
+	return nil
+}
+
+// normalizeNacosMetadataKey mirrors Java's NacosConfigServiceWrapper boundary:
+// Nacos config keys cannot carry the inner-class marker or a path separator.
+// Keep definition.DataID backend-neutral and adapt only the values sent to
+// Nacos, including a configured metadata group.
+func normalizeNacosMetadataKey(value string) string {
+	value = strings.ReplaceAll(value, "$", "___")
+	return strings.ReplaceAll(value, "/", "-")
+}
+
 type nacosMetadataReportFactory struct{}
+
+func serviceDefinitionGroup(url *common.URL) string {
+	return url.GetParam(constant.MetadataReportGroupKey, definition.DefaultMetadataGroup)
+}
 
 // CreateMetadataReport creates the nacos-based metadata report implementation.
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.MetadataReportNamespaceKey, ""))
 	url.SetParam(constant.TimeoutKey, url.GetParam(constant.TimeoutKey, constant.DefaultRegTimeout))
 	group := url.GetParam(constant.MetadataReportGroupKey, constant.ServiceDiscoveryDefaultGroup)
+	definitionGroup := serviceDefinitionGroup(url)
 	url.SetParam(constant.NacosGroupKey, group)
 	url.SetParam(constant.NacosUsername, url.Username)
 	url.SetParam(constant.NacosPassword, url.Password)
@@ -322,5 +367,10 @@ func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) repor
 		logger.Errorf("[Metadata][Nacos] could not create nacos metadata report, url=%s", url.String())
 		return nil
 	}
-	return &nacosMetadataReport{client: client, group: group, url: url}
+	return &nacosMetadataReport{
+		client:          client,
+		group:           group,
+		definitionGroup: definitionGroup,
+		url:             url,
+	}
 }

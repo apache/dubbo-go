@@ -101,12 +101,14 @@ func GenTripleFile(genFile *protogen.GeneratedFile, triple TripleGo) error {
 }
 
 type TripleGo struct {
-	Source       string
-	Package      string
-	FileName     string
-	ProtoPackage string
-	Services     []Service
-	IsStream     bool
+	Source           string
+	Package          string
+	FileName         string
+	ProtoPackage     string
+	GeneratorVersion string
+	ProtocVersion    string
+	Services         []Service
+	IsStream         bool
 }
 
 type Service struct {

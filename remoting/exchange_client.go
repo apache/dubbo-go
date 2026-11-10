@@ -18,20 +18,21 @@
 package remoting
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	uatomic "go.uber.org/atomic"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -58,21 +59,26 @@ type Client interface {
 	IsAvailable() bool
 }
 
+type contextRequester interface {
+	RequestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error
+}
+
 // ExchangeClient is abstraction level. it is like facade.
 type ExchangeClient struct {
-	ConnectTimeout time.Duration  // timeout for connecting server
-	address        string         // server address for dialing. The format: ip:port
-	client         Client         // dealing with the transport
-	initState      uatomic.Int32  // initialization state
-	initCond       *sync.Cond     // signals waiters when init completes (success or failure)
-	initErr        error          // stored init error for waiters to observe (guarded by initCond.L)
-	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
+	ConnectTimeout time.Duration // timeout for connecting server
+	address        string        // server address for dialing. The format: ip:port
+	client         Client        // dealing with the transport
+	initState      atomic.Int32  // initialization state
+	initCond       *sync.Cond    // signals waiters when init completes (success or failure)
+	initErr        error         // stored init error for waiters to observe (guarded by initCond.L)
+	activeNum      atomic.Uint32 // the number of service using the exchangeClient
 }
 
 const (
 	initUninitialized int32 = iota
 	initInitializing
 	initInitialized
+	initClosed
 )
 
 // NewExchangeClient returns a ExchangeClient.
@@ -92,13 +98,13 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 	return exchangeClient
 }
 
-func (cl *ExchangeClient) doInit(url *common.URL) error {
+func (cl *ExchangeClient) doInit(url *common.URL) (initErr error) {
 	// Fast path: already initialized.
 	if cl.initState.Load() == initInitialized {
 		return nil
 	}
 	// Try to become the initializer.
-	if !cl.initState.CAS(initUninitialized, initInitializing) {
+	if !cl.initState.CompareAndSwap(initUninitialized, initInitializing) {
 		// Another goroutine is initializing. Wait for it to complete.
 		cl.initCond.L.Lock()
 		for cl.initState.Load() == initInitializing {
@@ -109,19 +115,23 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 		return err
 	}
 	// This goroutine won the CAS — perform the actual initialization.
-	var initErr error
 	defer func() {
 		panicValue := recover()
 		if panicValue != nil {
 			initErr = fmt.Errorf("exchange client init panic: %v", panicValue)
 		}
 		cl.initCond.L.Lock()
-		cl.initErr = initErr
-		if initErr != nil {
-			// Reset to uninitialized so future calls can retry.
-			cl.initState.Store(initUninitialized)
+		if cl.initState.Load() == initClosed {
+			// An in-flight Connect must not revive a closed client.
+			initErr = base.ErrClientClosed
 		} else {
-			cl.initState.Store(initInitialized)
+			cl.initErr = initErr
+			if initErr != nil {
+				// Reset to uninitialized so future calls can retry.
+				cl.initState.Store(initUninitialized)
+			} else {
+				cl.initState.Store(initInitialized)
+			}
 		}
 		cl.initCond.L.Unlock()
 		cl.initCond.Broadcast()
@@ -148,7 +158,7 @@ func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
 
 // DecreaseActiveNumber decrease number of service using client.
 func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
-	return client.activeNum.Sub(1)
+	return client.activeNum.Add(^uint32(0))
 }
 
 // GetActiveNumber get number of service using client.
@@ -159,6 +169,19 @@ func (client *ExchangeClient) GetActiveNumber() uint32 {
 // Request means two way request.
 func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.URL, timeout time.Duration,
 	res *result.RPCResult) error {
+	return client.RequestContext(context.Background(), invocation, url, timeout, res)
+}
+
+// RequestContext sends a two-way request and stops waiting when ctx is canceled.
+func (client *ExchangeClient) RequestContext(ctx context.Context, invocation *base.Invocation, url *common.URL, timeout time.Duration,
+	res *result.RPCResult) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		res.Err = err
+		return err
+	}
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -168,11 +191,12 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 	request.TwoWay = true
 
 	rsp := NewPendingResponse(request.ID)
+	rsp.Observation = rpcerror.ClaimObservation(ctx, *invocation)
 	rsp.response = NewResponse(request.ID, "2.0.2")
 	rsp.Reply = (*invocation).Reply()
 	AddPendingResponse(rsp)
 
-	err := client.client.Request(request, timeout, rsp)
+	err := client.requestContext(ctx, request, timeout, rsp)
 	// request error
 	if err != nil {
 		RemovePendingResponse(SequenceType(request.ID))
@@ -190,9 +214,29 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 	return nil
 }
 
+func (client *ExchangeClient) requestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error {
+	if requester, ok := client.client.(contextRequester); ok {
+		return requester.RequestContext(ctx, request, timeout, response)
+	}
+	return client.client.Request(request, timeout, response)
+}
+
 // AsyncRequest async two way request.
 func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *result.RPCResult) error {
+	return client.AsyncRequestContext(context.Background(), invocation, url, timeout, callback, result)
+}
+
+// AsyncRequestContext sends an asynchronous two-way request with ctx.
+func (client *ExchangeClient) AsyncRequestContext(ctx context.Context, invocation *base.Invocation, url *common.URL, timeout time.Duration,
+	callback common.AsyncCallback, result *result.RPCResult) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		result.Err = err
+		return err
+	}
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -202,23 +246,38 @@ func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *com
 	request.TwoWay = true
 
 	rsp := NewPendingResponse(request.ID)
+	rsp.Observation = rpcerror.ClaimObservation(ctx, *invocation)
 	rsp.response = NewResponse(request.ID, "2.0.2")
 	rsp.Callback = callback
 	rsp.Reply = (*invocation).Reply()
+	if callback != nil {
+		rsp.Observation.BeginAsync(ctx, timeout)
+	}
 	AddPendingResponse(rsp)
 
-	err := client.client.Request(request, timeout, rsp)
+	err := client.requestContext(ctx, request, timeout, rsp)
 	if err != nil {
 		RemovePendingResponse(SequenceType(request.ID))
 		result.Err = err
 		return err
 	}
-	result.Rest = rsp.response
+	result.Rest = rsp.getResponse()
 	return nil
 }
 
 // Send sends oneway request.
 func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL, timeout time.Duration) error {
+	return client.SendContext(context.Background(), invocation, url, timeout)
+}
+
+// SendContext sends a one-way request with ctx.
+func (client *ExchangeClient) SendContext(ctx context.Context, invocation *base.Invocation, url *common.URL, timeout time.Duration) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -230,7 +289,7 @@ func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL,
 	rsp := NewPendingResponse(request.ID)
 	rsp.response = NewResponse(request.ID, "2.0.2")
 
-	err := client.client.Request(request, timeout, rsp)
+	err := client.requestContext(ctx, request, timeout, rsp)
 	if err != nil {
 		return err
 	}
@@ -239,12 +298,12 @@ func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL,
 
 // Close close the client.
 func (client *ExchangeClient) Close() {
-	client.client.Close()
 	client.initCond.L.Lock()
-	client.initState.Store(initUninitialized)
-	client.initErr = nil
+	client.initState.Store(initClosed)
+	client.initErr = base.ErrClientClosed
 	client.initCond.L.Unlock()
 	client.initCond.Broadcast()
+	client.client.Close()
 }
 
 // IsAvailable to check if the underlying network client is available yet.

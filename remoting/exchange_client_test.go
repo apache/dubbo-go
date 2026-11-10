@@ -18,6 +18,7 @@
 package remoting
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -37,12 +38,14 @@ import (
 )
 
 type mockClient struct {
-	mu          sync.Mutex
-	available   bool
-	connectErr  error
-	connectFunc func() error
-	connCount   int
-	requestErr  error
+	mu                    sync.Mutex
+	available             bool
+	connectErr            error
+	connCount             int
+	requestErr            error
+	contextRequestStarted chan struct{}
+	blockContextRequest   bool
+	connectFunc           func() error
 }
 
 func (m *mockClient) SetExchangeClient(client *ExchangeClient) {}
@@ -53,6 +56,18 @@ func (m *mockClient) Request(request *Request, timeout time.Duration, response *
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.requestErr
+}
+
+func (m *mockClient) RequestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error {
+	if m.contextRequestStarted != nil {
+		close(m.contextRequestStarted)
+		m.contextRequestStarted = nil
+	}
+	if m.blockContextRequest {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	return m.Request(request, timeout, response)
 }
 
 func (m *mockClient) Connect(url *common.URL) error {
@@ -134,7 +149,8 @@ func TestExchangeClientClose(t *testing.T) {
 	m := &mockClient{available: true}
 	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
 	ec.Close()
-	assert.Equal(t, initUninitialized, ec.initState.Load(), "client should be uninitialized after Close")
+	require.ErrorIs(t, ec.doInit(testURL()), base.ErrClientClosed)
+	assert.Zero(t, m.connCount, "a closed client must not connect")
 }
 
 func TestExchangeClientIsAvailable(t *testing.T) {
@@ -167,7 +183,7 @@ func TestExchangeClientConcurrentDoInit(t *testing.T) {
 
 	assert.Len(t, errCh, goroutines, "all doInit calls should finish")
 	for err := range errCh {
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	m.mu.Lock()
@@ -221,6 +237,52 @@ func TestExchangeClientConcurrentDoInitPropagatesError(t *testing.T) {
 	}
 	assert.Equal(t, goroutines, errorCount, "all goroutines should receive the init error")
 	assert.Equal(t, initUninitialized, ec.initState.Load(), "client should be uninitialized after failure")
+}
+
+func TestExchangeClientCloseDuringInit(t *testing.T) {
+	connectStarted := make(chan struct{})
+	releaseConnect := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(releaseConnect) }) }
+	defer release()
+
+	m := &mockClient{connectFunc: func() error {
+		close(connectStarted)
+		<-releaseConnect
+		return nil
+	}}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+	waiting := make(chan struct{})
+	ec.initCond = sync.NewCond(&initWaitMutex{waiting: waiting})
+
+	initErr := make(chan error, 1)
+	initDone := make(chan struct{})
+	go func() {
+		defer close(initDone)
+		initErr <- ec.doInit(testURL())
+	}()
+	waitForInitSignal(t, connectStarted, "Connect did not start")
+
+	waiterErr := make(chan error, 1)
+	waiterDone := make(chan struct{})
+	go func() {
+		defer close(waiterDone)
+		waiterErr <- ec.doInit(testURL())
+	}()
+	waitForInitSignal(t, waiting, "concurrent caller did not wait for initialization")
+
+	ec.Close()
+	waitForInitSignal(t, waiterDone, "Close did not release the initialization waiter")
+	waiterResult := <-waiterErr
+	ec.Close()
+	release()
+	waitForInitSignal(t, initDone, "initializer remained blocked after Connect returned")
+	require.ErrorIs(t, waiterResult, base.ErrClientClosed)
+	require.ErrorIs(t, <-initErr, base.ErrClientClosed, "late Connect success must not undo Close")
+	require.ErrorIs(t, ec.doInit(testURL()), base.ErrClientClosed)
+	m.mu.Lock()
+	assert.Equal(t, 1, m.connCount, "a closed client must not reconnect")
+	m.mu.Unlock()
 }
 
 func TestExchangeClientDoInitPanicReleasesWaiters(t *testing.T) {
@@ -326,6 +388,41 @@ func TestExchangeClientAsyncRequestErrorCleanup(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, err, res.Err)
 	assert.Equal(t, before, countPendingResponses(), "pendingResponses leaked on AsyncRequest error path")
+}
+
+func TestExchangeClientRequestContextCancellationCleanup(t *testing.T) {
+	requestStarted := make(chan struct{})
+	m := &mockClient{
+		available:             true,
+		contextRequestStarted: requestStarted,
+		blockContextRequest:   true,
+	}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	before := countPendingResponses()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	res := &result.RPCResult{}
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- ec.RequestContext(ctx, newTestInvocation(), testURL(), time.Minute, res)
+	}()
+
+	select {
+	case <-requestStarted:
+	case <-time.After(time.Second):
+		t.Fatal("request was not sent to the transport")
+	}
+	cancel()
+
+	select {
+	case err := <-errCh:
+		require.ErrorIs(t, err, context.Canceled)
+		require.ErrorIs(t, res.Err, context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("request did not stop after context cancellation")
+	}
+	assert.Equal(t, before, countPendingResponses(), "pendingResponses leaked after context cancellation")
 }
 
 // countPendingResponses returns the number of entries currently held in the global

@@ -18,9 +18,12 @@
 package nacos
 
 import (
+	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,8 +32,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -43,6 +44,77 @@ var (
 	newNacosConfigClient = nacosClient.NewNacosConfigClient
 )
 
+// credentialIDs maps each distinct credential set to a small opaque id used
+// in pool keys. The credentials themselves stay in this process-local map and
+// never become part of the key, which may end up in logs.
+var (
+	credentialIDsMu sync.RWMutex
+	credentialIDs   = make(map[string]string)
+)
+
+func credentialID(url *common.URL) string {
+	tuple := strings.Join([]string{
+		url.GetParam(constant.NacosUsername, ""),
+		url.GetParam(constant.NacosPassword, ""),
+		url.GetParam(constant.NacosAccessKey, ""),
+		url.GetParam(constant.NacosSecretKey, ""),
+	}, "\n")
+
+	// Try read lock first for the common case (credential already exists)
+	credentialIDsMu.RLock()
+	id, ok := credentialIDs[tuple]
+	credentialIDsMu.RUnlock()
+	if ok {
+		return id
+	}
+
+	// Need to create new credential ID, acquire write lock
+	credentialIDsMu.Lock()
+	defer credentialIDsMu.Unlock()
+	// Double-check in case another goroutine created it while we waited
+	id, ok = credentialIDs[tuple]
+	if !ok {
+		id = "cred" + strconv.Itoa(len(credentialIDs))
+		credentialIDs[tuple] = id
+	}
+	return id
+}
+
+// nacosClientPoolKey derives the gost client-pool key from the fields that
+// distinguish one nacos connection from another: server (endpoint/address),
+// path, namespace and the full credential set. Components pointing at the same
+// cluster (registry, config-center, metadata-report) resolve to the same key
+// and share one SDK client session instead of each opening its own.
+// Role-scoped client names must not be used as the key — they would defeat
+// the sharing.
+//
+// Note on url.Location with multiple addresses: url.Location may contain
+// multiple comma-separated addresses (e.g., "host1:8848,host2:8848") which
+// are parsed into separate ServerConfig entries. The full Location string
+// participates in the pool key, so different orderings or different server
+// lists will create separate pool keys. This is intentional: the order and
+// composition of servers affects client behavior, and configurations should
+// be consistent across components that intend to share a client.
+func nacosClientPoolKey(kind string, url *common.URL) string {
+	// GetNacosConfig ignores url.Location when an endpoint is set; mirror
+	// that here so URLs resolving to the same server set share one client.
+	server := url.GetParam(constant.NacosEndpoint, "")
+	if server == "" {
+		server = url.Location
+	}
+	// Clients authenticated differently must never collapse into one pool
+	// entry, so the full credential set participates via its opaque id.
+	// Include url.Path so that nacos://host:port/pathA and nacos://host:port/pathB
+	// create separate clients (path becomes ContextPath in ServerConfig).
+	return strings.Join([]string{
+		"dubbo-nacos", kind,
+		server,
+		url.Path,
+		url.GetParam(constant.NacosNamespaceID, ""),
+		credentialID(url),
+	}, "|")
+}
+
 // NewNacosConfigClientByUrl read the config from url and build an instance
 func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
 	sc, cc, err := GetNacosConfig(url)
@@ -51,20 +123,20 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 	}
 	clientName := url.GetParam(constant.ClientNameKey, "")
 	if len(clientName) <= 0 {
-		return nil, perrors.New("nacos client name must set")
+		return nil, errors.New("nacos client name must set")
 	}
-	return newNacosConfigClient(clientName, true, sc, cc)
+	return newNacosConfigClient(nacosClientPoolKey("config", url), true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config
 func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstant.ClientConfig, error) {
 	if url == nil {
-		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, perrors.New("url is empty!")
+		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, errors.New("url is empty")
 	}
 
 	if len(url.Location) == 0 {
 		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-			perrors.New("url.location is empty!")
+			errors.New("url.location is empty")
 	}
 
 	var serverConfigs []nacosConstant.ServerConfig
@@ -76,13 +148,13 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			ip, portStr, err := net.SplitHostPort(addr)
 			if err != nil {
 				return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-					perrors.WithMessagef(err, "split [%s] ", addr)
+					fmt.Errorf("split [%s] : %w", addr, err)
 			}
 			portContextPath := strings.Split(portStr, constant.PathSeparator)
 			port, err := strconv.Atoi(portContextPath[0])
 			if err != nil {
 				return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-					perrors.WithMessagef(err, "port [%s] ", portContextPath[0])
+					fmt.Errorf("port [%s] : %w", portContextPath[0], err)
 			}
 			var contextPath string
 			if len(portContextPath) > 1 {
@@ -127,12 +199,8 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 	}
 	clientName := url.GetParam(constant.ClientNameKey, "")
 	if len(clientName) <= 0 {
-		return nil, perrors.New("nacos client name must set")
+		return nil, errors.New("nacos client name must set")
 	}
 	logger.Infof("[Remoting][Nacos] new nacos client, config=%+v", scs)
-	namespaceID := url.GetParam(constant.NacosNamespaceID, "")
-	if len(namespaceID) > 0 {
-		clientName += namespaceID
-	}
-	return newNacosNamingClient(clientName, true, scs, cc)
+	return newNacosNamingClient(nacosClientPoolKey("naming", url), true, scs, cc)
 }

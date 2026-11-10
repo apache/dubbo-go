@@ -24,6 +24,7 @@ import (
 	"maps"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -51,6 +52,10 @@ import (
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
+
+// defaultServerCompressMinBytes is the serialized response size below which a
+// server skips compression.
+const defaultServerCompressMinBytes = 512
 
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
 // provide functionality.
@@ -118,10 +123,6 @@ func resolveServerTransport(url *common.URL) (*transportSettings, error) {
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
 		callProtocol = constant.CallHTTP2AndHTTP3
 	}
-
-	// todo: support opentracing interceptor
-
-	// TODO: move tls config to handleService
 
 	rawTLSConfig, err := resolveRawTLSConfig(url)
 	if err != nil {
@@ -236,19 +237,17 @@ func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
 		return
 	}
 	s.transportStarted = true
-
-	go func() {
-		if runErr := s.triServer.Run(callProtocol, tlsConf); runErr != nil {
-			logger.Errorf("[Triple][Server] server serve failed, err=%v", runErr)
-		}
-	}()
+	// Start snapshots the startup epoch synchronously before the transport
+	// goroutine runs, so run's checkpoint detects a Stop that completes
+	// before the goroutine executes.
+	s.triServer.Start(callProtocol, tlsConf)
 }
 
-func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, hanOpts []tri.HandlerOption) {
+func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, handlerOpts []tri.HandlerOption) {
 	url := invoker.GetURL()
 
 	// IDLMode means that this will only be set when
-	// the new triple is started in non-IDL mode.
+	// The new triple is started in non-IDL mode.
 	// TODO: remove IDLMode when config package is removed
 	IDLMode := url.GetParam(constant.IDLMode, "")
 
@@ -258,7 +257,7 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 	}
 
 	intfName := url.Interface()
-	//OpenAPI group
+	// OpenAPI group
 	var openapiGroup string
 	if g, ok := url.GetAttribute(constant.OpenAPIMetaKeyOpenAPIGroup); ok {
 		if gs, ok := g.(string); ok && gs != "" {
@@ -267,16 +266,23 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 	}
 
 	if info != nil {
-		// new triple idl mode
-		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
+		// New triple IDL mode. A ServiceInfo describes only the methods the
+		// service declares, so the generic entry point is registered explicitly:
+		// a caller without generated stubs reaches a service through $invoke,
+		// exactly as it does for a non-IDL export. A service that declares
+		// $invoke itself keeps its own handler.
+		s.handleServiceWithInfo(intfName, invoker, info, handlerOpts...)
+		if !declaresGenericMethod(info.Methods) {
+			s.registerMethodHandler(joinProcedure(intfName, constant.Generic), buildGenericMethodInfo(), invoker, handlerOpts...)
+		}
 		s.saveServiceInfo(intfName, info, openapiGroup, url.Group(), url.Version())
 	} else if IDLMode == constant.NONIDL {
-		// new triple non-idl mode
+		// New triple non-IDL mode
 		reflectInfo := createServiceInfoWithReflection(service)
-		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
+		s.handleServiceWithInfo(intfName, invoker, reflectInfo, handlerOpts...)
 		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, url.Group(), url.Version())
 	} else {
-		s.compatHandleService(url, intfName, url.Group(), url.Version(), hanOpts...)
+		s.compatHandleService(url, intfName, url.Group(), url.Version(), handlerOpts...)
 	}
 }
 
@@ -293,12 +299,12 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 func (s *Server) refreshService(invoker base.Invoker, info *common.ServiceInfo) error {
 	url := invoker.GetURL()
 
-	hanOpts, err := resolveHandlerOptions(url)
+	handlerOpts, err := resolveHandlerOptions(url)
 	if err != nil {
 		return err
 	}
 
-	s.registerServiceHandlers(invoker, info, hanOpts)
+	s.registerServiceHandlers(invoker, info, handlerOpts)
 	return nil
 }
 
@@ -380,34 +386,82 @@ func resolveHandlerOptions(url *common.URL) ([]tri.HandlerOption, error) {
 		return nil, err
 	}
 
-	hanOpts := getHanOpts(url, tripleConf)
-	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
-	return hanOpts, nil
+	sendMaxBytes := resolveServerSendMaxBytes(url, tripleConf)
+	handlerOpts := buildServerHandlerOptions(url, tripleConf, sendMaxBytes)
+
+	minBytes := defaultServerCompressMinBytes
+	source := "default"
+	if tripleConf != nil && tripleConf.ServerCompressMinBytes != nil {
+		minBytes = *tripleConf.ServerCompressMinBytes
+		source = "server-compress-min-bytes"
+	}
+	if raw := url.GetParam(ServerCompressMinBytesParam, ""); raw != "" {
+		parsed, parseErr := strconv.Atoi(raw)
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid service parameter %s %q: expected a non-negative integer", ServerCompressMinBytesParam, raw)
+		}
+		minBytes = parsed
+		source = "service parameter " + ServerCompressMinBytesParam
+	}
+	if minBytes < 0 {
+		return nil, fmt.Errorf("invalid %s %d: expected a non-negative integer", source, minBytes)
+	}
+	effectiveMinBytes := serverCompressMinBytes(minBytes, sendMaxBytes)
+	if effectiveMinBytes != minBytes {
+		logger.Debugf("[Triple][Server] gzip compression minimum reduced from %d to %d for sendMaxBytes=%d", minBytes, effectiveMinBytes, sendMaxBytes)
+	}
+	handlerOpts = append(handlerOpts, tri.WithCompressMinBytes(effectiveMinBytes))
+	handlerOpts = append(handlerOpts, tri.WithExpectedCodecName(serialization))
+	return handlerOpts, nil
 }
 
-func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri.HandlerOption) {
+// serverCompressMinBytes caps the threshold at sendMaxBytes+1 so the send limit
+// is checked against the compressed size instead of the raw size. Without the
+// cap a threshold above the send limit would skip compression, and the raw size
+// would then be rejected.
+func serverCompressMinBytes(minBytes, sendMaxBytes int) int {
+	if sendMaxBytes > 0 && minBytes > sendMaxBytes {
+		return sendMaxBytes + 1
+	}
+	return minBytes
+}
+
+// resolveServerSendMaxBytes returns the outgoing message limit. The URL
+// parameter provides the base value and a TripleConfig value overrides it when
+// it parses to a non-zero size; unparsable or zero values are ignored.
+//
+// Compatibility: reads the legacy URL send-size parameter.
+// TODO: remove MaxServerSendMsgSize in version 4.0.0.
+func resolveServerSendMaxBytes(url *common.URL, tripleConf *global.TripleConfig) int {
+	maxBytes := constant.DefaultMaxServerSendMsgSize
+	if size, err := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == nil && size != 0 {
+		maxBytes = int(size)
+	}
+	if tripleConf != nil && tripleConf.MaxServerSendMsgSize != "" {
+		if size, err := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == nil && size != 0 {
+			maxBytes = int(size)
+		}
+	}
+	return maxBytes
+}
+
+func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig, sendMaxBytes int) (handlerOpts []tri.HandlerOption) {
 	group := url.GetParam(constant.GroupKey, "")
 	version := url.GetParam(constant.VersionKey, "")
-	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
+	handlerOpts = append(handlerOpts, tri.WithGroup(group), tri.WithVersion(version))
 
-	// Deprecated：use TripleConfig
-	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+	// Compatibility: read the legacy URL receive-size parameter.
+	// TODO: remove MaxServerRecvMsgSize in version 4.0.0.
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
 		maxServerRecvMsgSize = int(recvMsgSize)
 	}
-	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
+	handlerOpts = append(handlerOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
-	// Deprecated：use TripleConfig
-	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
-	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
-	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); convertErr == nil && sendMsgSize != 0 {
-		maxServerSendMsgSize = int(sendMsgSize)
-	}
-	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
+	handlerOpts = append(handlerOpts, tri.WithSendMaxBytes(sendMaxBytes))
 
 	if tripleConf == nil {
-		return hanOpts
+		return handlerOpts
 	}
 
 	if tripleConf.MaxServerRecvMsgSize != "" {
@@ -415,22 +469,14 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
 			maxServerRecvMsgSize = int(recvMsgSize)
 		}
-		hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
+		handlerOpts = append(handlerOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 	}
 
-	if tripleConf.MaxServerSendMsgSize != "" {
-		logger.Debugf("[Triple][Server] MaxServerSendMsgSize=%v", tripleConf.MaxServerSendMsgSize)
-		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); convertErr == nil && sendMsgSize != 0 {
-			maxServerSendMsgSize = int(sendMsgSize)
-		}
-		hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
-	}
-
-	// todo:// open tracing
+	// TODO: support OpenTracing
 
 	// CORS configuration
 	if tripleConf.Cors != nil && len(tripleConf.Cors.AllowOrigins) > 0 {
-		hanOpts = append(hanOpts, tri.WithCORS(&tri.CorsConfig{
+		handlerOpts = append(handlerOpts, tri.WithCORS(&tri.CorsConfig{
 			AllowOrigins:     tripleConf.Cors.AllowOrigins,
 			AllowMethods:     tripleConf.Cors.AllowMethods,
 			AllowHeaders:     tripleConf.Cors.AllowHeaders,
@@ -440,10 +486,10 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 		}))
 	}
 
-	return hanOpts
+	return handlerOpts
 }
 
-// *Important*, this function is responsible for being compatible with old triple-gen code and non-idl code
+// *Important*, this function is responsible for being compatible with old triple-gen code and non-IDL code
 // compatHandleService registers handler based on ServiceConfig and provider service.
 func (s *Server) compatHandleService(url *common.URL, interfaceName string, group, version string, opts ...tri.HandlerOption) {
 	var providerServices map[string]*global.ServiceConfig
@@ -483,7 +529,7 @@ func (s *Server) compatHandleService(url *common.URL, interfaceName string, grou
 			continue
 		}
 		s.compatSaveServiceInfo(ds.XXX_ServiceDesc())
-		// inject invoker, it has all invocation logics
+		// Inject invoker, it has all invocation logics
 		ds.XXX_SetProxyImpl(invoker)
 		s.compatRegisterHandler(interfaceName, ds, opts...)
 	}
@@ -491,18 +537,20 @@ func (s *Server) compatHandleService(url *common.URL, interfaceName string, grou
 
 func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
 	desc := svc.XXX_ServiceDesc()
-	// init unary handlers
+	// Register compat unary handlers from generated descriptors.
 	for _, method := range desc.Methods {
-		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
-		// error could be ignored because base is empty string
+		// Please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
+		// Error could be ignored because base is empty string
 		procedure := joinProcedure(interfaceName, method.MethodName)
-		_ = s.triServer.RegisterCompatUnaryHandler(procedure, method.MethodName, svc, tri.MethodHandler(method.Handler), opts...)
+		if err := s.triServer.RegisterCompatUnaryHandler(procedure, method.MethodName, svc, tri.MethodHandler(method.Handler), opts...); err != nil {
+			logger.Errorf("[Triple][Server] register compat unary handler failed, procedure=%s, err=%v", procedure, err)
+		}
 	}
 
-	// init stream handlers
+	// Register compat stream handlers from generated descriptors.
 	for _, stream := range desc.Streams {
-		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
-		// error could be ignored because base is empty string
+		// Please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
+		// Error could be ignored because base is empty string
 		procedure := joinProcedure(interfaceName, stream.StreamName)
 		var typ tri.StreamType
 		switch {
@@ -513,7 +561,9 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 		case stream.ServerStreams:
 			typ = tri.StreamTypeServer
 		}
-		_ = s.triServer.RegisterCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...)
+		if err := s.triServer.RegisterCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...); err != nil {
+			logger.Errorf("[Triple][Server] register compat stream handler failed, procedure=%s, err=%v", procedure, err)
+		}
 	}
 }
 
@@ -526,6 +576,18 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoke
 		procedure := joinProcedure(interfaceName, method.Name)
 		s.registerMethodHandler(procedure, m, invoker, opts...)
 	}
+}
+
+// declaresGenericMethod reports whether a ServiceInfo already declares the
+// generic entry point. Such a service owns that handler and must not have it
+// replaced by the synthesized one.
+func declaresGenericMethod(methods []common.MethodInfo) bool {
+	for _, method := range methods {
+		if method.Name == constant.Generic {
+			return true
+		}
+	}
+	return false
 }
 
 // registerMethodHandler registers a single method handler for the given procedure path.
@@ -543,33 +605,36 @@ func (s *Server) registerMethodHandler(procedure string, m common.MethodInfo, in
 }
 
 func (s *Server) registerUnaryMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterUnaryHandler(
+	err := s.triServer.RegisterUnaryHandler(
 		procedure,
 		m.ReqInitFunc,
 		func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
 			args := extractUnaryInvocationArgs(req.Msg)
 			attachments := generateAttachments(req.Header())
-			// inject attachments
+			// Make incoming attachments available to invocation filters and user code.
 			ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 			invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 			res := invoker.Invoke(ctx, invo)
-			// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
-			// please refer to server/InfoInvoker.Invoke()
+			// TODO(DMwangnima): modify InfoInvoker to get a unified processing logic
+			// Please refer to server/InfoInvoker.Invoke()
 			triResp := wrapTripleResponse(res.Result())
 			appendTripleOutgoingAttachments(ctx, res.Attachments())
 			return triResp, res.Error()
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register unary handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func (s *Server) registerClientStreamMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterClientStreamHandler(
+	err := s.triServer.RegisterClientStreamHandler(
 		procedure,
 		func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
 			args := []any{m.StreamInitFunc(stream)}
 			attachments := generateAttachments(stream.RequestHeader())
-			// inject attachments
+			// Make incoming attachments available to invocation filters and user code.
 			ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 			invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 			res := invoker.Invoke(ctx, invo)
@@ -577,16 +642,19 @@ func (s *Server) registerClientStreamMethodHandler(procedure string, m common.Me
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register client stream handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func (s *Server) registerServerStreamMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterServerStreamHandler(
+	err := s.triServer.RegisterServerStreamHandler(
 		procedure,
 		m.ReqInitFunc,
 		func(ctx context.Context, req *tri.Request, stream *tri.ServerStream) error {
 			args := []any{req.Msg, m.StreamInitFunc(stream)}
 			attachments := generateAttachments(req.Header())
-			// inject attachments
+			// Make incoming attachments available to invocation filters and user code.
 			ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 			invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 			res := invoker.Invoke(ctx, invo)
@@ -594,15 +662,18 @@ func (s *Server) registerServerStreamMethodHandler(procedure string, m common.Me
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register server stream handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func (s *Server) registerBidiStreamMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterBidiStreamHandler(
+	err := s.triServer.RegisterBidiStreamHandler(
 		procedure,
 		func(ctx context.Context, stream *tri.BidiStream) error {
 			args := []any{m.StreamInitFunc(stream)}
 			attachments := generateAttachments(stream.RequestHeader())
-			// inject attachments
+			// Make incoming attachments available to invocation filters and user code.
 			ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 			invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 			res := invoker.Invoke(ctx, invo)
@@ -610,20 +681,23 @@ func (s *Server) registerBidiStreamMethodHandler(procedure string, m common.Meth
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register bidi stream handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func extractUnaryInvocationArgs(msg any) []any {
 	if argsRaw, ok := msg.([]any); ok {
 		args := make([]any, 0, len(argsRaw))
-		// non-idl mode, req.Msg consists of many arguments
+		// Non-IDL mode, req.Msg consists of many arguments
 		for _, argRaw := range argsRaw {
-			// refer to createServiceInfoWithReflection, in ReqInitFunc, argRaw is a pointer to real arg.
-			// so we have to invoke Elem to get the real arg.
+			// Refer to createServiceInfoWithReflection, in ReqInitFunc, argRaw is a pointer to real arg.
+			// So we have to invoke Elem to get the real arg.
 			args = append(args, reflect.ValueOf(argRaw).Elem().Interface())
 		}
 		return args
 	}
-	// triple idl mode and old triple idl mode
+	// Triple IDL mode and old triple IDL mode
 	return []any{msg}
 }
 
@@ -631,7 +705,7 @@ func wrapTripleResponse(result any) *tri.Response {
 	if existingResp, ok := result.(*tri.Response); ok {
 		return existingResp
 	}
-	// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
+	// Please refer to proxy/proxy_factory/ProxyInvoker.Invoke
 	return tri.NewResponse([]any{result})
 }
 
@@ -673,7 +747,7 @@ func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo,
 	ret.Metadata = info
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// todo(DMwangnima): using interfaceName is not enough, we need to consider group and version
+	// TODO(DMwangnima): using interfaceName is not enough, we need to consider group and version
 	s.services[interfaceName] = ret
 
 	if s.triServer != nil {
@@ -729,7 +803,7 @@ func (s *Server) GracefulStop() {
 	}
 }
 
-// createServiceInfoWithReflection is for non-idl scenario.
+// createServiceInfoWithReflection is for non-IDL scenario.
 // It makes use of reflection to extract method parameters information and create ServiceInfo.
 // As a result, Server could use this ServiceInfo to register.
 func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo {
@@ -761,7 +835,7 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 // buildMethodInfoWithReflection creates MethodInfo for a single method using reflection.
 func buildMethodInfoWithReflection(methodType reflect.Method) *common.MethodInfo {
 	paramsNum := methodType.Type.NumIn()
-	// the first param is receiver itself, the second param is ctx
+	// The first param is receiver itself, the second param is ctx
 	if paramsNum < 2 {
 		logger.Fatalf("[Triple][Server] triple does not support %s method that does not have any parameter", methodType.Name)
 		return nil
@@ -775,7 +849,7 @@ func buildMethodInfoWithReflection(methodType reflect.Method) *common.MethodInfo
 
 	// Extract return types for OpenAPI schema generation.
 	// Only record response.type when the signature is a reliable unary shape:
-	// exactly 2 return values where the second implements error.
+	// Exactly 2 return values where the second implements error.
 	// This avoids:
 	//   - methods returning only error getting a synthetic response type
 	//   - non-standard signatures producing misleading OpenAPI schemas
@@ -802,7 +876,7 @@ func buildMethodInfoWithReflection(methodType reflect.Method) *common.MethodInfo
 	method := methodType
 	return &common.MethodInfo{
 		Name: methodType.Name,
-		Type: constant.CallUnary, // only support Unary invocation now
+		Type: constant.CallUnary, // Only support Unary invocation now
 		Meta: meta,
 		ReqInitFunc: func() any {
 			params := make([]any, len(paramsTypes))
@@ -824,9 +898,9 @@ func buildGenericMethodInfo() common.MethodInfo {
 		Type: constant.CallUnary,
 		ReqInitFunc: func() any {
 			return []any{
-				func(s string) *string { return &s }(""), // methodName *string
-				&[]string{},                              // types *[]string
-				&[]hessian.Object{},                      // args *[]hessian.Object
+				func(s string) *string { return &s }(""), // MethodName *string
+				&[]string{},                              // Types *[]string
+				&[]hessian.Object{},                      // Args *[]hessian.Object
 			}
 		},
 	}
