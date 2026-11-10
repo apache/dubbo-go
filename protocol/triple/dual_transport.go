@@ -39,6 +39,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -89,19 +91,29 @@ type dualTransport struct {
 }
 
 // newDualTransport creates a new dual transport that supports both HTTP/2 and HTTP/3
-func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout time.Duration) http.RoundTripper {
+func newDualTransport(
+	tlsConfig *tls.Config,
+	http3Config *global.Http3Config,
+	keepAliveInterval,
+	keepAliveTimeout time.Duration,
+) (http.RoundTripper, error) {
 	http2Transport := &http2.Transport{
 		TLSClientConfig: tlsConfig,
 		ReadIdleTimeout: keepAliveInterval,
 		PingTimeout:     keepAliveTimeout,
 	}
 
+	quicConfig, err := http3config.NewQUICConfig(http3Config, &quic.Config{
+		KeepAlivePeriod: keepAliveInterval,
+		MaxIdleTimeout:  keepAliveTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	http3Transport := &http3.Transport{
 		TLSClientConfig: tlsConfig,
-		QUICConfig: &quic.Config{
-			KeepAlivePeriod: keepAliveInterval,
-			MaxIdleTimeout:  keepAliveTimeout,
-		},
+		QUICConfig:      quicConfig,
 	}
 
 	return &dualTransport{
@@ -111,7 +123,7 @@ func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout
 		probeTimeout:   defaultH3ProbeTimeout,
 		baseCooldown:   defaultH3BaseCooldown,
 		maxCooldown:    defaultH3MaxCooldown,
-	}
+	}, nil
 }
 
 // RoundTrip implements http.RoundTripper interface with HTTP Alternative Services support

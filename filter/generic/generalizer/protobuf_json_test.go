@@ -35,7 +35,7 @@ func TestProtobufJsonGeneralizer(t *testing.T) {
 	}
 	reqJson, err := g.Generalize(req)
 	require.NoError(t, err)
-	rReq, err := g.Realize(reqJson, reflect.TypeOf(req))
+	rReq, err := g.Realize(reqJson, reflect.TypeFor[*RequestType]())
 	require.NoError(t, err)
 	reqObj, ok := rReq.(*RequestType)
 	assert.True(t, ok)
@@ -49,7 +49,7 @@ func TestProtobufJsonGeneralizer(t *testing.T) {
 	}
 	respJson, err := g.Generalize(resp)
 	require.NoError(t, err)
-	rResp, err := g.Realize(respJson, reflect.TypeOf(resp))
+	rResp, err := g.Realize(respJson, reflect.TypeFor[*ResponseType]())
 	require.NoError(t, err)
 	respObj, ok := rResp.(*ResponseType)
 	assert.True(t, ok)

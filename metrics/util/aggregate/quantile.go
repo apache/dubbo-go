@@ -63,8 +63,10 @@ func (t *TimeWindowQuantile) Quantiles(qs []float64) []float64 {
 
 // mergeTDigests merges all panes' TDigests into one TDigest.
 func (t *TimeWindowQuantile) mergeTDigests() *tdigest.TDigest {
-	t.mux.RLock()
-	defer t.mux.RUnlock()
+	// Centroids processes the digest's pending samples and mutates its state.
+	// Concurrent collections must not run it under a shared read lock.
+	t.mux.Lock()
+	defer t.mux.Unlock()
 
 	td := tdigest.NewWithCompression(t.compression)
 	for _, v := range t.window.values(time.Now().UnixMilli()) {

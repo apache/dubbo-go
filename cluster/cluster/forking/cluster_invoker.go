@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -33,6 +34,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -59,8 +61,11 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 	}
 
 	var selected []protocolbase.Invoker
-	forks := invoker.GetURL().GetParamByIntValue(constant.ForksKey, constant.DefaultForks)
-	timeouts := invoker.GetURL().GetParamInt(constant.TimeoutKey, constant.DefaultTimeout)
+	// Read the reference settings from an invoker URL: with a registry, the
+	// directory URL is the registry URL and does not carry them.
+	url := invokers[0].GetURL()
+	forks := url.GetParamByIntValue(constant.ForksKey, constant.DefaultForks)
+	timeout := getTimeout(url, invocation)
 	if forks < 0 || forks > len(invokers) {
 		selected = invokers
 	} else {
@@ -92,7 +97,7 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 		}(ivk)
 	}
 
-	rsps, err := resultQ.Poll(1, time.Millisecond*time.Duration(timeouts))
+	rsps, err := resultQ.Poll(1, timeout)
 	// Stop remaining calls as soon as polling completes, including on timeout.
 	cancel()
 	if err != nil {
@@ -110,4 +115,16 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 		return &result.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but not legal resp", selected)}
 	}
 	return res
+}
+
+// getTimeout returns how long to wait for the first forked result, which is the
+// timeout the forked calls run with: the per-call timeout if one is set,
+// otherwise the reference timeout. Both are duration strings such as "3s".
+func getTimeout(url *common.URL, invocation protocolbase.Invocation) time.Duration {
+	if v, ok := invocation.GetAttachment(constant.TimeoutKey); ok {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			return d
+		}
+	}
+	return url.GetParamDuration(constant.TimeoutKey, strconv.Itoa(constant.DefaultTimeout)+"ms")
 }

@@ -31,16 +31,32 @@ const (
 	// SubscribeRt
 	// StoreProviderInterfaceRt
 	SubscribeServiceRt
+	MetadataMappingRegister
+	MetadataMappingGet
+	MetadataMappingListen
+	MetadataMappingRemove
+	MetadataCache
+	MetadataFetch
 )
 
 const (
-	dubboMetadataPush             = "dubbo_metadata_push_num"
-	dubboPushRt                   = "dubbo_push_rt_milliseconds"
-	dubboMetadataSubscribe        = "dubbo_metadata_subscribe_num"
-	dubboSubscribeRt              = "dubbo_subscribe_rt_milliseconds"
-	dubboMetadataStoreProvider    = "dubbo_metadata_store_provider"
-	dubboStoreProviderInterfaceRt = "dubbo_store_provider_interface_rt_milliseconds"
-	dubboSubscribeServiceRt       = "dubbo_subscribe_service_rt_milliseconds"
+	dubboMetadataPush              = "dubbo_metadata_push_num"
+	dubboPushRt                    = "dubbo_push_rt_milliseconds"
+	dubboMetadataSubscribe         = "dubbo_metadata_subscribe_num"
+	dubboSubscribeRt               = "dubbo_subscribe_rt_milliseconds"
+	dubboMetadataStoreProvider     = "dubbo_metadata_store_provider"
+	dubboStoreProviderInterfaceRt  = "dubbo_store_provider_interface_rt_milliseconds"
+	dubboSubscribeServiceRt        = "dubbo_subscribe_service_rt_milliseconds"
+	dubboMetadataMappingRegister   = "dubbo_metadata_mapping_register_num"
+	dubboMetadataMappingRegisterRt = "dubbo_metadata_mapping_register_rt_milliseconds"
+	dubboMetadataMappingGet        = "dubbo_metadata_mapping_get_num"
+	dubboMetadataMappingGetRt      = "dubbo_metadata_mapping_get_rt_milliseconds"
+	dubboMetadataMappingListen     = "dubbo_metadata_mapping_listen_num"
+	dubboMetadataMappingListenRt   = "dubbo_metadata_mapping_listen_rt_milliseconds"
+	dubboMetadataMappingRemove     = "dubbo_metadata_mapping_remove_num"
+	dubboMetadataMappingRemoveRt   = "dubbo_metadata_mapping_remove_rt_milliseconds"
+	dubboMetadataCache             = "dubbo_metadata_cache"
+	dubboMetadataFetch             = "dubbo_metadata_fetch"
 )
 
 const (
@@ -84,4 +100,70 @@ var (
 	storeProviderInterfaceRt = metrics.NewMetricKey(dubboStoreProviderInterfaceRt, "Store Provider Interface Time")
 
 	subscribeServiceRt = metrics.NewMetricKey(dubboSubscribeServiceRt, "Subscribe Service Time")
+
+	metadataMappingRegisterNum     = metrics.NewMetricKey(dubboMetadataMappingRegister+totalSuffix, "Total Metadata Mapping Register Num")
+	metadataMappingRegisterSucceed = metrics.NewMetricKey(dubboMetadataMappingRegister+succSuffix, "Succeed Metadata Mapping Register Num")
+	metadataMappingRegisterFailed  = metrics.NewMetricKey(dubboMetadataMappingRegister+failedSuffix, "Failed Metadata Mapping Register Num")
+	metadataMappingRegisterRt      = metrics.NewMetricKey(dubboMetadataMappingRegisterRt, "Metadata Mapping Register Time")
+
+	metadataMappingGetNum     = metrics.NewMetricKey(dubboMetadataMappingGet+totalSuffix, "Total Metadata Mapping Get Num")
+	metadataMappingGetSucceed = metrics.NewMetricKey(dubboMetadataMappingGet+succSuffix, "Succeed Metadata Mapping Get Num")
+	metadataMappingGetFailed  = metrics.NewMetricKey(dubboMetadataMappingGet+failedSuffix, "Failed Metadata Mapping Get Num")
+	metadataMappingGetRt      = metrics.NewMetricKey(dubboMetadataMappingGetRt, "Metadata Mapping Get Time")
+
+	metadataMappingListenNum     = metrics.NewMetricKey(dubboMetadataMappingListen+totalSuffix, "Total Metadata Mapping Listen Num")
+	metadataMappingListenSucceed = metrics.NewMetricKey(dubboMetadataMappingListen+succSuffix, "Succeed Metadata Mapping Listen Num")
+	metadataMappingListenFailed  = metrics.NewMetricKey(dubboMetadataMappingListen+failedSuffix, "Failed Metadata Mapping Listen Num")
+	metadataMappingListenRt      = metrics.NewMetricKey(dubboMetadataMappingListenRt, "Metadata Mapping Listen Time")
+
+	metadataMappingRemoveNum     = metrics.NewMetricKey(dubboMetadataMappingRemove+totalSuffix, "Total Metadata Mapping Remove Num")
+	metadataMappingRemoveSucceed = metrics.NewMetricKey(dubboMetadataMappingRemove+succSuffix, "Succeed Metadata Mapping Remove Num")
+	metadataMappingRemoveFailed  = metrics.NewMetricKey(dubboMetadataMappingRemove+failedSuffix, "Failed Metadata Mapping Remove Num")
+	metadataMappingRemoveRt      = metrics.NewMetricKey(dubboMetadataMappingRemoveRt, "Metadata Mapping Remove Time")
+
+	/*
+	   # HELP dubbo_metadata_cache_total Total Metadata Cache Lookup Num
+	   # TYPE dubbo_metadata_cache_total counter
+	   dubbo_metadata_cache_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",} 5.0
+	   dubbo_metadata_cache_hit_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",} 4.0
+	   dubbo_metadata_cache_miss_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",} 1.0
+	*/
+	// app level, tagged by provider app
+	metadataCacheNum  = metrics.NewMetricKey(dubboMetadataCache+totalSuffix, "Total Lookups Against the Metadata LRU Cache")
+	metadataCacheHit  = metrics.NewMetricKey(dubboMetadataCache+"_hit"+totalSuffix, "Successful Lookups Against the Metadata LRU Cache")
+	metadataCacheMiss = metrics.NewMetricKey(dubboMetadataCache+"_miss"+totalSuffix, "Failed Lookups Against the Metadata LRU Cache")
+
+	/*
+	   # HELP dubbo_metadata_fetch_total Total Metadata Fetch Num
+	   # TYPE dubbo_metadata_fetch_total counter
+	   dubbo_metadata_fetch_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",result="success",source="report",storage_type="remote",} 1.0
+	*/
+	// app level, tagged by provider app, fetch source, storage type and result
+	metadataFetchNum = metrics.NewMetricKey(dubboMetadataFetch+totalSuffix, "Total Metadata Fetch Num")
+)
+
+const (
+	TagProviderApp = "provider_app"
+	TagSource      = "source"
+	TagStorageType = "storage_type"
+	TagResult      = "result"
+)
+
+// Metadata fetch source values
+const (
+	SourceCache  = "cache"
+	SourceReport = "report"
+	SourceRpc    = "rpc"
+)
+
+// Metadata storage type values
+const (
+	StorageTypeLocal  = "local"
+	StorageTypeRemote = "remote"
+)
+
+// Metadata fetch result values
+const (
+	ResultSuccess = "success"
+	ResultFailure = "failure"
 )

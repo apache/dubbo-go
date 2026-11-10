@@ -19,13 +19,12 @@ package failover
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -98,7 +97,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	if ivk == nil {
 		logger.Errorf("[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
 		return &result.RPCResult{
-			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't connect server.",
+			Err: fmt.Errorf("failed to invoke the method %s of the service %s .No provider is available because can't connect server",
 				methodName, invokerSvc),
 		}
 	}

@@ -68,7 +68,7 @@ const (
 	"homepageUrl": "http://localhost:8080"
 }]`
 
-	mockConfigCacheRes = `{"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n"}`
+	mockConfigCacheRes = `{"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n     retries: 3\n"}`
 
 	mockConfigCacheJsonRes = `{
     "content": "{\n    \"dubbo\": {\n        \"application\": {\n            \"name\": \"demo-server\",\n            \"version\": \"2.0\"\n        },\n        \"otel\": {\n            \"trace\": {\n                \"enable\": true,\n                \"sample-ratio\": 1.123\n            }\n        }\n    }\n}"
@@ -80,7 +80,7 @@ var mockConfigRes = `{
 	"cluster": "default",
 	"namespaceName": "mockDubbogo.yaml",
 	"configurations":{
-		"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n"
+		"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n     retries: 3\n"
     },
 	"releaseKey": "20191104105242-0f13805d89f834a4"
 }`
@@ -181,6 +181,20 @@ func TestGetConfigItem(t *testing.T) {
 	assert.Equal(t, "demo-server", appName)
 }
 
+func TestGetConfigItemReturnsErrorForNonStringValue(t *testing.T) {
+	configuration := initMockApollo(t)
+
+	var (
+		value string
+		err   error
+	)
+	require.NotPanics(t, func() {
+		value, err = configuration.GetInternalProperty(constant.ApplicationConfigPrefix + ".retries")
+	})
+	require.Error(t, err)
+	assert.Empty(t, value)
+}
+
 func initMockApollo(t *testing.T) *apolloConfiguration {
 	// Register the YAML format parser with concurrent safety.
 	extension.AddFormatParser(apolloconstant.YAML, &Parser{})
@@ -199,6 +213,38 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	configuration, err := newApolloConfiguration(apolloCfgURL)
 	require.NoError(t, err)
 	return configuration
+}
+
+func TestMakeNestedMap(t *testing.T) {
+	t.Run("ordinary dotted keys", func(t *testing.T) {
+		got := makeNestedMap(map[string]string{
+			"dubbo.application.name": "demo",
+			"dubbo.application.port": "20000",
+		})
+		application := got["dubbo"].(map[string]any)["application"].(map[string]any)
+		assert.Equal(t, "demo", application["name"])
+		assert.Equal(t, "20000", application["port"])
+	})
+
+	t.Run("leaf and parent do not panic and keep the nested value", func(t *testing.T) {
+		props := map[string]string{
+			"a.b":   "1",
+			"a.b.c": "2",
+			"a.d":   "3",
+		}
+		for range 32 {
+			var got map[string]any
+			require.NotPanics(t, func() {
+				got = makeNestedMap(props)
+			})
+			a, ok := got["a"].(map[string]any)
+			require.True(t, ok)
+			b, ok := a["b"].(map[string]any)
+			require.True(t, ok)
+			assert.Equal(t, "2", b["c"])
+			assert.Equal(t, "3", a["d"])
+		}
+	})
 }
 
 func TestGetAddressWithProtocolPrefix(t *testing.T) {

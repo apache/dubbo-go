@@ -38,7 +38,11 @@ metadata/report/zookeeper/zookeeper-4unittest/
 .*.sw?
 /license-header-checker-linux/
 /license-header-checker-linux.zip
+/.tools/
 
 # macOS
 .DS_Store
 .history
+
+# Local AI agent planning artifacts
+/docs/superpowers/

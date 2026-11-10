@@ -29,8 +29,6 @@ import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -110,9 +108,9 @@ func (e *etcdMetadataReport) PublishAppMetadata(application, revision string, in
 func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
 	path := e.rootDir + constant.PathSeparator + group + constant.PathSeparator + key
 	oldVal, rev, err := e.client.GetValAndRev(path)
-	if perrors.Cause(err) == gxetcd.ErrKVPairNotFound {
+	if errors.Is(err, gxetcd.ErrKVPairNotFound) {
 		if cErr := e.client.Create(path, value); cErr != nil {
-			if perrors.Cause(cErr) == gxetcd.ErrCompareFail {
+			if errors.Is(cErr, gxetcd.ErrCompareFail) {
 				return fmt.Errorf("create mapping %s: %w", path, report.ErrMappingCASConflict)
 			}
 			return cErr
@@ -126,7 +124,7 @@ func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string,
 		return nil
 	}
 	if uErr := e.client.UpdateWithRev(path, merged, rev); uErr != nil {
-		if perrors.Cause(uErr) == gxetcd.ErrCompareFail {
+		if errors.Is(uErr, gxetcd.ErrCompareFail) {
 			return fmt.Errorf("update mapping %s: %w", path, report.ErrMappingCASConflict)
 		}
 		return uErr
@@ -165,7 +163,7 @@ func (e *etcdMetadataReport) ListAppRevisions(application string) ([]report.AppR
 	prefix := e.rootDir + constant.PathSeparator + application + constant.PathSeparator
 	keys, values, err := e.client.GetChildren(prefix)
 	if err != nil {
-		if errors.Is(perrors.Cause(err), gxetcd.ErrKVPairNotFound) {
+		if errors.Is(err, gxetcd.ErrKVPairNotFound) {
 			return nil, nil
 		}
 		return nil, err

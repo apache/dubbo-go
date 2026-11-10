@@ -17,4 +17,4 @@
 
 package main
 
-const version = " 3.3.1-dev"
+const version = "3.3.2"

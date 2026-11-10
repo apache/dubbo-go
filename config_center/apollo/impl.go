@@ -18,6 +18,7 @@
 package apollo
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -32,9 +33,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 import (
@@ -76,7 +75,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 		return c.appConf, nil
 	})
 	if err != nil {
-		return nil, perrors.Wrap(err, "start apollo client failed")
+		return nil, fmt.Errorf("start apollo client failed: %w", err)
 	}
 	c.client = client
 	return c, nil
@@ -108,17 +107,21 @@ func (c *apolloConfiguration) RemoveListener(key string, listener cc.Configurati
 
 func (c *apolloConfiguration) GetInternalProperty(key string, opts ...cc.Option) (string, error) {
 	if c.client == nil {
-		return "", perrors.New("apollo client is not initialized")
+		return "", errors.New("apollo client is not initialized")
 	}
 	cache := c.client.GetConfigCache(c.appConf.NamespaceName)
 	if cache == nil {
-		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
+		return "", fmt.Errorf("nothing in namespace:%s ", key)
 	}
 	value, err := cache.Get(key)
 	if err != nil {
-		return "", perrors.Wrap(err, "get config value failed")
+		return "", fmt.Errorf("get config value failed: %w", err)
 	}
-	return value.(string), nil
+	stringValue, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("apollo config value for key %q is not a string: %T", key, value)
+	}
+	return stringValue, nil
 }
 
 func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, error) {
@@ -127,25 +130,25 @@ func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, er
 
 // PublishConfig will publish the config with the (key, group, value) pair
 func (c *apolloConfiguration) PublishConfig(string, string, string) error {
-	return perrors.New("unsupported operation")
+	return errors.New("unsupported operation")
 }
 
 // GetConfigKeysByGroup will return all keys with the group
 func (c *apolloConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	return nil, perrors.New("unsupported operation")
+	return nil, errors.New("unsupported operation")
 }
 
 // GetProperties get configuration content according to the namespace
 func (c *apolloConfiguration) GetProperties(ns string, opts ...cc.Option) (string, error) {
 	if c.client == nil {
-		return "", perrors.New("apollo client is not initialized")
+		return "", errors.New("apollo client is not initialized")
 	}
 	if ns == "" {
 		ns = c.appConf.NamespaceName
 	}
 	conf := c.client.GetConfig(ns)
 	if conf == nil || conf.GetCache().EntryCount() < 1 {
-		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", ns))
+		return "", fmt.Errorf("nothing in namespace:%s ", ns)
 	}
 	fileType := getFileTypeFromNS(ns)
 	return formatContent(conf, fileType)
@@ -168,7 +171,7 @@ func formatContent(conf *storage.Config, fileType string) (string, error) {
 		nestedMap := makeNestedMap(props)
 		result, err := yaml.Marshal(nestedMap)
 		if err != nil {
-			return "", perrors.Wrap(err, "convert to yaml error")
+			return "", fmt.Errorf("convert to yaml error: %w", err)
 		}
 		return string(result), nil
 	default:
@@ -191,7 +194,10 @@ func getFileTypeFromNS(ns string) string {
 	return "properties"
 }
 
-// makeNestedMap convert flat key-value pairs to nested structure
+// makeNestedMap converts flat key-value pairs to a nested structure.
+// A property that is both a leaf and a parent ("a.b" and "a.b.c") must not
+// panic. The nested value is kept, and the conflicting scalar is dropped,
+// whichever key is visited first.
 func makeNestedMap(props map[string]string) map[string]any {
 	result := make(map[string]any)
 
@@ -201,15 +207,19 @@ func makeNestedMap(props map[string]string) map[string]any {
 
 		for i, part := range parts {
 			if i == len(parts)-1 {
-				// The last part as value
-				current[part] = v
-			} else {
-				// Create or get nested map
-				if _, exists := current[part]; !exists {
-					current[part] = make(map[string]any)
+				// A later scalar must not erase longer keys already stored here.
+				if _, isMap := current[part].(map[string]any); isMap {
+					continue
 				}
-				current = current[part].(map[string]any)
+				current[part] = v
+				continue
 			}
+			next, ok := current[part].(map[string]any)
+			if !ok {
+				next = make(map[string]any)
+				current[part] = next
+			}
+			current = next
 		}
 	}
 	return result

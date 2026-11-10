@@ -1,0 +1,11 @@
+name: Setup Go tools cache
+description: Restore cached repository-local Go development tools
+
+runs:
+  using: composite
+  steps:
+    - name: Restore Go tools
+      uses: actions/cache@v6
+      with:
+        path: .tools/bin
+        key: ${{ runner.os }}-${{ runner.arch }}-go-tools-${{ hashFiles('Makefile', 'go.mod', 'go.sum', 'tools/imports-formatter/**') }}

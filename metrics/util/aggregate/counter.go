@@ -58,6 +58,24 @@ func (t *TimeWindowCounter) LivedSeconds() int64 {
 	return int64(windowLength) * t.window.paneIntervalInMs / 1000
 }
 
+// QPS reads the count and the existing lived-pane denominator from the same
+// window snapshot. An empty window has a rate of zero, not 0/0.
+func (t *TimeWindowCounter) QPS() float64 {
+	t.mux.RLock()
+	defer t.mux.RUnlock()
+
+	values := t.window.values(time.Now().UnixMilli())
+	seconds := int64(len(values)) * t.window.paneIntervalInMs / 1000
+	if seconds == 0 {
+		return 0
+	}
+	total := float64(0)
+	for _, v := range values {
+		total += v.(*counter).value
+	}
+	return total / float64(seconds)
+}
+
 // Add adds a step to the counter.
 func (t *TimeWindowCounter) Add(step float64) {
 	t.mux.Lock()

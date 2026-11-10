@@ -121,9 +121,7 @@ func TestTripleHealthWatchEmitsClosingEvent(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	go func() {
-		_ = server.Run(constant.CallHTTP2, nil)
-	}()
+	server.Start(constant.CallHTTP2, nil)
 	defer func() {
 		_ = server.Stop()
 	}()

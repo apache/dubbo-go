@@ -25,7 +25,7 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 import (
@@ -49,6 +49,7 @@ type ScriptRouter struct {
 	rawScript  string
 }
 
+// NewScriptRouter creates a new ScriptRouter.
 func NewScriptRouter() *ScriptRouter {
 	return &ScriptRouter{
 		applicationName: "",
@@ -56,6 +57,7 @@ func NewScriptRouter() *ScriptRouter {
 	}
 }
 
+// parseRoute decodes a YAML script rule into a RouterConfig.
 func parseRoute(routeContent string) (*global.RouterConfig, error) {
 	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
 	routerConfig := &global.RouterConfig{}
@@ -66,6 +68,10 @@ func parseRoute(routeContent string) (*global.RouterConfig, error) {
 	return routerConfig, nil
 }
 
+// Process receives a script rule change event and mutates the router state
+// accordingly. On a Del event it resets the router to the disabled, empty
+// state. On an Add or Update event it destroys the old instance first, then
+// compiles the new instance.
 func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -117,11 +123,11 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			logger.Error("[Router][Script] applicationName field must be set in config")
 			return
 		}
-		if !*cfg.Enabled {
+		if cfg.Enabled != nil && !*cfg.Enabled {
 			logger.Infof("[Router][Script] enabled field equals false, this rule will be ignored, script=%s", cfg.Script)
 		}
 		// rewrite to ScriptRouter
-		s.enabled = *cfg.Enabled
+		s.enabled = cfg.Enabled == nil || *cfg.Enabled
 		s.rawScript = cfg.Script
 		s.scriptType = cfg.ScriptType
 
@@ -144,6 +150,7 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	}
 }
 
+// runScript executes rawScript through the engine registered for scriptType.
 func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []base.Invoker, invocation base.Invocation) ([]base.Invoker, error) {
 	in, err := ins.GetInstances(scriptType)
 	if err != nil {
@@ -152,6 +159,7 @@ func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []base.I
 	return in.Run(rawScript, invokers, invocation)
 }
 
+// Route determines the target invokers by executing the enabled script.
 func (s *ScriptRouter) Route(invokers []base.Invoker, _ *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
 		return []base.Invoker{}
@@ -173,14 +181,18 @@ func (s *ScriptRouter) Route(invokers []base.Invoker, _ *common.URL, invocation 
 	return res
 }
 
+// URL always returns nil.
 func (s *ScriptRouter) URL() *common.URL {
 	return nil
 }
 
+// Priority always returns 0.
 func (s *ScriptRouter) Priority() int64 {
 	return 0
 }
 
+// Notify subscribes this router to the script rule of the provider
+// application in the invoker list.
 func (s *ScriptRouter) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return

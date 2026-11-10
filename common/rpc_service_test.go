@@ -183,8 +183,7 @@ func TestMethodTypeSuiteContext(t *testing.T) {
 }
 
 func TestSuiteMethod(t *testing.T) {
-	s := &TestService{}
-	method, ok := reflect.TypeOf(s).MethodByName("MethodOne")
+	method, ok := reflect.TypeFor[*TestService]().MethodByName("MethodOne")
 	assert.True(t, ok)
 	methodType := suiteMethod(method)
 	method = methodType.Method()
@@ -198,7 +197,7 @@ func TestSuiteMethod(t *testing.T) {
 	rt := methodType.ReplyType()
 	assert.Nil(t, rt)
 
-	method, ok = reflect.TypeOf(s).MethodByName("MethodTwo")
+	method, ok = reflect.TypeFor[*TestService]().MethodByName("MethodTwo")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	method = methodType.Method()
@@ -211,7 +210,7 @@ func TestSuiteMethod(t *testing.T) {
 	rt = methodType.ReplyType()
 	assert.Equal(t, testSuiteMethodExpectedString, rt.String())
 
-	method, ok = reflect.TypeOf(s).MethodByName("MethodThree")
+	method, ok = reflect.TypeFor[*TestService]().MethodByName("MethodThree")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	method = methodType.Method()
@@ -223,32 +222,31 @@ func TestSuiteMethod(t *testing.T) {
 	assert.Nil(t, rt)
 
 	// wrong number of in return
-	s1 := &testService{}
-	method, ok = reflect.TypeOf(s1).MethodByName("Reference")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Reference")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// args not exported
-	method, ok = reflect.TypeOf(s1).MethodByName("Method1")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method1")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// Reply not exported
-	method, ok = reflect.TypeOf(s1).MethodByName("Method2")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method2")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// no return
-	method, ok = reflect.TypeOf(s1).MethodByName("Method3")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method3")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// return value is not error
-	method, ok = reflect.TypeOf(s1).MethodByName("Method4")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method4")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
@@ -423,8 +421,7 @@ func TestIsExportedOrBuiltinType(t *testing.T) {
 	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[int]()))
 
 	// Pointer to builtin
-	var i int
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(&i)))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[*int]()))
 
 	// Unexported type
 	assert.False(t, isExportedOrBuiltinType(reflect.TypeFor[testService]()))
@@ -534,8 +531,7 @@ func TestUnRegisterInterfaceNotFound(t *testing.T) {
 }
 
 func TestSuitableMethodsWithMethodMapper(t *testing.T) {
-	s := &TestService{}
-	methods, methodMap := suitableMethods(reflect.TypeOf(s))
+	methods, methodMap := suitableMethods(reflect.TypeFor[*TestService]())
 
 	// Check that MethodMapper renamed MethodTwo to methodTwo
 	assert.Contains(t, methods, "methodTwo")
@@ -702,4 +698,56 @@ func TestSuiteMethodTooManyReturns(t *testing.T) {
 
 	mt := suiteMethod(method)
 	assert.Nil(t, mt) // Should be nil because too many return values
+}
+
+// possibleReplyPointerService covers the net/rpc reply-pointer shape and the two
+// shapes that must not be mistaken for it.
+type possibleReplyPointerService struct{}
+
+// Looks like net/rpc: the trailing pointer is where the author expects the
+// result, and dubbo-go discards it.
+func (s *possibleReplyPointerService) Fetch(ctx context.Context, id string, reply *string) error {
+	return nil
+}
+
+// A single-parameter void call — a delete, say. Nothing is expected back.
+func (s *possibleReplyPointerService) Remove(ctx context.Context, id *string) error { return nil }
+
+// Two pointers but genuinely void: both are inputs.
+func (s *possibleReplyPointerService) Transfer(ctx context.Context, from *string, to *string) error {
+	return nil
+}
+
+// Returns its result properly.
+func (s *possibleReplyPointerService) Get(ctx context.Context, id string) (*string, error) {
+	return nil, nil
+}
+
+func TestPossibleReplyPointerRPCMethodNames(t *testing.T) {
+	names := possibleReplyPointerRPCMethodNames(reflect.TypeFor[*possibleReplyPointerService]())
+
+	assert.Contains(t, names, "Fetch")
+	assert.NotContains(t, names, "Remove",
+		"a single-parameter void call is the common delete shape, not a reply pointer")
+	assert.NotContains(t, names, "Get", "a declared return value is returned properly")
+
+	// Transfer is a false positive by construction: it has the same signature
+	// as Fetch and reflection cannot tell them apart. The warning is advisory
+	// for exactly this reason — it never blocks registration.
+	assert.Contains(t, names, "Transfer")
+}
+
+func TestWarnRPCMethodsQualifiesPossibleReplyPointer(t *testing.T) {
+	prev := gostlogger.GetLogger()
+	capture := &captureCommonWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	WarnRPCMethods("com.example.PointerInputs", &possibleReplyPointerService{})
+
+	require.Len(t, capture.warns, 1)
+	assert.Contains(t, capture.warns[0], "If that pointer is intended")
+	assert.Contains(t, capture.warns[0], "no action is required")
 }

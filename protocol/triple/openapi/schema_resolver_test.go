@@ -92,7 +92,7 @@ func TestSchemaResolver_Resolve_BasicTypes(t *testing.T) {
 		wantFmt  string
 	}{
 		{"string", reflect.TypeFor[string](), model.SchemaTypeString, ""},
-		{"bool", reflect.TypeOf(true), model.SchemaTypeBoolean, ""},
+		{"bool", reflect.TypeFor[bool](), model.SchemaTypeBoolean, ""},
 		{"int", reflect.TypeFor[int](), model.SchemaTypeInteger, ""},
 		{"int8", reflect.TypeFor[int8](), model.SchemaTypeInteger, ""},
 		{"int16", reflect.TypeFor[int16](), model.SchemaTypeInteger, ""},

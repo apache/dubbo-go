@@ -18,14 +18,10 @@
 package generic
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -52,27 +48,72 @@ func isMakingAGenericCall(invoker base.Invoker, invocation base.Invocation) bool
 
 // isGeneric receives a generic field from url of invoker to determine whether the service is generic or not
 func isGeneric(generic string) bool {
-	return strings.EqualFold(generic, constant.GenericSerializationDefault) ||
-		strings.EqualFold(generic, constant.GenericSerializationGson) ||
-		strings.EqualFold(generic, constant.GenericSerializationProtobufJson) ||
-		strings.EqualFold(generic, constant.GenericSerializationBean)
+	_, err := getGeneralizer(generic)
+	return err == nil
 }
 
-func getGeneralizer(generic string) (g generalizer.Generalizer) {
+func isGenericDisabled(generic string) bool {
+	return generic == "" || strings.EqualFold(generic, "false")
+}
+
+// getGeneralizer resolves a generic mode to its generalizer.
+// Recommended modes are true, gson, bean, and protobuf-json. protobuf keeps
+// the legacy Map/Hessian generic semantics used by Triple generic invocations.
+func getGeneralizer(generic string) (generalizer.Generalizer, error) {
 	switch {
 	case strings.EqualFold(generic, constant.GenericSerializationDefault):
-		g = generalizer.GetMapGeneralizer()
+		return generalizer.GetMapGeneralizer(), nil
 	case strings.EqualFold(generic, constant.GenericSerializationGson):
-		g = generalizer.GetGsonGeneralizer()
+		return generalizer.GetGsonGeneralizer(), nil
 	case strings.EqualFold(generic, constant.GenericSerializationProtobufJson):
-		g = generalizer.GetProtobufJsonGeneralizer()
+		return generalizer.GetProtobufJsonGeneralizer(), nil
+	case strings.EqualFold(generic, constant.GenericSerializationProtobuf):
+		return generalizer.GetMapGeneralizer(), nil
 	case strings.EqualFold(generic, constant.GenericSerializationBean):
-		g = generalizer.GetBeanGeneralizer()
+		return generalizer.GetBeanGeneralizer(), nil
 	default:
-		logger.Debugf("[Filter][Generic] generic type not supported, use the default generalizer, generic=%s", generic)
-		g = generalizer.GetMapGeneralizer()
+		return nil, fmt.Errorf("unsupported generic mode %q", generic)
 	}
-	return
+}
+
+// resolveGeneralizer validates configured generic modes and selects a non-empty invocation mode when present.
+// Invocation generic mode takes precedence over the URL mode; empty or false values do not override URL mode.
+func resolveGeneralizer(configuredGeneric string, invocation base.Invocation) (string, generalizer.Generalizer, error) {
+	if isGenericDisabled(configuredGeneric) {
+		return "", nil, nil
+	}
+
+	var g generalizer.Generalizer
+	var err error
+	g, err = getGeneralizer(configuredGeneric)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if invocationGeneric, ok := invocation.GetAttachment(constant.GenericKey); ok {
+		if isGenericDisabled(invocationGeneric) {
+			return configuredGeneric, g, nil
+		}
+		invocationGeneralizer, err := getGeneralizer(invocationGeneric)
+		if err != nil {
+			return "", nil, err
+		}
+		return invocationGeneric, invocationGeneralizer, nil
+	}
+
+	return configuredGeneric, g, nil
+}
+
+func resolveGenericInvocationGeneralizer(invocation base.Invocation) (string, generalizer.Generalizer, error) {
+	generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
+	if generic == "" {
+		generic = constant.GenericSerializationDefault
+	}
+	g, err := getGeneralizer(generic)
+	if err != nil {
+		return "", nil, err
+	}
+	return generic, g, nil
 }
 
 // realizeResult deserializes the data into the target type using the provided generalizer.
@@ -93,10 +134,88 @@ func realizeResult(data any, targetType reflect.Type, g generalizer.Generalizer)
 
 	realized, err := g.Realize(data, targetType)
 	if err != nil {
-		return nil, perrors.Errorf("failed to deserialize result to %s: %v", targetType.String(), err)
+		return nil, fmt.Errorf("failed to deserialize result to %s: %v", targetType.String(), err)
 	}
 
 	return realized, nil
+}
+
+func shouldRealizeTypedResult(data any, generic string) bool {
+	if data == nil {
+		return false
+	}
+	switch {
+	case strings.EqualFold(generic, constant.GenericSerializationGson),
+		strings.EqualFold(generic, constant.GenericSerializationProtobufJson),
+		strings.EqualFold(generic, constant.GenericSerializationBean):
+		return true
+	default:
+		kind := reflect.ValueOf(data).Kind()
+		return kind == reflect.Map || kind == reflect.Slice
+	}
+}
+
+func unsupportedTypedResultModeError(generic string) error {
+	return fmt.Errorf("generic mode %q does not support typed result", generic)
+}
+
+func setRealizedReply(replyValue reflect.Value, realized any) error {
+	if realized == nil {
+		return nil
+	}
+
+	target := replyValue.Elem()
+	value, ok := valueForAssignment(reflect.ValueOf(realized), target.Type())
+	if !ok {
+		return fmt.Errorf("failed to assign realized result of type %T to reply type %s", realized, target.Type())
+	}
+	target.Set(value)
+	return nil
+}
+
+func valueForAssignment(value reflect.Value, targetType reflect.Type) (reflect.Value, bool) {
+	if !value.IsValid() {
+		if canBeNil(targetType) {
+			return reflect.Zero(targetType), true
+		}
+		return reflect.Value{}, false
+	}
+
+	if value.Type().AssignableTo(targetType) {
+		return value, true
+	}
+	if value.Type().ConvertibleTo(targetType) {
+		return value.Convert(targetType), true
+	}
+
+	if value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return reflect.Value{}, false
+		}
+		elem := value.Elem()
+		if elem.Type().AssignableTo(targetType) {
+			return elem, true
+		}
+		if elem.Type().ConvertibleTo(targetType) {
+			return elem.Convert(targetType), true
+		}
+	}
+
+	if targetType.Kind() == reflect.Pointer {
+		elemType := targetType.Elem()
+		if value.Type().AssignableTo(elemType) {
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(value)
+			return ptr, true
+		}
+		if value.Type().ConvertibleTo(elemType) {
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(value.Convert(elemType))
+			return ptr, true
+		}
+	}
+
+	return reflect.Value{}, false
 }
 
 // validateReplyPointer checks if the reply is a valid non-nil pointer.
@@ -109,16 +228,16 @@ func realizeResult(data any, targetType reflect.Type, g generalizer.Generalizer)
 //   - error if validation fails
 func validateReplyPointer(reply any) (reflect.Value, error) {
 	if reply == nil {
-		return reflect.Value{}, perrors.New("reply cannot be nil")
+		return reflect.Value{}, errors.New("reply cannot be nil")
 	}
 
 	replyValue := reflect.ValueOf(reply)
 	if replyValue.Kind() != reflect.Pointer {
-		return reflect.Value{}, perrors.New("reply must be a pointer")
+		return reflect.Value{}, errors.New("reply must be a pointer")
 	}
 
 	if replyValue.IsNil() {
-		return reflect.Value{}, perrors.New("reply cannot be a nil pointer")
+		return reflect.Value{}, errors.New("reply cannot be a nil pointer")
 	}
 
 	return replyValue, nil

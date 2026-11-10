@@ -19,10 +19,7 @@ package jsonrpc
 
 import (
 	"context"
-)
-
-import (
-	perrors "github.com/pkg/errors"
+	"errors"
 )
 
 // import (
@@ -192,7 +189,7 @@ func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
 }
 
 func (u *UserProvider) GetUser1() error {
-	return perrors.New("error")
+	return errors.New("error")
 }
 
 func (u *UserProvider) GetUser2(ctx context.Context, req []any, rsp *[]User) error {

@@ -28,6 +28,10 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+)
+
 // flagEnvelopeCompressed indicates that the data is compressed. It has the
 // same meaning in the gRPC-Web, gRPC-HTTP2, and Triple protocols.
 const flagEnvelopeCompressed = 0b00000001
@@ -76,15 +80,37 @@ func (w *envelopeWriter) Marshal(message any) *Error {
 		}
 		return nil
 	}
-	raw, err := w.codec.Marshal(message)
-	if err != nil {
-		if w.backupCodec != nil && w.codec.Name() != w.backupCodec.Name() {
-			logger.Debugf("[Triple][Codec] failed to marshal message with primary codec %s, trying fallback codec %s", w.codec.Name(), w.backupCodec.Name())
-			raw, err = w.backupCodec.Marshal(message)
-		}
+	// Fast path: if the codec can append to a caller-provided buffer, marshal
+	// directly into a pooled buffer to avoid the per-request allocation.
+	if appender, ok := w.codec.(marshalAppender); ok {
+		buffer, err := marshalToPool(w.bufferPool, appender, message)
 		if err != nil {
-			return errorf(CodeInternal, "marshal message: %w", err)
+			// Preserve the backup-codec fallback semantics of the slow path.
+			// Only a marshal failure may fall back; write failures (I/O,
+			// compression, or the sendMaxBytes limit) are terminal and must
+			// never retry through the backup codec.
+			if w.backupCodec != nil && w.codec.Name() != w.backupCodec.Name() {
+				logger.Debugf("[Triple][Codec] failed to marshal message with primary codec %s, trying fallback codec %s", w.codec.Name(), w.backupCodec.Name())
+				return w.marshalWithFallback(w.backupCodec, message)
+			}
+			return err
 		}
+		defer w.bufferPool.Put(buffer)
+		return w.Write(&envelope{Data: buffer})
+	}
+	return w.marshalWithFallback(w.codec, message)
+}
+
+// marshalWithFallback is the slow path: Marshal, falling back to the backup
+// codec on error, then wrap the result in a fresh buffer.
+func (w *envelopeWriter) marshalWithFallback(codec Codec, message any) *Error {
+	raw, err := codec.Marshal(message)
+	if err != nil && w.backupCodec != nil && codec.Name() != w.backupCodec.Name() {
+		logger.Debugf("[Triple][Codec] failed to marshal message with primary codec %s, trying fallback codec %s", codec.Name(), w.backupCodec.Name())
+		raw, err = w.backupCodec.Marshal(message)
+	}
+	if err != nil {
+		return errorf(CodeInternal, "marshal message: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	// We can't avoid allocating the byte slice, so we may as well reuse it once
 	// we're done with it.
@@ -209,7 +235,7 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 			err = r.backupCodec.Unmarshal(data.Bytes(), message)
 		}
 		if err != nil {
-			return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, err)
+			return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, rpcerror.Mark(err, rpcerror.Codec))
 		}
 	}
 	return nil

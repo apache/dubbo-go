@@ -70,10 +70,6 @@ func newPolarisServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, err
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, perrors.WithMessage(err, "create polaris namingClient failed.")
-	}
-
 	descriptor := fmt.Sprintf("polaris-service-discovery[%s]", discoveryURL.Location)
 
 	newInstance := &polarisServiceDiscovery{
@@ -121,7 +117,7 @@ func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstan
 	ins := convertToRegisterInstance(polaris.namespace, instance)
 	resp, err := polaris.provider.RegisterInstance(ins)
 	if err != nil {
-		return perrors.WithMessage(err, "could not register the instance. "+instance.GetServiceName())
+		return fmt.Errorf("could not register the instance. "+instance.GetServiceName()+": %w", err)
 	}
 
 	if resp.Existed {
@@ -162,7 +158,7 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 
 	err := polaris.provider.Deregister(convertToDeregisterInstance(polaris.namespace, instance))
 	if err != nil {
-		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
+		return fmt.Errorf("Could not unregister the instance. "+instance.GetServiceName()+": %w", err)
 	}
 
 	polaris.services.Remove(instance.GetServiceName())

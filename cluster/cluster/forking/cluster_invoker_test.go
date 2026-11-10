@@ -54,8 +54,8 @@ func TestForkingInvokeCancelsOutstandingCalls(t *testing.T) {
 		success bool
 		timeout string
 	}{
-		{name: "first result", success: true, timeout: "1000"},
-		{name: "poll timeout", timeout: "50"},
+		{name: "first result", success: true, timeout: "1s"},
+		{name: "poll timeout", timeout: "50ms"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
@@ -120,7 +120,7 @@ func TestForkingInvokeCancelsOutstandingCalls(t *testing.T) {
 			for range slowCalls {
 				select {
 				case err := <-stopped:
-					assert.ErrorIs(t, err, context.Canceled)
+					require.ErrorIs(t, err, context.Canceled)
 				case <-timer.C:
 					t.Fatal("forked calls remained blocked after Invoke returned")
 				}

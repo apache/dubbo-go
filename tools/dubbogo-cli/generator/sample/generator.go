@@ -36,8 +36,9 @@ var (
 
 func Generate(rootPath string) error {
 	for _, v := range fileMap {
-		v.path = path.Join(rootPath, v.path)
-		if err := genFile(v); err != nil {
+		fg := *v
+		fg.path = path.Join(rootPath, fg.path)
+		if err := genFile(&fg); err != nil {
 			return err
 		}
 	}
@@ -49,6 +50,8 @@ func genFile(fg *fileGenerator) error {
 	if err != nil {
 		return err
 	}
+	defer fp.Close()
+
 	buffer := new(bytes.Buffer)
 	if _, err := buffer.WriteString(fg.context); err != nil {
 		return err

@@ -280,23 +280,42 @@ func (g *grpcClient) NewConn(
 			header[grpcHeaderTimeout] = []string{encodedDeadline}
 		}
 	}
-	duplexCall := newDuplexHTTPCall(
-		ctx,
-		g.HTTPClient,
-		g.URL,
-		spec,
-		header,
-	)
+	var call unaryClientCall
+	var streamWriter io.Writer
+	var writeBuffer *streamBufferWriter
+	if spec.StreamType == StreamTypeUnary && g.UnaryFastPath {
+		// Unary fast path: no io.Pipe, no per-request goroutine. Streaming
+		// calls always keep using duplexHTTPCall.
+		call = newUnaryFastPathCall(
+			ctx,
+			g.HTTPClient,
+			g.URL,
+			spec,
+			header,
+			g.BufferPool,
+		)
+		streamWriter = call
+	} else {
+		call = newDuplexHTTPCall(ctx, g.HTTPClient, g.URL, spec, header)
+		streamWriter = call
+		if g.WriteBuffering {
+			// Aggregate small streamed messages so a burst of Sends pays the
+			// io.Pipe handshake once per batch instead of once per message.
+			writeBuffer = newStreamBufferWriter(call)
+			streamWriter = writeBuffer
+		}
+	}
 	conn := &grpcClientConn{
 		spec:             spec,
 		peer:             g.Peer(),
-		duplexCall:       duplexCall,
+		call:             call,
+		writeBuffer:      writeBuffer,
 		compressionPools: g.CompressionPools,
 		bufferPool:       g.BufferPool,
 		protobuf:         g.Protobuf,
 		marshaler: grpcMarshaler{
 			envelopeWriter: envelopeWriter{
-				writer:           duplexCall,
+				writer:           streamWriter,
 				compressionPool:  g.CompressionPools.Get(g.CompressionName),
 				codec:            g.Codec,
 				compressMinBytes: g.CompressMinBytes,
@@ -306,7 +325,7 @@ func (g *grpcClient) NewConn(
 		},
 		unmarshaler: grpcUnmarshaler{
 			envelopeReader: envelopeReader{
-				reader:       duplexCall,
+				reader:       call,
 				codec:        g.Codec,
 				bufferPool:   g.BufferPool,
 				readMaxBytes: g.ReadMaxBytes,
@@ -315,8 +334,8 @@ func (g *grpcClient) NewConn(
 		responseHeader:  make(http.Header),
 		responseTrailer: make(http.Header),
 	}
-	duplexCall.SetValidateResponse(conn.validateResponse)
-	conn.readTrailers = func(_ *grpcUnmarshaler, call *duplexHTTPCall) http.Header {
+	call.SetValidateResponse(conn.validateResponse)
+	conn.readTrailers = func(_ *grpcUnmarshaler, call unaryClientCall) http.Header {
 		// To access HTTP trailers, we need to read the body to EOF.
 		_ = discard(call)
 		return call.ResponseTrailer()
@@ -328,7 +347,8 @@ func (g *grpcClient) NewConn(
 type grpcClientConn struct {
 	spec             Spec
 	peer             Peer
-	duplexCall       *duplexHTTPCall
+	call             unaryClientCall
+	writeBuffer      *streamBufferWriter
 	compressionPools readOnlyCompressionPools
 	bufferPool       *bufferPool
 	protobuf         Codec // for errors
@@ -336,7 +356,7 @@ type grpcClientConn struct {
 	unmarshaler      grpcUnmarshaler
 	responseHeader   http.Header
 	responseTrailer  http.Header
-	readTrailers     func(*grpcUnmarshaler, *duplexHTTPCall) http.Header
+	readTrailers     func(*grpcUnmarshaler, unaryClientCall) http.Header
 }
 
 func (cc *grpcClientConn) Spec() Spec {
@@ -355,15 +375,46 @@ func (cc *grpcClientConn) Send(msg any) error {
 }
 
 func (cc *grpcClientConn) RequestHeader() http.Header {
-	return cc.duplexCall.Header()
+	return cc.call.Header()
 }
 
 func (cc *grpcClientConn) CloseRequest() error {
-	return cc.duplexCall.CloseWrite()
+	// Flush and seal the write buffer before the write side closes. Sealing
+	// means a concurrent Send is no longer accepted into the buffer and fails
+	// with io.EOF instead. No-op when write buffering is disabled.
+	var flushErr error
+	if cc.writeBuffer != nil {
+		flushErr = cc.writeBuffer.Close()
+	}
+	// CloseWrite runs even if the flush failed: the write side must always be
+	// closed so the peer does not wait on it.
+	closeErr := cc.call.CloseWrite()
+	if flushErr != nil && !errors.Is(flushErr, io.EOF) {
+		return flushErr
+	}
+	return closeErr
+}
+
+// flushBeforeWait pushes buffered request bytes to the wire before the caller
+// blocks on the response side. Small Sends stay in the write buffer until the
+// watermark or CloseRequest, so without this a stream whose messages all fit in
+// the buffer would never issue its HTTP request and BlockUntilResponseReady
+// would wait forever. No-op when write buffering is off, and flushing an empty
+// buffer is a no-op too.
+func (cc *grpcClientConn) flushBeforeWait() {
+	if cc.writeBuffer == nil {
+		return
+	}
+	if err := cc.writeBuffer.Flush(); err != nil && !errors.Is(err, io.EOF) {
+		// A closed request pipe can accompany a server response. Preserve
+		// the response status instead of replacing it with the write-side EOF.
+		cc.call.SetError(err)
+	}
 }
 
 func (cc *grpcClientConn) Receive(msg any) error {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.flushBeforeWait()
+	cc.call.BlockUntilResponseReady()
 	err := cc.unmarshaler.Unmarshal(msg)
 	if err == nil {
 		return nil
@@ -377,7 +428,7 @@ func (cc *grpcClientConn) Receive(msg any) error {
 	// See if the server sent an explicit error in the HTTP or gRPC-Web trailers.
 	mergeHeaders(
 		cc.responseTrailer,
-		cc.readTrailers(&cc.unmarshaler, cc.duplexCall),
+		cc.readTrailers(&cc.unmarshaler, cc.call),
 	)
 	serverErr := grpcErrorFromTrailer(cc.bufferPool, cc.protobuf, cc.responseTrailer)
 	if serverErr != nil && (errors.Is(err, io.EOF) || !errors.Is(serverErr, errTrailersWithoutGRPCStatus)) {
@@ -391,33 +442,36 @@ func (cc *grpcClientConn) Receive(msg any) error {
 		// the stream has ended, Receive must return an error.
 		serverErr.meta = cc.responseHeader.Clone()
 		mergeHeaders(serverErr.meta, cc.responseTrailer)
-		cc.duplexCall.SetError(serverErr)
+		cc.call.SetError(serverErr)
 		return serverErr
 	}
 	// This was probably an error converting the bytes to a message or an error
 	// reading from the network. We're going to return it to the
 	// user, but we also want to setResponseError so Send errors out.
-	cc.duplexCall.SetError(err)
+	cc.call.SetError(err)
 	return err
 }
 
 func (cc *grpcClientConn) ResponseHeader() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.flushBeforeWait()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseHeader
 }
 
 func (cc *grpcClientConn) ResponseTrailer() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.flushBeforeWait()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseTrailer
 }
 
 func (cc *grpcClientConn) CloseResponse() error {
-	err := cc.duplexCall.CloseRead()
+	cc.flushBeforeWait()
+	err := cc.call.CloseRead()
 	if err != nil {
 		return err
 	}
-	if cc.duplexCall.response != nil && cc.duplexCall.response.Trailer != nil {
-		cc.responseTrailer = cc.duplexCall.response.Trailer.Clone()
+	if trailer := cc.call.ResponseTrailer(); len(trailer) > 0 {
+		cc.responseTrailer = trailer.Clone()
 	}
 	return nil
 }

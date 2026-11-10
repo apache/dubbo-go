@@ -46,7 +46,7 @@ type Registry interface {
 	// Will remove in dubbogo version v1.1.0
 	// mode1: return Listener with Next function which can return
 	//        subscribe service event from registry
-	// Deprecated!
+	// Legacy mode (removed):
 	// subscribe(event.URL) (Listener, error)
 	// Will replace mode1 in dubbogo version v1.1.0
 	// mode2: callback mode, subscribe with notify(notify listener).
@@ -81,7 +81,9 @@ type NotifyListener interface {
 	NotifyAll([]*ServiceEvent, func())
 }
 
-// Listener Deprecated!
+// Listener receives registry service events.
+//
+// Deprecated: use the callback-based NotifyListener API instead.
 type Listener interface {
 	// Next returns next service event once received
 	Next() (*ServiceEvent, error)

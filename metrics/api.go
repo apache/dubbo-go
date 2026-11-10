@@ -86,6 +86,15 @@ type MetricRegistry interface {
 	// GetMetricsString() (string, error) // get text format metric data
 }
 
+// GaugeFuncRegistry is an optional MetricRegistry extension for gauges whose
+// values must be evaluated at collection time. The function must be safe for
+// concurrent calls. Registries without this extension retain record-time gauges.
+// Registering the same metric name and label set again replaces its callback.
+// An in-flight collection may still finish evaluating the previous callback.
+type GaugeFuncRegistry interface {
+	GaugeFunc(*MetricId, func() float64)
+}
+
 type RtOpts struct {
 	Aggregate         bool
 	BucketNum         int   // only for aggRt
@@ -323,12 +332,17 @@ func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
 		twc, ok = d.cache[key]
 		if !ok {
 			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
+			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
+				r.GaugeFunc(NewMetricIdByLabels(d.metricKey, labels), twc.QPS)
+			}
 			d.cache[key] = twc
 		}
 		d.mux.Unlock()
 	}
 	twc.Inc()
-	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count() / float64(twc.LivedSeconds()))
+	if _, ok := d.metricRegistry.(GaugeFuncRegistry); !ok {
+		d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.QPS())
+	}
 }
 
 // AggregateCounterVec means a set of aggregate counter metrics with the same metricKey but different labels.
@@ -368,12 +382,17 @@ func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
 		twc, ok = d.cache[key]
 		if !ok {
 			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
+			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
+				r.GaugeFunc(NewMetricIdByLabels(d.metricKey, labels), twc.Count)
+			}
 			d.cache[key] = twc
 		}
 		d.mux.Unlock()
 	}
 	twc.Inc()
-	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count())
+	if _, ok := d.metricRegistry.(GaugeFuncRegistry); !ok {
+		d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count())
+	}
 }
 
 // QuantileMetricVec means a set of quantile metrics with the same metricKey but different labels.
@@ -415,13 +434,20 @@ func (d *DefaultQuantileMetricVec) Record(labels map[string]string, v float64) {
 		twq, ok = d.cache[key]
 		if !ok {
 			twq = aggregate.NewTimeWindowQuantile(DefaultCompression, DefaultBucketNum, DefaultTimeWindowSeconds)
+			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
+				for i, q := range d.quantiles {
+					r.GaugeFunc(NewMetricIdByLabels(d.metricKeys[i], labels), func() float64 { return twq.Quantile(q) })
+				}
+			}
 			d.cache[key] = twq
 		}
 		d.mux.Unlock()
 	}
 	twq.Add(v)
 
-	for i, q := range twq.Quantiles(d.quantiles) {
-		d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKeys[i], labels)).Set(q)
+	if _, ok := d.metricRegistry.(GaugeFuncRegistry); !ok {
+		for i, q := range twq.Quantiles(d.quantiles) {
+			d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKeys[i], labels)).Set(q)
+		}
 	}
 }

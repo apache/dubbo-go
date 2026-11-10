@@ -103,8 +103,7 @@ func TestReflectResponse(t *testing.T) {
 
 	// ------ interface test -------
 	in1 := []any{rr{"dubbo", 666}, 123, "hello"}
-	var inr1 *any
-	doTestReflectResponse(t, in1, reflect.New(reflect.TypeOf(inr1).Elem()).Interface())
+	doTestReflectResponse(t, in1, reflect.New(reflect.TypeFor[any]()).Interface())
 
 	in2 := make(map[string]rr)
 	var inr2 map[string]rr

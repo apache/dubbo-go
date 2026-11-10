@@ -23,6 +23,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -30,11 +31,13 @@ import (
 
 // metricsEvent is the event defined for rpc metrics
 type metricsEvent struct {
-	name       metricsName
-	invoker    base.Invoker
-	invocation base.Invocation
-	costTime   time.Duration
-	result     result.Result
+	name      metricsName
+	costTime  time.Duration
+	role      string
+	labels    map[string]string
+	err       error
+	hasResult bool
+	origin    rpcerror.Origin
 }
 
 // Type returns the type of the event, it is used for metrics bus to dispatch the event to rpc collector
@@ -47,22 +50,46 @@ type metricsName uint8
 const (
 	BeforeInvoke metricsName = iota
 	AfterInvoke
+	ObservationExpired
 )
 
 func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
 	return &metricsEvent{
-		name:       BeforeInvoke,
-		invoker:    invoker,
-		invocation: invocation,
+		name:   BeforeInvoke,
+		role:   getRole(invoker.GetURL()),
+		labels: buildLabels(invoker.GetURL(), invocation),
 	}
 }
 
+// NewCompletionEvent uses the identity captured before sending, so callbacks do
+// not retain or read a mutable invocation, result, URL, or session.
+func NewCompletionEvent(before metrics.MetricsEvent, duration time.Duration, c rpcerror.Completion) metrics.MetricsEvent {
+	start := before.(*metricsEvent)
+	name := AfterInvoke
+	if !c.Known {
+		name = ObservationExpired
+	}
+	return &metricsEvent{name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin}
+}
+
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {
+	return NewAfterInvokeEventWithOrigin(invoker, invocation, costTime, result, rpcerror.Unknown)
+}
+
+// NewAfterInvokeEventWithOrigin snapshots local request evidence independently
+// of the error returned to the user. Success always remains success.
+func NewAfterInvokeEventWithOrigin(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result, origin rpcerror.Origin) metrics.MetricsEvent {
+	var err error
+	if result != nil {
+		err = result.Error()
+	}
 	return &metricsEvent{
-		name:       AfterInvoke,
-		invoker:    invoker,
-		invocation: invocation,
-		costTime:   costTime,
-		result:     result,
+		name:      AfterInvoke,
+		costTime:  costTime,
+		role:      getRole(invoker.GetURL()),
+		labels:    buildLabels(invoker.GetURL(), invocation),
+		err:       err,
+		hasResult: result != nil,
+		origin:    origin,
 	}
 }

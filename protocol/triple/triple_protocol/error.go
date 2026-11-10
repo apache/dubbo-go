@@ -159,6 +159,8 @@ func IsWireError(err error) bool {
 	return se.wireErr
 }
 
+// Error implements the [error] interface. It returns the status code's name
+// and, if non-empty, the underlying error's message separated by a colon.
 func (e *Error) Error() string {
 	message := e.Message()
 	if message == "" {

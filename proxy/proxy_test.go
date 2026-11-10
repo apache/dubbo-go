@@ -19,14 +19,13 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
 import (
-	perrors "github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -75,9 +74,9 @@ func TestProxyImplement(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, ret) // ret is nil, because it doesn't be injection yet
 
-	ret2, err := p.Get().(*TestService).MethodFour(0, false)
+	_, err = p.Get().(*TestService).MethodFour(0, false)
 	require.NoError(t, err)
-	assert.Equal(t, "*interface {}", reflect.TypeOf(ret2).String())
+	assert.Equal(t, "*interface {}", reflect.TypeFor[*any]().String())
 	err = p.Get().(*TestService).Echo(nil, nil)
 	require.NoError(t, err)
 
@@ -91,7 +90,7 @@ func TestProxyImplement(t *testing.T) {
 		methodOne func(context.Context, any, *struct{}) error
 	}
 	s1 := &S1{TestService: *s, methodOne: func(_ context.Context, _ any, _ *struct{}) error {
-		return perrors.New("errors")
+		return errors.New("errors")
 	}}
 	p.Implement(s1)
 	err = s1.MethodOne(nil, 0, false, nil)
@@ -158,4 +157,24 @@ func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) resul
 	return &result.RPCResult{
 		Rest: inv.Arguments(),
 	}
+}
+
+// TestResolveRootCause is a regression test for the stdlib replacement of
+// perrors.Cause in proxy.go: resolveRootCause must walk the stdlib Unwrap()
+// chain down to the root error.
+func TestResolveRootCause(t *testing.T) {
+	root := errors.New("root")
+
+	t.Run("plain error returns itself", func(t *testing.T) {
+		require.Equal(t, root, resolveRootCause(root))
+	})
+
+	t.Run("stdlib Unwrap chain", func(t *testing.T) {
+		wrapped := fmt.Errorf("w1: %w", fmt.Errorf("w2: %w", root))
+		require.Equal(t, root, resolveRootCause(wrapped))
+	})
+
+	t.Run("nil returns nil", func(t *testing.T) {
+		require.NoError(t, resolveRootCause(nil))
+	})
 }

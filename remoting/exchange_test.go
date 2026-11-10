@@ -20,6 +20,7 @@ package remoting
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -130,4 +131,42 @@ func TestResponseHandle(t *testing.T) {
 		}
 		require.Error(t, pr.Err)
 	})
+}
+
+func TestResponseHandleConcurrentDuplicate(t *testing.T) {
+	pr := NewPendingResponse(SequenceID())
+	var called atomic.Int32
+	pr.Callback = func(common.CallbackResponse) { called.Add(1) }
+	AddPendingResponse(pr)
+	var wg sync.WaitGroup
+	for range 32 {
+		wg.Go(func() { (&Response{ID: pr.seq}).Handle() })
+	}
+	wg.Wait()
+	if called.Load() != 1 {
+		t.Fatalf("callback ran %d times", called.Load())
+	}
+	if GetPendingResponse(SequenceType(pr.seq)) != nil {
+		t.Fatal("pending response leaked")
+	}
+}
+
+func TestPendingResponseClaimConcurrentWithCleanup(t *testing.T) {
+	for range 100 {
+		pr := NewPendingResponse(SequenceID())
+		AddPendingResponse(pr)
+		var claims atomic.Int32
+		var wg sync.WaitGroup
+		for range 8 {
+			wg.Go(func() {
+				if RemovePendingResponse(SequenceType(pr.seq)) != nil {
+					claims.Add(1)
+				}
+			})
+		}
+		wg.Wait()
+		if claims.Load() != 1 {
+			t.Fatalf("claimed %d times", claims.Load())
+		}
+	}
 }

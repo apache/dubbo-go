@@ -19,13 +19,12 @@ package proxy_factory
 
 import (
 	"context"
+	"errors"
 	"reflect"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -95,7 +94,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.I
 			if v, ok := arg.([]byte); ok {
 				args = append(args, v)
 			} else {
-				result.Err = perrors.New("the param type is not []byte")
+				result.Err = errors.New("the param type is not []byte")
 				return result
 			}
 		}

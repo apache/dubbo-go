@@ -33,8 +33,6 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
-	perrors "github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -256,7 +254,7 @@ func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 	mc := mockClient{}
 	client.SetClient(mc)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
+		return nil, fmt.Errorf("create nacos namingClient failed.: %w", err)
 	}
 
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryURL.Location)

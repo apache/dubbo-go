@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -25,8 +26,6 @@ import (
 import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -59,7 +58,7 @@ func (n *NacosClient) SetClient(configClient *nacosClient.NacosConfigClient) {
 // ValidateNacosClient Validate nacos configClient , if null then create it
 func ValidateNacosClient(container nacosClientFacade) error {
 	if container == nil {
-		return perrors.Errorf("container can not be null")
+		return fmt.Errorf("container can not be null")
 	}
 	url := container.GetURL()
 	if container.NacosClient() == nil || container.NacosClient().Client() == nil {
@@ -67,11 +66,11 @@ func ValidateNacosClient(container nacosClientFacade) error {
 		newClient, err := nacos.NewNacosConfigClientByUrl(url)
 		if err != nil {
 			logger.Errorf("[ConfigCenter][Nacos] validateNacosClient nacos address, address=%v err=%v", url.Location, err)
-			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
+			return fmt.Errorf("newNacosClient(address:%+v): %w", url.Location, err)
 		}
 		container.SetNacosClient(newClient)
 	}
-	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
+	return nil
 }
 
 // Done Get nacos configClient exit signal

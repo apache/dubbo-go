@@ -40,7 +40,7 @@ func main() {
 		panic(err)
 	}
 
-	if err := api.RegisterGreeterServer(srv, &service.GreeterServerImpl{}); err != nil {
+	if err := api.RegisterGreeterHandler(srv, &service.GreeterServerImpl{}); err != nil {
 		panic(err)
 	}
 
