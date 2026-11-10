@@ -20,8 +20,9 @@ and callback contracts.
    calls hand completion to the real response, with a buffered fast-response
    state to handle a callback arriving before Invoke returns. A synchronous
    submission error wins over that buffered response.
-6. The Collector consumes an immutable event and increments total failure and
-   exactly one category. No transport or codec increments counters directly.
+6. `metrics.Publish` synchronously invokes the RPC recorder, which increments
+   total failure and exactly one category before delivering best-effort channel
+   notifications. No transport or codec increments counters directly.
 
 A successful result remains successful even if sidecar evidence exists.
 Observation freezing is protected by a mutex. Response, cancellation and
@@ -77,7 +78,7 @@ request timeout (the existing default of three seconds when nonpositive).
 For cancellation/expiry without a confirmed result:
 
 - Release the observer closure, timer, context hook and Session reference.
-- Publish a monitoring-expiry event to release the processing Gauge only.
+- Synchronously record monitoring expiry to release the processing Gauge only.
 - Do not invent completed totals, failure categories or response-time samples.
 - Do not delete the original PendingResponse or suppress its possible late
   user callback.
@@ -151,8 +152,45 @@ or Linux/WSL; an old MinGW runtime is not a reliable race toolchain.
 - Atomic PendingResponse claiming prevents duplicate delivery, and retired
   responses with no waiter skip Reply decoding. It does not solve the deeper
   cancellation-versus-already-started Reply decoding ownership race.
-- The existing metrics event bus can drop events when full. Exactly-once
-  publication is not guaranteed delivery; processing can still drift under
-  event loss.
+- Channel observers and other collectors still use best-effort event delivery.
+  The built-in RPC recorder no longer depends on those channel deliveries.
 - No new histogram, exporter deployment, Admin dashboard, wire status mapping,
   early RPC completion, callback failure contract or retry policy is included.
+
+## Synchronous RPC recording (#3802)
+
+The RPC recorder is installed before `Metrics.Init` returns. Core RPC updates
+run in the publishing goroutine; an exhausted observer channel cannot drop a
+counter, window, latency sample or processing update. `Subscribe`/`Unsubscribe`
+continue to control channel observers only. Other collector event types retain
+their existing asynchronous delivery policy.
+
+A registry-owned cache binds metrics using the role and all eight existing
+labels. Successful and failed results, including each failure category, bind
+their counter and corresponding window only on first use. The pair is published
+after both are ready. Start-only observations do not create result/latency
+series, and success-only traffic does not create unused failure series.
+Counters and windows are updated separately; concurrent scrapes can observe an
+intermediate snapshot rather than an atomic transaction across all fields.
+
+Registries implementing `GaugeFuncRegistry` support concurrent metric updates
+and collection. Registries without it retain the legacy handlers and their
+record-time window gauges under a recorder mutex. Registry panics are isolated
+from the business invocation and reported once per recorder; this does not
+promise complete recording after a registry failure.
+
+Initialization remains process-wide and one-time. A start event captures the
+recorder that was ready at creation; observations begun before initialization
+do not acquire completion-only accounting later. Config reload, unregistering
+series and switching registries at runtime are not introduced. Existing callback
+observations may finish while the process is alive; the recorder owns no queue
+that must be drained during shutdown. Registered series and cached handles live
+for the registry lifetime, so unbounded label cardinality remains an application
+concern. This is in-memory accounting, not durable delivery across process crashes.
+
+Run `go test ./metrics/... ./filter/metrics ./common/rpcerror`, and the same
+packages with `-race` on Linux. The integration subprocess tests exercise real
+`Metrics.Init`, the first call after readiness, disabled RPC metrics, concurrent
+calls and full observer channels. Recorder tests compare all scalar metrics with
+the legacy handlers under concurrent first binding/collection and test every
+existing label, result laziness, expiry and custom-registry behavior.
