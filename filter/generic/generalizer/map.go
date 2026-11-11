@@ -109,12 +109,69 @@ func genericRealizeDecodeHook(from, to reflect.Type, data any) (any, error) {
 		return realizeJavaByteSequence(data, to)
 	}
 
+	if to == timeType && from != timeType {
+		return realizeTime(data)
+	}
+
 	if isUnsignedKind(to.Kind()) {
 		if err := validateUnsignedValue(data, to); err != nil {
 			return nil, err
 		}
 	}
 	return data, nil
+}
+
+var timeType = reflect.TypeFor[time.Time]()
+
+// javaDateLayout is the layout Java's CompatibleTypeUtils uses to parse a String
+// into a java.util.Date ("yyyy-MM-dd HH:mm:ss"), read in the local time zone as
+// SimpleDateFormat does.
+const javaDateLayout = "2006-01-02 15:04:05"
+
+// realizeTime turns a JSON-shaped java.util.Date into a time.Time.
+//
+// Service definitions publish time.Time as java.util.Date. A hessian2 caller
+// already sends a Date, which arrives as time.Time and needs no conversion. A
+// caller that builds the request from JSON, like Dubbo Admin, can only send a
+// number or a string. These follow Java's PojoUtils.realize, which hands both
+// to CompatibleTypeUtils: a number is epoch milliseconds (new Date(long)), and a
+// string is "yyyy-MM-dd HH:mm:ss". RFC 3339, the form encoding/json gives a
+// time.Time, is accepted as well.
+func realizeTime(data any) (any, error) {
+	if number, ok := data.(json.Number); ok {
+		millis, err := number.Int64()
+		if err != nil {
+			return nil, fmt.Errorf("java.util.Date millis %s is not an int64: %w", number, err)
+		}
+		return time.UnixMilli(millis), nil
+	}
+	value := reflect.ValueOf(data)
+	switch value.Kind() {
+	case reflect.String:
+		if t, err := time.ParseInLocation(javaDateLayout, value.String(), time.Local); err == nil {
+			return t, nil
+		}
+		t, err := time.Parse(time.RFC3339Nano, value.String())
+		if err != nil {
+			return nil, fmt.Errorf(`java.util.Date string %q must be "yyyy-MM-dd HH:mm:ss" or RFC 3339`, value.String())
+		}
+		return t, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return time.UnixMilli(value.Int()), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if value.Uint() > math.MaxInt64 {
+			return nil, fmt.Errorf("java.util.Date millis %d overflow int64", value.Uint())
+		}
+		return time.UnixMilli(int64(value.Uint())), nil
+	case reflect.Float32, reflect.Float64:
+		f := value.Float()
+		if f != math.Trunc(f) || f >= math.MaxInt64 || f < math.MinInt64 {
+			return nil, fmt.Errorf("java.util.Date millis %v is not an int64", f)
+		}
+		return time.UnixMilli(int64(f)), nil
+	default:
+		return data, nil
+	}
 }
 
 func isByteSequence(t reflect.Type) bool {
@@ -306,6 +363,9 @@ func objToMap(obj any) (any, error) {
 	if t.Kind() == reflect.Pointer && v.IsNil() {
 		return nil, nil
 	}
+	if date, ok := asJavaDate(v); ok {
+		return date, nil
+	}
 
 	// if obj is a POJO, get the struct from the pointer (if it is a pointer)
 	pojo, isPojo := obj.(hessian.POJO)
@@ -345,12 +405,6 @@ func objToMap(obj any) (any, error) {
 				}
 				generalizedValue, err = objToMap(valueIface)
 			case reflect.Struct, reflect.Slice, reflect.Map:
-				if isPrimitive(valueIface) {
-					logger.Warnf("[Filter][Generic] %q is primitive. Cross-language transfer (e.g., dubbo-go <-> dubbo-java) may crash. Use basic types like string.", value.Type())
-					generalizedValue = valueIface
-					break
-				}
-
 				generalizedValue, err = objToMap(valueIface)
 			default:
 				generalizedValue = valueIface
@@ -441,10 +495,24 @@ func isEmptyValue(value reflect.Value) bool {
 	}
 }
 
-// isPrimitive determines if the object is primitive
-func isPrimitive(obj any) bool {
-	if _, ok := obj.(time.Time); ok {
-		return true
+// asJavaDate returns v as a time.Time when it is one, or a non-nil pointer to
+// one.
+//
+// time.Time is java.util.Date on the generic wire, and Java's PojoUtils.generalize
+// returns a Date unchanged because ReflectUtils.isPrimitive counts it as a
+// primitive. Returning it unchanged here lets hessian2 encode it as a Date at any
+// depth: as the result itself, through a pointer, or inside a field, slice or
+// map. Expanding the struct instead would yield an empty map, since all of
+// time.Time's fields are unexported.
+func asJavaDate(v reflect.Value) (time.Time, bool) {
+	for v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return time.Time{}, false
+		}
+		v = v.Elem()
 	}
-	return false
+	if v.Type() != timeType {
+		return time.Time{}, false
+	}
+	return v.Interface().(time.Time), true
 }

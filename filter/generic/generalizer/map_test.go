@@ -18,6 +18,7 @@
 package generalizer
 
 import (
+	"encoding/json"
 	"math"
 	"reflect"
 	"strconv"
@@ -284,6 +285,142 @@ func TestRealizeRejectsUnsignedOverflow(t *testing.T) {
 			assert.Contains(t, err.Error(), "overflows")
 		})
 	}
+}
+
+type timedPayload struct {
+	At    time.Time
+	Maybe *time.Time
+}
+
+// TestRealizeJavaDate covers the forms a java.util.Date parameter can arrive
+// in: a Date from a hessian2 caller, or epoch millis / RFC 3339 from a JSON
+// caller such as Dubbo Admin.
+func TestRealizeJavaDate(t *testing.T) {
+	want := time.UnixMilli(1762826400123)
+	for _, tt := range []struct {
+		name string
+		data any
+	}{
+		{name: "time.Time", data: want},
+		{name: "int64 millis", data: int64(1762826400123)},
+		{name: "float64 millis", data: float64(1762826400123)},
+		{name: "json.Number millis", data: json.Number("1762826400123")},
+		{name: "RFC 3339", data: want.UTC().Format(time.RFC3339Nano)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mockMapGeneralizer.Realize(
+				map[string]any{"at": tt.data, "maybe": tt.data},
+				reflect.TypeFor[timedPayload](),
+			)
+			require.NoError(t, err)
+			payload := got.(timedPayload)
+			assert.True(t, want.Equal(payload.At), "got %v", payload.At)
+			require.NotNil(t, payload.Maybe)
+			assert.True(t, want.Equal(*payload.Maybe), "got %v", *payload.Maybe)
+		})
+	}
+
+	// Java's CompatibleTypeUtils layout, read in the local zone.
+	local, err := mockMapGeneralizer.Realize(
+		map[string]any{"at": "2026-11-11 08:30:00"}, reflect.TypeFor[timedPayload]())
+	require.NoError(t, err)
+	assert.True(t, time.Date(2026, 11, 11, 8, 30, 0, 0, time.Local).Equal(local.(timedPayload).At))
+
+	for _, data := range []any{"2026-11-11", 1.5, json.Number("1.5")} {
+		_, err := mockMapGeneralizer.Realize(map[string]any{"at": data}, reflect.TypeFor[timedPayload]())
+		require.Error(t, err, "%v", data)
+	}
+}
+
+type DatedItem struct {
+	At time.Time
+}
+
+type datedTree struct {
+	Items  []DatedItem
+	ByName map[string]*DatedItem
+	Times  []time.Time
+	Index  map[string]time.Time
+	Nested *DatedItem
+}
+
+// TestRealizeJavaDateNested checks that the conversion applies wherever a
+// time.Time sits: inside slices, maps, pointers and nested structs.
+func TestRealizeJavaDateNested(t *testing.T) {
+	want := time.UnixMilli(1762826400123)
+	millis := int64(1762826400123)
+	got, err := mockMapGeneralizer.Realize(map[string]any{
+		"items":  []any{map[string]any{"at": millis}},
+		"byName": map[string]any{"a": map[string]any{"at": want.Format(time.RFC3339Nano)}},
+		"times":  []any{float64(millis), want},
+		"index":  map[any]any{"k": json.Number("1762826400123")},
+		"nested": map[string]any{"at": millis},
+	}, reflect.TypeFor[datedTree]())
+	require.NoError(t, err)
+	tree := got.(datedTree)
+	require.Len(t, tree.Items, 1)
+	assert.True(t, want.Equal(tree.Items[0].At))
+	require.NotNil(t, tree.ByName["a"])
+	assert.True(t, want.Equal(tree.ByName["a"].At))
+	require.Len(t, tree.Times, 2)
+	assert.True(t, want.Equal(tree.Times[0]))
+	assert.True(t, want.Equal(tree.Times[1]))
+	assert.True(t, want.Equal(tree.Index["k"]))
+	require.NotNil(t, tree.Nested)
+	assert.True(t, want.Equal(tree.Nested.At))
+
+	top, err := mockMapGeneralizer.Realize(millis, reflect.TypeFor[time.Time]())
+	require.NoError(t, err)
+	assert.True(t, want.Equal(top.(time.Time)))
+}
+
+// TestGeneralizeJavaDate checks that a time.Time result reaches hessian2 as a
+// time.Time, so it is written as java.util.Date, wherever it sits. It used to
+// be walked as a struct and come out as an empty map.
+func TestGeneralizeJavaDate(t *testing.T) {
+	want := time.UnixMilli(1762826400123)
+
+	top, err := mockMapGeneralizer.Generalize(want)
+	require.NoError(t, err)
+	assert.Equal(t, want, top)
+
+	ptr, err := mockMapGeneralizer.Generalize(&want)
+	require.NoError(t, err)
+	assert.Equal(t, want, ptr)
+
+	var nilTime *time.Time
+	none, err := mockMapGeneralizer.Generalize(nilTime)
+	require.NoError(t, err)
+	assert.Nil(t, none)
+
+	list, err := mockMapGeneralizer.Generalize([]time.Time{want})
+	require.NoError(t, err)
+	assert.Equal(t, []any{want}, list)
+
+	dict, err := mockMapGeneralizer.Generalize(map[string]time.Time{"k": want})
+	require.NoError(t, err)
+	assert.Equal(t, map[any]any{"k": want}, dict)
+
+	tree, err := mockMapGeneralizer.Generalize(datedTree{
+		Items:  []DatedItem{{At: want}},
+		ByName: map[string]*DatedItem{"a": {At: want}},
+		Times:  []time.Time{want},
+		Index:  map[string]time.Time{"k": want},
+		Nested: &DatedItem{At: want},
+	})
+	require.NoError(t, err)
+	m := tree.(map[string]any)
+	assert.Equal(t, want, m["items"].([]any)[0].(map[string]any)["at"])
+	assert.Equal(t, want, m["byName"].(map[any]any)["a"].(map[string]any)["at"])
+	assert.Equal(t, []any{want}, m["times"])
+	assert.Equal(t, map[any]any{"k": want}, m["index"])
+	assert.Equal(t, want, m["nested"].(map[string]any)["at"])
+
+	// Round trip through Realize gives the same values back.
+	back, err := mockMapGeneralizer.Realize(tree, reflect.TypeFor[datedTree]())
+	require.NoError(t, err)
+	assert.True(t, want.Equal(back.(datedTree).Nested.At))
+	assert.True(t, want.Equal(back.(datedTree).Index["k"]))
 }
 
 type bytePayload struct {

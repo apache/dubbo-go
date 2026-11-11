@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"testing"
+	"time"
 )
 
 import (
@@ -379,6 +380,20 @@ func TestServiceFilter_OnResponseWithUnsupportedGenericMode(t *testing.T) {
 
 	require.EqualError(t, res.Error(), `unsupported generic mode "unsupported_type"`)
 	assert.Nil(t, res.Result())
+}
+
+// TestServiceFilter_OnResponseJavaDate checks that a time.Time result leaves the
+// default generic mode as a time.Time, which hessian2 writes as java.util.Date.
+func TestServiceFilter_OnResponseJavaDate(t *testing.T) {
+	filter := &genericServiceFilter{}
+	want := time.UnixMilli(1762826400123)
+	inv := invocation.NewRPCInvocation(constant.Generic,
+		[]any{"Now", []string{}, []hessian.Object{}},
+		map[string]any{constant.GenericKey: "true"})
+
+	res := filter.OnResponse(context.Background(), &result.RPCResult{Rest: &want}, nil, inv)
+	require.NoError(t, res.Error())
+	assert.Equal(t, want, res.Result())
 }
 
 func TestServiceFilter_OnResponseWithEmptyGenericModeUsesDefault(t *testing.T) {

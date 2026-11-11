@@ -137,6 +137,16 @@ func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaB
 
 	desc := &JavaBeanDescriptor{ClassName: className, Properties: make(map[any]any)}
 
+	// Java's JavaBeanSerializeUtil treats a Date as a primitive: a
+	// TYPE_PRIMITIVE descriptor whose value is the Date itself. Walking
+	// time.Time as a struct would give an empty bean.
+	if t == timeType {
+		desc.ClassName = "java.util.Date"
+		desc.Type = TypePrimitive
+		desc.Properties["value"] = v.Interface()
+		return desc
+	}
+
 	switch t.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
