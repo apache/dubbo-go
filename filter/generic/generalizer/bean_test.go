@@ -20,6 +20,7 @@ package generalizer
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 import (
@@ -309,4 +310,27 @@ func TestBeanGeneralizer_Generalize_MutualCircularReference(t *testing.T) {
 
 	// node2.Next should be nil (circular reference back to node1)
 	assert.Nil(t, node2Desc.Properties["next"])
+}
+
+// TestBeanGeneralizer_JavaDate checks time.Time becomes a primitive java.util.Date descriptor.
+func TestBeanGeneralizer_JavaDate(t *testing.T) {
+	g := GetBeanGeneralizer()
+	want := time.UnixMilli(1762826400123)
+
+	result, err := g.Generalize(want)
+	require.NoError(t, err)
+	desc := result.(*JavaBeanDescriptor)
+	assert.Equal(t, TypePrimitive, desc.Type)
+	assert.Equal(t, "java.util.Date", desc.ClassName)
+	assert.Equal(t, want, desc.Properties["value"])
+
+	result, err = g.Generalize(DatedItem{At: want})
+	require.NoError(t, err)
+	field := result.(*JavaBeanDescriptor).Properties["at"].(*JavaBeanDescriptor)
+	assert.Equal(t, TypePrimitive, field.Type)
+	assert.Equal(t, want, field.Properties["value"])
+
+	back, err := g.Realize(result, reflect.TypeFor[DatedItem]())
+	require.NoError(t, err)
+	assert.True(t, want.Equal(back.(DatedItem).At))
 }

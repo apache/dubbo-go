@@ -109,12 +109,58 @@ func genericRealizeDecodeHook(from, to reflect.Type, data any) (any, error) {
 		return realizeJavaByteSequence(data, to)
 	}
 
+	if to == timeType && from != timeType {
+		return realizeTime(data)
+	}
+
 	if isUnsignedKind(to.Kind()) {
 		if err := validateUnsignedValue(data, to); err != nil {
 			return nil, err
 		}
 	}
 	return data, nil
+}
+
+var timeType = reflect.TypeFor[time.Time]()
+
+// realizeTime converts a JSON-encoded java.util.Date (epoch millis,
+// "yyyy-MM-dd HH:mm:ss" or RFC 3339) into time.Time.
+func realizeTime(data any) (any, error) {
+	if number, ok := data.(json.Number); ok {
+		millis, err := number.Int64()
+		if err != nil {
+			return nil, fmt.Errorf("java.util.Date millis %s is not an int64: %w", number, err)
+		}
+		return time.UnixMilli(millis), nil
+	}
+	value := reflect.ValueOf(data)
+	switch value.Kind() {
+	case reflect.String:
+		// Java CompatibleTypeUtils layout "yyyy-MM-dd HH:mm:ss".
+		if t, err := time.ParseInLocation(time.DateTime, value.String(), time.Local); err == nil {
+			return t, nil
+		}
+		t, err := time.Parse(time.RFC3339Nano, value.String())
+		if err != nil {
+			return nil, fmt.Errorf(`java.util.Date string %q must be "yyyy-MM-dd HH:mm:ss" or RFC 3339`, value.String())
+		}
+		return t, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return time.UnixMilli(value.Int()), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if value.Uint() > math.MaxInt64 {
+			return nil, fmt.Errorf("java.util.Date millis %d overflow int64", value.Uint())
+		}
+		return time.UnixMilli(int64(value.Uint())), nil
+	case reflect.Float32, reflect.Float64:
+		f := value.Float()
+		if f != math.Trunc(f) || f >= math.MaxInt64 || f < math.MinInt64 {
+			return nil, fmt.Errorf("java.util.Date millis %v is not an int64", f)
+		}
+		return time.UnixMilli(int64(f)), nil
+	default:
+		return data, nil
+	}
 }
 
 func isByteSequence(t reflect.Type) bool {
@@ -306,6 +352,9 @@ func objToMap(obj any) (any, error) {
 	if t.Kind() == reflect.Pointer && v.IsNil() {
 		return nil, nil
 	}
+	if date, ok := asJavaDate(v); ok {
+		return date, nil
+	}
 
 	// if obj is a POJO, get the struct from the pointer (if it is a pointer)
 	pojo, isPojo := obj.(hessian.POJO)
@@ -345,12 +394,6 @@ func objToMap(obj any) (any, error) {
 				}
 				generalizedValue, err = objToMap(valueIface)
 			case reflect.Struct, reflect.Slice, reflect.Map:
-				if isPrimitive(valueIface) {
-					logger.Warnf("[Filter][Generic] %q is primitive. Cross-language transfer (e.g., dubbo-go <-> dubbo-java) may crash. Use basic types like string.", value.Type())
-					generalizedValue = valueIface
-					break
-				}
-
 				generalizedValue, err = objToMap(valueIface)
 			default:
 				generalizedValue = valueIface
@@ -441,10 +484,17 @@ func isEmptyValue(value reflect.Value) bool {
 	}
 }
 
-// isPrimitive determines if the object is primitive
-func isPrimitive(obj any) bool {
-	if _, ok := obj.(time.Time); ok {
-		return true
+// asJavaDate returns v as a time.Time if it is one or a non-nil pointer to one,
+// so it is kept as-is and encoded as java.util.Date.
+func asJavaDate(v reflect.Value) (time.Time, bool) {
+	for v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return time.Time{}, false
+		}
+		v = v.Elem()
 	}
-	return false
+	if v.Type() != timeType {
+		return time.Time{}, false
+	}
+	return v.Interface().(time.Time), true
 }
