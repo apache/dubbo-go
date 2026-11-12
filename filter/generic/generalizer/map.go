@@ -123,9 +123,6 @@ func genericRealizeDecodeHook(from, to reflect.Type, data any) (any, error) {
 
 var timeType = reflect.TypeFor[time.Time]()
 
-// javaDateLayout is the "yyyy-MM-dd HH:mm:ss" layout used by Java's CompatibleTypeUtils.
-const javaDateLayout = "2006-01-02 15:04:05"
-
 // realizeTime converts a JSON-encoded java.util.Date (epoch millis,
 // "yyyy-MM-dd HH:mm:ss" or RFC 3339) into time.Time.
 func realizeTime(data any) (any, error) {
@@ -139,7 +136,8 @@ func realizeTime(data any) (any, error) {
 	value := reflect.ValueOf(data)
 	switch value.Kind() {
 	case reflect.String:
-		if t, err := time.ParseInLocation(javaDateLayout, value.String(), time.Local); err == nil {
+		// Java CompatibleTypeUtils layout "yyyy-MM-dd HH:mm:ss".
+		if t, err := time.ParseInLocation(time.DateTime, value.String(), time.Local); err == nil {
 			return t, nil
 		}
 		t, err := time.Parse(time.RFC3339Nano, value.String())
