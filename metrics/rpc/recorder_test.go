@@ -64,58 +64,10 @@ func TestConcurrentRecorderMatchesLegacyMetrics(t *testing.T) {
 		t.Run(strconv.Itoa(role), func(t *testing.T) {
 			c, reg := newRecordingCollector(t)
 			old, oldReg := newRecordingCollector(t)
-			errs := []error{nil, errors.New("unknown"), tri.NewError(tri.CodeDeadlineExceeded, errors.New("timeout")), tri.NewError(tri.CodeResourceExhausted, errors.New("limit")), tri.NewError(tri.CodeUnavailable, errors.New("unavailable")), tri.NewError(tri.CodeBizError, errors.New("business")), rpcerror.Mark(errors.New("network"), rpcerror.Network), rpcerror.Mark(errors.New("codec"), rpcerror.Codec)}
-			var events []*metricsEvent
-			for range 32 {
-				for i := range 72 {
-					before := recordingEvent(t, c, role)
-					end := *before
-					end.name = AfterInvoke
-					end.hasResult = true
-					end.costTime = 7 * time.Millisecond
-					if i%9 == 8 {
-						end.name = ObservationExpired
-						end.hasResult = false
-					} else {
-						end.err = errs[i%9]
-					}
-					events = append(events, before, &end)
-					old.beforeInvokeHandler(before)
-					if end.name == ObservationExpired {
-						old.observationExpiredHandler(&end)
-					} else {
-						old.afterInvokeHandler(&end)
-					}
-				}
-			}
-			stop := make(chan struct{})
-			var gathering sync.WaitGroup
-			for range 2 {
-				gathering.Go(func() {
-					for {
-						select {
-						case <-stop:
-							return
-						default:
-							if _, err := reg.Gather(); err != nil {
-								t.Error(err)
-								return
-							}
-						}
-					}
-				})
-			}
-			var wg sync.WaitGroup
-			for w := range 32 {
-				wg.Go(func() {
-					for i := w * 144; i < (w+1)*144; i++ {
-						c.record(events[i])
-					}
-				})
-			}
-			wg.Wait()
-			close(stop)
-			gathering.Wait()
+			events := legacyComparisonEvents(t, c, old, role)
+			stopGathering := startConcurrentGathering(t, reg)
+			recordConcurrentEvents(c, events)
+			stopGathering()
 			got := scalarSnapshot(t, reg)
 			want := scalarSnapshot(t, oldReg)
 			delete(got, "dubbo_"+events[0].role+"_qps_total")
@@ -125,6 +77,84 @@ func TestConcurrentRecorderMatchesLegacyMetrics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func legacyComparisonEvents(t *testing.T, c, old *rpcCollector, role int) []*metricsEvent {
+	t.Helper()
+	errs := []error{nil, errors.New("unknown"), tri.NewError(tri.CodeDeadlineExceeded, errors.New("timeout")), tri.NewError(tri.CodeResourceExhausted, errors.New("limit")), tri.NewError(tri.CodeUnavailable, errors.New("unavailable")), tri.NewError(tri.CodeBizError, errors.New("business")), rpcerror.Mark(errors.New("network"), rpcerror.Network), rpcerror.Mark(errors.New("codec"), rpcerror.Codec)}
+	var events []*metricsEvent
+	for range 32 {
+		for i := range 72 {
+			before := recordingEvent(t, c, role)
+			end := comparisonCompletion(before, i%9, errs)
+			events = append(events, before, end)
+			recordLegacyPair(old, before, end)
+		}
+	}
+	return events
+}
+
+func comparisonCompletion(before *metricsEvent, outcome int, errs []error) *metricsEvent {
+	end := *before
+	end.name = AfterInvoke
+	end.hasResult = true
+	end.costTime = 7 * time.Millisecond
+	if outcome == 8 {
+		end.name = ObservationExpired
+		end.hasResult = false
+		return &end
+	}
+	end.err = errs[outcome]
+	return &end
+}
+
+func recordLegacyPair(c *rpcCollector, before, end *metricsEvent) {
+	c.beforeInvokeHandler(before)
+	if end.name == ObservationExpired {
+		c.observationExpiredHandler(end)
+		return
+	}
+	c.afterInvokeHandler(end)
+}
+
+func startConcurrentGathering(t *testing.T, reg *prom.Registry) func() {
+	t.Helper()
+	stop := make(chan struct{})
+	var gathering sync.WaitGroup
+	for range 2 {
+		gathering.Go(func() { gatherUntilStopped(t, reg, stop) })
+	}
+	return func() {
+		close(stop)
+		gathering.Wait()
+	}
+}
+
+func gatherUntilStopped(t *testing.T, reg *prom.Registry, stop <-chan struct{}) {
+	t.Helper()
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+			if _, err := reg.Gather(); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}
+}
+
+func recordConcurrentEvents(c *rpcCollector, events []*metricsEvent) {
+	var wg sync.WaitGroup
+	for w := range 32 {
+		wg.Go(func() {
+			for _, event := range events[w*144 : (w+1)*144] {
+				c.record(event)
+			}
+		})
+	}
+	wg.Wait()
 }
 
 func scalarSnapshot(t *testing.T, r *prom.Registry) map[string]float64 {
@@ -185,22 +215,28 @@ func TestRecorderUsesCompleteIdentity(t *testing.T) {
 		end.hasResult = true
 		c.record(&end)
 	}
+	assertCompleteIdentityMetrics(t, r)
+}
+
+func assertCompleteIdentityMetrics(t *testing.T, r *prom.Registry) {
+	t.Helper()
 	families, err := r.Gather()
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, f := range families {
-		if f.GetName() == "dubbo_consumer_requests_total" {
-			if len(f.Metric) != 9 {
-				t.Fatalf("collapsed identities: %d", len(f.Metric))
-			}
-			for _, m := range f.Metric {
-				if m.GetCounter().GetValue() != 1 || len(m.Label) != 8 {
-					t.Fatal("identity or labels changed")
-				}
-			}
-			return
+		if f.GetName() != "dubbo_consumer_requests_total" {
+			continue
 		}
+		if len(f.Metric) != 9 {
+			t.Fatalf("collapsed identities: %d", len(f.Metric))
+		}
+		for _, m := range f.Metric {
+			if m.GetCounter().GetValue() != 1 || len(m.Label) != 8 {
+				t.Fatal("identity or labels changed")
+			}
+		}
+		return
 	}
 	t.Fatal("missing completed metrics")
 }
@@ -288,23 +324,7 @@ func TestRecorderPreservesEveryLatencyObservation(t *testing.T) {
 	c.metricSet = buildMetricSet(r)
 	var wg sync.WaitGroup
 	for range 16 {
-		wg.Go(func() {
-			for i := range 128 {
-				before := recordingEvent(t, c, common.CONSUMER)
-				c.record(before)
-				end := *before
-				end.name = AfterInvoke
-				end.hasResult = true
-				end.costTime = 7 * time.Millisecond
-				switch i % 4 {
-				case 0:
-					end.name = ObservationExpired
-				case 1:
-					end.err = errors.New("failure")
-				}
-				c.record(&end)
-			}
-		})
+		wg.Go(func() { recordLatencyBatch(t, c) })
 	}
 	wg.Wait()
 	for _, name := range []string{"dubbo_consumer_rt_milliseconds", "dubbo_consumer_rt"} {
@@ -321,5 +341,24 @@ func TestRecorderPreservesEveryLatencyObservation(t *testing.T) {
 		if got := values[name]; got != want {
 			t.Errorf("%s: got %v want %v", name, got, want)
 		}
+	}
+}
+
+func recordLatencyBatch(t *testing.T, c *rpcCollector) {
+	t.Helper()
+	for i := range 128 {
+		before := recordingEvent(t, c, common.CONSUMER)
+		c.record(before)
+		end := *before
+		end.name = AfterInvoke
+		end.hasResult = true
+		end.costTime = 7 * time.Millisecond
+		switch i % 4 {
+		case 0:
+			end.name = ObservationExpired
+		case 1:
+			end.err = errors.New("failure")
+		}
+		c.record(&end)
 	}
 }
