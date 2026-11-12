@@ -104,7 +104,7 @@ func (p *promMetricRegistry) Histogram(m *metrics.MetricId) metrics.ObservableMe
 	return p.HistogramWithOptions(m, nil)
 }
 
-var _ metrics.ConfigurableHistogramRegistry = (*promMetricRegistry)(nil)
+var _ metrics.HistogramProvider = (*promMetricRegistry)(nil)
 
 // HistogramWithOptions registers a histogram without changing the defaults of
 // Histogram. Invalid bounds fall back to the Prometheus defaults with a warning.

@@ -48,14 +48,14 @@ func init() {
 type rpcCollector struct {
 	registry          metrics.MetricRegistry
 	metricSet         *metricSet // metricSet is a struct which contains all metrics about rpc
-	histogramRegistry metrics.ConfigurableHistogramRegistry
+	histogramRegistry metrics.HistogramProvider
 	histogramOpts     *metrics.HistogramOpts
 }
 
 func newRPCCollector(registry metrics.MetricRegistry, url *common.URL) *rpcCollector {
 	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
 	if url.GetParamBool(constant.HistogramEnabledKey, false) {
-		if configurable, ok := registry.(metrics.ConfigurableHistogramRegistry); ok {
+		if configurable, ok := registry.(metrics.HistogramProvider); ok {
 			c.histogramRegistry = configurable
 			c.histogramOpts = rpcHistogramOpts(url.GetParam(constant.HistogramBucketsKey, ""))
 		} else {

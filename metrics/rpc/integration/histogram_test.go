@@ -43,7 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/metrics"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/metrics" // Register the metrics filter used by this test.
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsprom "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -97,16 +97,8 @@ func TestFilterToRPCHistogramHTTP(t *testing.T) {
 	// Warm-up uses a distinct method, so retries cannot pollute asserted counts.
 	require.Eventually(t, func() bool {
 		f.Invoke(context.Background(), provider, invocation.NewRPCInvocation("Warmup", nil, nil))
-		families, err := reg.Gather()
-		if err != nil {
-			return false
-		}
-		for _, family := range families {
-			if family.GetName() == "dubbo_provider_rt_milliseconds_histogram_seconds" {
-				return true
-			}
-		}
-		return false
+		counts, err := histogramSampleCounts(reg, "dubbo_provider_rt_milliseconds_histogram_seconds")
+		return err == nil && len(counts) > 0
 	}, 5*time.Second, 10*time.Millisecond)
 	consumerURL := common.NewURLWithOptions(
 		common.WithPath("org.example.HistogramFixture"),
@@ -121,25 +113,13 @@ func TestFilterToRPCHistogramHTTP(t *testing.T) {
 		}
 	}
 	require.Eventually(t, func() bool {
-		families, err := reg.Gather()
-		if err != nil {
-			return false
-		}
-		complete := 0
-		for _, family := range families {
-			if family.GetName() != "dubbo_provider_rt_milliseconds_histogram_seconds" &&
-				family.GetName() != "dubbo_consumer_rt_milliseconds_histogram_seconds" {
-				continue
-			}
-			for _, m := range family.Metric {
-				for _, label := range m.Label {
-					if label.GetName() == "method" && label.GetValue() == "Get" && m.GetHistogram().GetSampleCount() == 2 {
-						complete++
-					}
-				}
+		for _, side := range []string{"provider", "consumer"} {
+			counts, err := histogramSampleCounts(reg, "dubbo_"+side+"_rt_milliseconds_histogram_seconds")
+			if err != nil || counts["Get"] != 2 {
+				return false
 			}
 		}
-		return complete == 2
+		return true
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Exercise the same Prometheus HTTP handler used by the exporter, without
@@ -155,4 +135,25 @@ func TestFilterToRPCHistogramHTTP(t *testing.T) {
 		assert.Contains(t, body, prefix+"_sum{")
 		assert.Contains(t, body, prefix+"_count{")
 	}
+}
+
+func histogramSampleCounts(reg prom.Gatherer, name string) (map[string]uint64, error) {
+	families, err := reg.Gather()
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[string]uint64)
+	for _, family := range families {
+		if family.GetName() != name {
+			continue
+		}
+		for _, m := range family.Metric {
+			for _, label := range m.Label {
+				if label.GetName() == "method" {
+					counts[label.GetValue()] = m.GetHistogram().GetSampleCount()
+				}
+			}
+		}
+	}
+	return counts, nil
 }

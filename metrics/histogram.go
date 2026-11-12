@@ -22,10 +22,10 @@ import (
 	"math"
 )
 
-// ConfigurableHistogramRegistry is an optional MetricRegistry capability.
+// HistogramProvider is an optional MetricRegistry capability.
 // Existing registries do not need to implement it. HistogramWithOptions must
 // preserve the default behavior of Histogram when opts or Buckets is empty.
-type ConfigurableHistogramRegistry interface {
+type HistogramProvider interface {
 	HistogramWithOptions(*MetricId, *HistogramOpts) ObservableMetric
 }
 
