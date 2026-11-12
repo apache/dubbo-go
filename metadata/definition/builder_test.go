@@ -442,9 +442,7 @@ func TestRuntimeStillRegistersCollidingMethods(t *testing.T) {
 // unsupported types
 // ---------------------------------------------------------------------------
 
-// TestBuildPublishesTimeAsJavaDate covers #3803: one time.Time field used to
-// drop every method that reached it, which emptied services such as the
-// generic sample's UserProvider.
+// TestBuildPublishesTimeAsJavaDate checks time.Time is published as java.util.Date (#3803).
 func TestBuildPublishesTimeAsJavaDate(t *testing.T) {
 	def, skips := build(t, &timeService{})
 	assert.Empty(t, skips)
@@ -462,7 +460,7 @@ func TestBuildPublishesTimeAsJavaDate(t *testing.T) {
 		"holidays": "java.util.Map<java.lang.String,java.util.Date>",
 	}, user.Properties)
 	assert.Equal(t, []string{"java.util.Date"}, typeByName(t, def, "java.util.Date[]").Items)
-	// A leaf, like String: no entry exposing wall/ext/loc.
+	// A leaf type: no entry of its own.
 	assert.NotContains(t, typeNames(def), "java.util.Date")
 	assert.NotContains(t, typeNames(def), "time.Time")
 }

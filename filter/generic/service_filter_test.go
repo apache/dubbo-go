@@ -382,8 +382,7 @@ func TestServiceFilter_OnResponseWithUnsupportedGenericMode(t *testing.T) {
 	assert.Nil(t, res.Result())
 }
 
-// TestServiceFilter_OnResponseJavaDate checks that a time.Time result leaves the
-// default generic mode as a time.Time, which hessian2 writes as java.util.Date.
+// TestServiceFilter_OnResponseJavaDate checks a time.Time result is returned as-is.
 func TestServiceFilter_OnResponseJavaDate(t *testing.T) {
 	filter := &genericServiceFilter{}
 	want := time.UnixMilli(1762826400123)

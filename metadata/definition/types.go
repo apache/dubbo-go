@@ -71,9 +71,7 @@ func IsUnsupported(err error) bool {
 // Named scalars are deliberately absent: time.Duration is an int64 that
 // round-trips as a number like any other, so the scalar branch below handles it
 // correctly. Only types whose structure would be misrepresented belong here.
-//
-// time.Time is not blocked either: it is published as the leaf javaDate, see
-// timeType.
+// time.Time is not blocked either; see timeType.
 var blockedNamedTypes = map[string]string{
 	"math/big.Int":             "no JSON wire representation is defined for math/big types yet",
 	"math/big.Float":           "no JSON wire representation is defined for math/big types yet",
@@ -105,12 +103,7 @@ const (
 	javaDate    = "java.util.Date"
 )
 
-// timeType is published as java.util.Date, a leaf with no properties.
-//
-// That is the name dubbo-go's runtime already uses for it: hessian2 encodes
-// time.Time as a Date and filter/generic maps it to Ljava.util.Date; when it
-// resolves $invoke parameter types. Expanding the struct instead would publish
-// wall/ext/loc as if they were the contract.
+// timeType is published as the leaf type java.util.Date.
 var timeType = reflect.TypeFor[time.Time]()
 
 // javaWrappers maps each primitive spelling to its boxed counterpart.
@@ -224,7 +217,7 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 	}
 
 	if t == timeType {
-		// Already a reference type, like String: nullable changes nothing.
+		// A reference type, so nullable does not matter.
 		return javaDate, nil
 	}
 

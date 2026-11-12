@@ -123,20 +123,11 @@ func genericRealizeDecodeHook(from, to reflect.Type, data any) (any, error) {
 
 var timeType = reflect.TypeFor[time.Time]()
 
-// javaDateLayout is the layout Java's CompatibleTypeUtils uses to parse a String
-// into a java.util.Date ("yyyy-MM-dd HH:mm:ss"), read in the local time zone as
-// SimpleDateFormat does.
+// javaDateLayout is the "yyyy-MM-dd HH:mm:ss" layout used by Java's CompatibleTypeUtils.
 const javaDateLayout = "2006-01-02 15:04:05"
 
-// realizeTime turns a JSON-shaped java.util.Date into a time.Time.
-//
-// Service definitions publish time.Time as java.util.Date. A hessian2 caller
-// already sends a Date, which arrives as time.Time and needs no conversion. A
-// caller that builds the request from JSON, like Dubbo Admin, can only send a
-// number or a string. These follow Java's PojoUtils.realize, which hands both
-// to CompatibleTypeUtils: a number is epoch milliseconds (new Date(long)), and a
-// string is "yyyy-MM-dd HH:mm:ss". RFC 3339, the form encoding/json gives a
-// time.Time, is accepted as well.
+// realizeTime converts a JSON-encoded java.util.Date (epoch millis,
+// "yyyy-MM-dd HH:mm:ss" or RFC 3339) into time.Time.
 func realizeTime(data any) (any, error) {
 	if number, ok := data.(json.Number); ok {
 		millis, err := number.Int64()
@@ -495,15 +486,8 @@ func isEmptyValue(value reflect.Value) bool {
 	}
 }
 
-// asJavaDate returns v as a time.Time when it is one, or a non-nil pointer to
-// one.
-//
-// time.Time is java.util.Date on the generic wire, and Java's PojoUtils.generalize
-// returns a Date unchanged because ReflectUtils.isPrimitive counts it as a
-// primitive. Returning it unchanged here lets hessian2 encode it as a Date at any
-// depth: as the result itself, through a pointer, or inside a field, slice or
-// map. Expanding the struct instead would yield an empty map, since all of
-// time.Time's fields are unexported.
+// asJavaDate returns v as a time.Time if it is one or a non-nil pointer to one,
+// so it is kept as-is and encoded as java.util.Date.
 func asJavaDate(v reflect.Value) (time.Time, bool) {
 	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {

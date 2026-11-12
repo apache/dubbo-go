@@ -292,9 +292,7 @@ type timedPayload struct {
 	Maybe *time.Time
 }
 
-// TestRealizeJavaDate covers the forms a java.util.Date parameter can arrive
-// in: a Date from a hessian2 caller, or epoch millis / RFC 3339 from a JSON
-// caller such as Dubbo Admin.
+// TestRealizeJavaDate checks each accepted java.util.Date input form.
 func TestRealizeJavaDate(t *testing.T) {
 	want := time.UnixMilli(1762826400123)
 	for _, tt := range []struct {
@@ -320,7 +318,7 @@ func TestRealizeJavaDate(t *testing.T) {
 		})
 	}
 
-	// Java's CompatibleTypeUtils layout, read in the local zone.
+	// "yyyy-MM-dd HH:mm:ss" is read in the local zone.
 	local, err := mockMapGeneralizer.Realize(
 		map[string]any{"at": "2026-11-11 08:30:00"}, reflect.TypeFor[timedPayload]())
 	require.NoError(t, err)
@@ -344,8 +342,7 @@ type datedTree struct {
 	Nested *DatedItem
 }
 
-// TestRealizeJavaDateNested checks that the conversion applies wherever a
-// time.Time sits: inside slices, maps, pointers and nested structs.
+// TestRealizeJavaDateNested checks time.Time inside slices, maps, pointers and nested structs.
 func TestRealizeJavaDateNested(t *testing.T) {
 	want := time.UnixMilli(1762826400123)
 	millis := int64(1762826400123)
@@ -374,9 +371,7 @@ func TestRealizeJavaDateNested(t *testing.T) {
 	assert.True(t, want.Equal(top.(time.Time)))
 }
 
-// TestGeneralizeJavaDate checks that a time.Time result reaches hessian2 as a
-// time.Time, so it is written as java.util.Date, wherever it sits. It used to
-// be walked as a struct and come out as an empty map.
+// TestGeneralizeJavaDate checks time.Time is kept as-is at any depth.
 func TestGeneralizeJavaDate(t *testing.T) {
 	want := time.UnixMilli(1762826400123)
 

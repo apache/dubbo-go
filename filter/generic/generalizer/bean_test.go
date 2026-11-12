@@ -312,8 +312,7 @@ func TestBeanGeneralizer_Generalize_MutualCircularReference(t *testing.T) {
 	assert.Nil(t, node2Desc.Properties["next"])
 }
 
-// TestBeanGeneralizer_JavaDate mirrors Java's JavaBeanSerializeUtil, which
-// writes a Date as a TYPE_PRIMITIVE descriptor holding the Date itself.
+// TestBeanGeneralizer_JavaDate checks time.Time becomes a primitive java.util.Date descriptor.
 func TestBeanGeneralizer_JavaDate(t *testing.T) {
 	g := GetBeanGeneralizer()
 	want := time.UnixMilli(1762826400123)
