@@ -18,6 +18,11 @@
 package rpc
 
 import (
+	"sync"
+	"sync/atomic"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -29,15 +34,16 @@ import (
 )
 
 var (
-	rpcMetricsChan = make(chan metrics.MetricsEvent, 1024)
+	activeCollector atomic.Pointer[rpcCollector]
 )
 
-// init will add the rpc collectorFunc to metrics.collectors slice, and lazy start the rpc collector goroutine
+// init registers RPC recording synchronously before Metrics.Init returns.
 func init() {
 	collectorFunc := func(registry metrics.MetricRegistry, url *common.URL) {
 		if url.GetParamBool(constant.RpcEnabledKey, true) {
 			rc := newRPCCollector(registry, url)
-			go rc.start()
+			metrics.SubscribeRecorder(constant.MetricsRpc, rc.record)
+			activeCollector.Store(rc)
 		}
 	}
 
@@ -48,6 +54,10 @@ func init() {
 type rpcCollector struct {
 	registry          metrics.MetricRegistry
 	metricSet         *metricSet // metricSet is a struct which contains all metrics about rpc
+	series            sync.Map   // seriesKey -> *rpcSeries; owned by this registry
+	bindMu            sync.Mutex
+	fallbackMu        sync.Mutex // preserve serialized calls for legacy registries
+	reportFailure     sync.Once
 	histogramRegistry metrics.HistogramProvider
 	histogramOpts     *metrics.HistogramOpts
 }
@@ -65,24 +75,34 @@ func newRPCCollector(registry metrics.MetricRegistry, url *common.URL) *rpcColle
 	return c
 }
 
-// start will subscribe the rpc.metricsEvent from channel rpcMetricsChan, and handle the event from the channel
-func (c *rpcCollector) start() {
-	metrics.Subscribe(constant.MetricsRpc, rpcMetricsChan)
-	for event := range rpcMetricsChan {
-		if rpcEvent, ok := event.(*metricsEvent); ok {
-			switch rpcEvent.name {
-			case BeforeInvoke:
-				c.beforeInvokeHandler(rpcEvent)
-			case AfterInvoke:
-				c.afterInvokeHandler(rpcEvent)
-			case ObservationExpired:
-				c.observationExpiredHandler(rpcEvent)
-			default:
-			}
-		} else {
-			logger.Error("[Metrics][RPC] bad metrics event found in RPC collector")
+// record is called by Publish, before best-effort observer delivery. It never
+// lets a broken custom registry replace a business result or suppress callbacks.
+func (c *rpcCollector) record(event metrics.MetricsEvent) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			c.reportFailure.Do(func() { logger.Errorf("[Metrics][RPC] synchronous recording failed: %v", recovered) })
 		}
+	}()
+	e, ok := event.(*metricsEvent)
+	if !ok || e.collector != c || (e.role != constant.SideConsumer && e.role != constant.SideProvider) {
+		return
 	}
+	if _, ok := c.registry.(metrics.GaugeFuncRegistry); !ok {
+		// Retain record-time window gauges and serial registry access for custom
+		// registries that do not implement the optional collection-time extension.
+		c.fallbackMu.Lock()
+		defer c.fallbackMu.Unlock()
+		switch e.name {
+		case BeforeInvoke:
+			c.beforeInvokeHandler(e)
+		case AfterInvoke:
+			c.afterInvokeHandler(e)
+		case ObservationExpired:
+			c.observationExpiredHandler(e)
+		}
+		return
+	}
+	c.getSeries(e).record(e)
 }
 
 // Expiry closes monitoring only; it does not prove an RPC result or latency.

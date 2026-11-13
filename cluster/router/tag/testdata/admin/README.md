@@ -23,7 +23,8 @@ GOTOOLCHAIN=go1.25.0 go run /path/to/dubbo-go/cluster/router/tag/testdata/admin/
   -zookeeper zookeeper://127.0.0.1:2181 -out /tmp/tag-fixtures
 ```
 
-The generator writes `/dubbo/config/tag-compat-provider.tag-router`, captures
+At that pinned revision the generator writes
+`/dubbo/config/tag-compat-provider.tag-router`, captures
 four payloads, then deletes that node. `disabled.yaml` corresponds to the legacy
 or fixed disabled fixture, depending on the Admin revision. The local Admin
 resource cache is deliberately unused; the captured bytes come from the real
@@ -46,7 +47,7 @@ force, and actual config deletion.
 ```sh
 DUBBO_TAG_NACOS=127.0.0.1:8848 \
 DUBBO_TAG_ZOOKEEPER=127.0.0.1:2181 \
-go test -tags adminintegration -run TestAdminTagConfigCenterRPC -count=1 -v ./cluster/router/tag
+go test -run TestAdminTagConfigCenterRPC -count=1 -v ./cluster/router/tag
 ```
 
 On the original Go baseline (`5d892b0a`), this external test exposes two
@@ -76,7 +77,7 @@ go mod edit -modfile="$testModDir/go.mod" \
   -replace=github.com/dubbogo/gost="$testModDir/gost"
 DUBBO_TAG_NACOS=127.0.0.1:8848 \
 DUBBO_TAG_ZOOKEEPER=127.0.0.1:2181 \
-go test -mod=mod -modfile="$testModDir/go.mod" -race -tags adminintegration \
+go test -mod=mod -modfile="$testModDir/go.mod" -race \
   -run TestAdminTagConfigCenterRPC -count=1 -v ./cluster/router/tag
 ```
 
@@ -86,10 +87,11 @@ accept unauthenticated configuration requests.
 
 Admin's Nacos location is group `dubbo`, data ID `<provider-app>.tag-router`.
 Go must set `config-center.group=dubbo`; Nacos's `DEFAULT_GROUP` is different.
-Admin's ZooKeeper location is `/dubbo/config/<provider-app>.tag-router`.
-The test sets Go's `dubbo.config-center.root-path=/dubbo` and
-`config-center.namespace=config` to read and watch that exact path. Go's default
-root and namespace would add another `/dubbo` component.
+Since [Admin #1553](https://github.com/apache/dubbo-admin/pull/1553), Admin's
+ZooKeeper location is `/dubbo/config/dubbo/<provider-app>.tag-router`, which is
+Go's default config-center root and namespace. The tests write there and read
+it with default settings; `TestAdminTagZooKeeperDefaultRPC` checks that path on
+its own. Admin 0.7.0-pre and earlier wrote `/dubbo/config/<provider-app>.tag-router`.
 
 These tests do not restore interface-level discovery. They start from two
 provider invokers, as supplied to the tag router by application discovery, and

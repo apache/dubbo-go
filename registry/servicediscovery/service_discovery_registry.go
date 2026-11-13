@@ -212,6 +212,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 func createInstance(meta *info.MetadataInfo, url *common.URL, registryId string) registry.ServiceInstance {
 	params := make(map[string]string, 8)
 	params[constant.MetadataStorageTypePropertyName] = metadata.GetMetadataType()
+	params[constant.TimestampKey] = strconv.FormatInt(time.Now().UnixMilli(), 10)
 	// Expose the registry this instance belongs to so that customizers (e.g. revision
 	// calculators) can scope their work to the correct per-registry service set.
 	params[constant.RegistryIdKey] = registryId

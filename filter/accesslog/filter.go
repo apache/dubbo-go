@@ -85,10 +85,13 @@ func init() {
  */
 type Filter struct {
 	logChan      chan Data
+	logChanLock  sync.RWMutex // guards logChan sends against shutdown closing it
+	logClosed    bool         // read/written only under logChanLock
 	fileLock     sync.RWMutex // protects fileCache
 	fileCache    map[string]*os.File
 	ctx          context.Context
 	cancel       context.CancelFunc
+	drainDone    chan struct{} // closed when processLogs (including drainLogs) returns
 	shutdownOnce sync.Once
 }
 
@@ -101,6 +104,7 @@ func newFilter() filter.Filter {
 				fileCache: make(map[string]*os.File),
 				ctx:       ctx,
 				cancel:    cancel,
+				drainDone: make(chan struct{}),
 			}
 			go accessLogFilter.processLogs()
 		})
@@ -121,8 +125,18 @@ func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation ba
 	return invoker.Invoke(ctx, invocation)
 }
 
-// logIntoChannel won't block the invocation
+// logIntoChannel won't block the invocation.
+// The read lock keeps a send from racing with shutdown: shutdown takes the
+// write lock before closing logChan, so every in-flight send completes first
+// and every later send is rejected by logClosed. A select with default does
+// NOT protect against a send on a closed channel - such a send is considered
+// ready and panics.
 func (f *Filter) logIntoChannel(accessLogData Data) {
+	f.logChanLock.RLock()
+	defer f.logChanLock.RUnlock()
+	if f.logClosed {
+		return
+	}
 	select {
 	case f.logChan <- accessLogData:
 		return
@@ -198,6 +212,14 @@ func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invo
 
 // processLogs runs in a background goroutine to process log data
 func (f *Filter) processLogs() {
+	// Signal shutdown() only after drainLogs has finished. Keep this as a
+	// separate deferred closure so the signal is still sent if drainLogs
+	// panics; otherwise shutdown() could block forever.
+	defer func() {
+		if f.drainDone != nil {
+			close(f.drainDone)
+		}
+	}()
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("[Filter][AccessLog] accessLog processLogs panic, err=%v", r)
@@ -220,7 +242,8 @@ func (f *Filter) processLogs() {
 
 // drainLogs drains remaining log data with timeout protection
 func (f *Filter) drainLogs() {
-	timeout := time.After(5 * time.Second)
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
 	for {
 		select {
 		case accessLogData, ok := <-f.logChan:
@@ -228,10 +251,8 @@ func (f *Filter) drainLogs() {
 				return
 			}
 			f.writeLogToFileWithTimeout(accessLogData, 1*time.Second)
-		case <-timeout:
+		case <-timer.C:
 			logger.Warn("[Filter][AccessLog] accessLog drain timeout, some logs may be lost")
-			return
-		default:
 			return
 		}
 	}
@@ -426,9 +447,25 @@ func (f *Filter) shutdown() {
 			f.cancel()
 		}
 
-		// Close the channel to stop accepting new logs
+		// Stop accepting new logs and close the channel under the write lock.
+		// Acquiring it waits for all in-flight logIntoChannel sends to finish,
+		// so no request goroutine can send on the channel after it is closed.
+		// The channel must still be closed: drainLogs (see #3564) relies on
+		// ok == false to finish draining the buffered logs.
+		f.logChanLock.Lock()
+		f.logClosed = true
 		if f.logChan != nil {
 			close(f.logChan)
+		}
+		f.logChanLock.Unlock()
+
+		// Wait for the consumer to finish draining before closing cached file
+		// handles. Otherwise a drain write can target an already closed
+		// *os.File (dropped log), or reopen the file after fileCache was
+		// emptied and leave a handle nobody closes. cancel() and the channel
+		// close above guarantee processLogs returns, so this wait is bounded.
+		if f.drainDone != nil {
+			<-f.drainDone
 		}
 
 		// Close all cached file handles

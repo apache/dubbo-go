@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 )
 
 import (
@@ -70,8 +71,8 @@ func IsUnsupported(err error) bool {
 // Named scalars are deliberately absent: time.Duration is an int64 that
 // round-trips as a number like any other, so the scalar branch below handles it
 // correctly. Only types whose structure would be misrepresented belong here.
+// time.Time is not blocked either; see timeType.
 var blockedNamedTypes = map[string]string{
-	"time.Time":                "no JSON wire representation is defined for time.Time yet",
 	"math/big.Int":             "no JSON wire representation is defined for math/big types yet",
 	"math/big.Float":           "no JSON wire representation is defined for math/big types yet",
 	"math/big.Rat":             "no JSON wire representation is defined for math/big types yet",
@@ -99,7 +100,11 @@ const (
 	javaDouble  = "double"
 	javaString  = "java.lang.String"
 	javaMap     = "java.util.Map"
+	javaDate    = "java.util.Date"
 )
+
+// timeType is published as the leaf type java.util.Date.
+var timeType = reflect.TypeFor[time.Time]()
 
 // javaWrappers maps each primitive spelling to its boxed counterpart.
 //
@@ -209,6 +214,11 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 			return "", unsupported(t.String(),
 				fmt.Sprintf("type nesting exceeds %d levels", maxTypeDepth))
 		}
+	}
+
+	if t == timeType {
+		// A reference type, so nullable does not matter.
+		return javaDate, nil
 	}
 
 	if name := namedTypeKey(t); name != "" {
@@ -418,6 +428,9 @@ func (c *typeCollector) collectStructProperties(
 			}
 			if fieldType.Kind() != reflect.Struct {
 				return unsupported(field.Type.String(), "m squash requires a struct")
+			}
+			if fieldType == timeType {
+				return unsupported(field.Type.String(), "m squash of time.Time has no fields to flatten")
 			}
 			if name := namedTypeKey(fieldType); name != "" {
 				if reason, blocked := blockedNamedTypes[name]; blocked {

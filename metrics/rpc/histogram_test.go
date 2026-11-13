@@ -121,8 +121,12 @@ func TestRPCHistogramRecordsCompletedCalls(t *testing.T) {
 				{200 * time.Millisecond, errors.New("RPC failed")},
 				{11 * time.Second, nil},
 			} {
-				c.beforeInvokeHandler(NewBeforeInvokeEvent(invoker, inv).(*metricsEvent))
-				c.afterInvokeHandler(NewAfterInvokeEvent(invoker, inv, call.cost, &result.RPCResult{Err: call.err}).(*metricsEvent))
+				before := NewBeforeInvokeEvent(invoker, inv).(*metricsEvent)
+				before.collector = c
+				c.record(before)
+				after := NewAfterInvokeEvent(invoker, inv, call.cost, &result.RPCResult{Err: call.err}).(*metricsEvent)
+				after.collector = c
+				c.record(after)
 			}
 			prefix := "dubbo_" + tt.name
 			family := metricFamily(t, reg, prefix+"_rt_milliseconds_histogram_seconds")
@@ -183,8 +187,12 @@ func TestRPCHistogramDisabledOrUnsupported(t *testing.T) {
 			require.Nil(t, c.histogramRegistry)
 			invoker := base.NewBaseInvoker(url)
 			inv := invocation.NewRPCInvocation("Get", nil, nil)
-			c.beforeInvokeHandler(NewBeforeInvokeEvent(invoker, inv).(*metricsEvent))
-			c.afterInvokeHandler(NewAfterInvokeEvent(invoker, inv, time.Millisecond, &result.RPCResult{}).(*metricsEvent))
+			before := NewBeforeInvokeEvent(invoker, inv).(*metricsEvent)
+			before.collector = c
+			c.record(before)
+			after := NewAfterInvokeEvent(invoker, inv, time.Millisecond, &result.RPCResult{}).(*metricsEvent)
+			after.collector = c
+			c.record(after)
 			families, err := reg.Gather()
 			require.NoError(t, err)
 			for _, family := range families {
@@ -206,8 +214,12 @@ func TestRPCHistogramCustomAndInvalidBuckets(t *testing.T) {
 			invoker := base.NewBaseInvoker(url)
 			for _, method := range []string{"Get", "Create"} {
 				inv := invocation.NewRPCInvocation(method, nil, nil)
-				c.beforeInvokeHandler(NewBeforeInvokeEvent(invoker, inv).(*metricsEvent))
-				c.afterInvokeHandler(NewAfterInvokeEvent(invoker, inv, 500*time.Microsecond, &result.RPCResult{}).(*metricsEvent))
+				before := NewBeforeInvokeEvent(invoker, inv).(*metricsEvent)
+				before.collector = c
+				c.record(before)
+				after := NewAfterInvokeEvent(invoker, inv, 500*time.Microsecond, &result.RPCResult{}).(*metricsEvent)
+				after.collector = c
+				c.record(after)
 			}
 			family := metricFamily(t, reg, consumerRTHistogram.Name)
 			require.Len(t, family.Metric, 2)

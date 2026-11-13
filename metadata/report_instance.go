@@ -212,8 +212,8 @@ func (d *DelegateMetadataReport) ListAppRevisions(application string) ([]report.
 // then pass the assertion and only report "unsupported" after a caller had
 // already tried to publish.
 //
-// Backends without the capability (zookeeper, etcd, third-party reports) simply
-// return false and are unaffected.
+// Backends without the capability (etcd, third-party reports) simply return
+// false and are unaffected.
 func (d *DelegateMetadataReport) ServiceDefinitionPublisher() (report.ServiceDefinitionPublisher, bool) {
 	publisher, ok := d.instance.(report.ServiceDefinitionPublisher)
 	return publisher, ok

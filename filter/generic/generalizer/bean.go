@@ -137,6 +137,14 @@ func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaB
 
 	desc := &JavaBeanDescriptor{ClassName: className, Properties: make(map[any]any)}
 
+	// time.Time is a primitive java.util.Date descriptor, as in Java.
+	if t == timeType {
+		desc.ClassName = "java.util.Date"
+		desc.Type = TypePrimitive
+		desc.Properties["value"] = v.Interface()
+		return desc
+	}
+
 	switch t.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,

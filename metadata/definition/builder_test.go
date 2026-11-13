@@ -91,6 +91,26 @@ type timeService struct{}
 
 func (s *timeService) At(ctx context.Context, t time.Time) error { return nil }
 
+type TimedUser struct {
+	Name     string
+	Created  time.Time
+	Expires  *time.Time
+	Logins   []time.Time
+	Holidays map[string]time.Time
+}
+
+type timedUserService struct{}
+
+func (s *timedUserService) Get(ctx context.Context, id string) (*TimedUser, error) { return nil, nil }
+
+type SquashedTime struct {
+	T time.Time `m:",squash"`
+}
+
+type squashedTimeService struct{}
+
+func (s *squashedTimeService) Put(ctx context.Context, v SquashedTime) error { return nil }
+
 type ifaceService struct{}
 
 func (s *ifaceService) Any(ctx context.Context, v any) error { return nil }
@@ -422,6 +442,35 @@ func TestRuntimeStillRegistersCollidingMethods(t *testing.T) {
 // unsupported types
 // ---------------------------------------------------------------------------
 
+// TestBuildPublishesTimeAsJavaDate checks time.Time is published as java.util.Date (#3803).
+func TestBuildPublishesTimeAsJavaDate(t *testing.T) {
+	def, skips := build(t, &timeService{})
+	assert.Empty(t, skips)
+	assert.Equal(t, []string{"java.util.Date"}, methodByName(t, def, "At").ParameterTypes)
+
+	def, skips = build(t, &timedUserService{})
+	assert.Empty(t, skips)
+	get := methodByName(t, def, "Get")
+	user := typeByName(t, def, get.ReturnType)
+	assert.Equal(t, map[string]string{
+		"name":     "java.lang.String",
+		"created":  "java.util.Date",
+		"expires":  "java.util.Date",
+		"logins":   "java.util.Date[]",
+		"holidays": "java.util.Map<java.lang.String,java.util.Date>",
+	}, user.Properties)
+	assert.Equal(t, []string{"java.util.Date"}, typeByName(t, def, "java.util.Date[]").Items)
+	// A leaf type: no entry of its own.
+	assert.NotContains(t, typeNames(def), "java.util.Date")
+	assert.NotContains(t, typeNames(def), "time.Time")
+}
+
+func TestBuildRejectsSquashedTime(t *testing.T) {
+	def, skips := build(t, &squashedTimeService{})
+	assert.Empty(t, def.Methods)
+	assert.Contains(t, skipReasons(skips)["Put"], "time.Time")
+}
+
 func TestBuildRejectsUnsupportedMethods(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -432,7 +481,6 @@ func TestBuildRejectsUnsupportedMethods(t *testing.T) {
 		{"variadic", &variadicService{}, "Sum", "variadic"},
 		{"chan", &chanService{}, "Stream", "cannot cross an RPC boundary"},
 		{"non-string map key", &intMapService{}, "Lookup", "string-keyed"},
-		{"time.Time", &timeService{}, "At", "time.Time"},
 		{"empty interface", &ifaceService{}, "Any", "no declarable structure"},
 	}
 

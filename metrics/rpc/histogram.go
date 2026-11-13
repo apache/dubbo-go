@@ -58,17 +58,36 @@ func rpcHistogramOpts(raw string) *metrics.HistogramOpts {
 }
 
 func (c *rpcCollector) reportRTHistogram(role string, labels map[string]string, seconds float64) {
-	if c.histogramRegistry == nil {
+	if c.histogramRegistry == nil || (role != constant.SideConsumer && role != constant.SideProvider) {
 		return
 	}
-	var key *metrics.MetricKey
-	switch role {
-	case constant.SideProvider:
+	c.histogramRegistry.HistogramWithOptions(rpcHistogramID(role, labels), c.histogramOpts).Observe(seconds)
+}
+
+func rpcHistogramID(role string, labels map[string]string) *metrics.MetricId {
+	key := consumerRTHistogram
+	if role == constant.SideProvider {
 		key = providerRTHistogram
-	case constant.SideConsumer:
-		key = consumerRTHistogram
-	default:
-		return
 	}
-	c.histogramRegistry.HistogramWithOptions(metrics.NewMetricIdByLabels(key, labels), c.histogramOpts).Observe(seconds)
+	return metrics.NewMetricIdByLabels(key, labels)
+}
+
+type histogramMetric struct {
+	metrics.ObservableMetric
+}
+
+// rtHistogram binds a histogram once per complete series identity. Registration
+// is lazy: starts and expired observations do not create latency samples.
+func (s *rpcSeries) rtHistogram() metrics.ObservableMetric {
+	if h := s.histogram.Load(); h != nil {
+		return h.ObservableMetric
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if h := s.histogram.Load(); h != nil {
+		return h.ObservableMetric
+	}
+	h := &histogramMetric{s.histogramRegistry.HistogramWithOptions(s.histogramID, s.histogramOpts)}
+	s.histogram.Store(h)
+	return h.ObservableMetric
 }

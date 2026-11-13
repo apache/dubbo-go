@@ -76,23 +76,29 @@ type MethodDefinition struct {
 // TypeDefinition describes one type reachable from a method signature.
 //
 // The three optional fields are mutually exclusive in practice: Properties for
-// structs, Items for slice/array/map containers, Enums for enumerated
-// values (never populated by Go, retained for Java JSON compatibility).
+// structs and protobuf messages, Items for slice/array/map containers, Enums
+// for protobuf enums.
 type TypeDefinition struct {
-	// Type is the Java-vocabulary type expression used by the generic runtime.
-	// It is the key Admin uses to resolve a ParameterTypes or ReturnType entry,
+	// Type is the type expression used to reference this definition. The
+	// reflection builder writes Java-vocabulary expressions; protobuf
+	// definitions write the protobuf full name for messages and enums
+	// (greet.GreetRequest) and the same Java vocabulary for scalars and
+	// containers. It is the key Admin uses to resolve a ParameterTypes or ReturnType entry,
 	// so it must match those strings byte for byte.
 	Type string `json:"type"`
 	// Items holds one element type for slices/arrays, or the key and value types
 	// for maps, matching Java TypeDefinition's generic-argument layout.
 	Items []string `json:"items,omitempty"`
-	// Enums is never populated by the Go builder. Go has no enum type that
-	// reflection can enumerate; named integer constants are indistinguishable
-	// from any other named integer at runtime.
+	// Enums holds a protobuf enum's value names in declaration order. The
+	// reflection builder never fills it: Go has no enum type that reflection
+	// can enumerate, and named integer constants are indistinguishable from any
+	// other named integer at runtime.
 	Enums []string `json:"enums,omitempty"`
-	// Properties maps a struct field's wire name to its type expression. The
-	// wire name follows the same rule MapGeneralizer uses when serializing, so
-	// that a schema built from this map round-trips through generic invocation.
+	// Properties maps a field's wire name to its type expression. For Go
+	// structs the wire name follows the same rule MapGeneralizer uses when
+	// serializing, so that a schema built from this map round-trips through
+	// generic invocation. For protobuf messages it is the field's JSON name
+	// (lowerCamelCase), the name protojson emits.
 	Properties map[string]string `json:"properties,omitempty"`
 }
 

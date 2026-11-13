@@ -77,12 +77,9 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 				u.SetParam(constant.NacosLogDirKey, t.TempDir())
 				u.SetParam(constant.NacosCacheDirKey, t.TempDir())
 				u.SetParam(constant.NacosLogLevelKey, "error")
-			} else {
-				// Admin's existing governor writes /dubbo/config/<resource-name>.
-				// Go defaults to /dubbo/config/dubbo/<key>; these existing options align them.
-				u.SetParam(constant.ConfigRootPathParamKey, "/dubbo")
-				u.SetParam(constant.ConfigNamespaceKey, "config")
 			}
+			// ZooKeeper uses Go's defaults: Admin writes /dubbo/config/dubbo/<resource-name>
+			// since apache/dubbo-admin#1553, which is the default read path.
 			factory, err := extension.GetConfigCenterFactory(backend.name)
 			require.NoError(t, err)
 			dc, err := factory.GetDynamicConfiguration(u)
@@ -102,7 +99,8 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 			write, remove := adminConditionRawWriter(t, backend.name, dc)
 			// ListenConfigurationEvent registers asynchronously. Check delivery
 			// before asserting a one-shot router update, without a fixed sleep.
-			probeKey := "condition-compat-watch-probe"
+			runID := fmt.Sprintf("%s-%d", backend.name, time.Now().UnixNano())
+			probeKey := "condition-compat-watch-probe-" + runID
 			probe := &adminConditionProbe{events: make(chan struct{}, 8)}
 			dc.AddListener(probeKey, probe)
 			t.Cleanup(func() { dc.RemoveListener(probeKey, probe); _ = remove(probeKey) })
@@ -117,23 +115,30 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 					return false
 				}
 			}, 20*time.Second, 100*time.Millisecond, "config-center listener did not receive native writes")
-			consumer, providers := adminConditionRPCProviders(t)
 			for _, scope := range []string{"service", "application", "consumer-application"} {
 				t.Run(scope, func(t *testing.T) {
-					key := adminConditionServiceKey
+					group := "compat-" + runID + "-" + scope
+					providerApp := adminConditionProviderApp + "-" + runID + "-" + scope
+					consumerApp := adminConditionConsumerApp + "-" + runID + "-" + scope
+					providerKey := providerApp + constant.ConditionRouterRuleSuffix
+					consumerKey := consumerApp + constant.ConditionRouterRuleSuffix
+					consumer, providers := adminConditionRPCProviders(t, group, providerApp, consumerApp)
+					key := adminConditionInterface + ":1.0.0:" + group + constant.ConditionRouterRuleSuffix
 					var conditionRouter interface {
 						router.PriorityRouter
 						config_center.ConfigurationListener
 					}
 					switch scope {
 					case "application":
-						key = adminConditionApplicationKey
+						key = providerKey
 					case "consumer-application":
-						key = adminConditionConsumerApp + constant.ConditionRouterRuleSuffix
+						key = consumerKey
 					}
 					// Retarget the fixed fixture IP to a second, genuinely reachable local IP.
 					fixture := func(name string) string {
-						return strings.ReplaceAll(adminConditionFixture(t, name), "127.0.0.2", providers[1].GetURL().Ip)
+						payload := strings.ReplaceAll(adminConditionFixture(t, name), "127.0.0.2", providers[1].GetURL().Ip)
+						payload = strings.ReplaceAll(payload, adminConditionProviderApp, providerApp)
+						return strings.ReplaceAll(payload, adminConditionConsumerApp, consumerApp)
 					}
 					require.NoError(t, write(key, fixture(scope+"-initial")))
 					// Consumer-app rules must exist before the constructor subscribes.
@@ -147,8 +152,8 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 						if scope == "service" {
 							dc.RemoveListener(key, conditionRouter)
 						} else {
-							dc.RemoveListener(adminConditionConsumerApp+constant.ConditionRouterRuleSuffix, conditionRouter)
-							dc.RemoveListener(adminConditionApplicationKey, conditionRouter)
+							dc.RemoveListener(consumerKey, conditionRouter)
+							dc.RemoveListener(providerKey, conditionRouter)
 						}
 					})
 					routeChain := &chain.RouterChain{}
@@ -185,6 +190,8 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 						check("consumer rule present before constructor, provider has no rule", []string{"B"})
 						require.NoError(t, remove(key))
 						check("delete consumer rule", []string{"A", "B", "C"})
+						require.NoError(t, write(key, fixture(scope+"-initial")))
+						check("create consumer rule after subscription", []string{"B"})
 						return
 					}
 					check("present before subscription", []string{"A", "B"})
@@ -205,6 +212,8 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 					check("forced empty", []string{})
 					require.NoError(t, remove(key))
 					check("delete rule", []string{"A", "B", "C"})
+					require.NoError(t, write(key, fixture(scope+"-initial")))
+					check("create rule after subscription", []string{"A", "B"})
 				})
 			}
 		})
@@ -243,11 +252,13 @@ func adminConditionRawWriter(t *testing.T, backend string, dc config_center.Dyna
 	conn := dc.(interface {
 		ZkClient() *gxzookeeper.ZookeeperClient
 	}).ZkClient().Conn
-	if _, err := conn.Create("/dubbo/config", nil, 0, zk.WorldACL(zk.PermAll)); err != nil && err != zk.ErrNodeExists {
-		require.NoError(t, err)
+	for _, path := range []string{"/dubbo", "/dubbo/config", "/dubbo/config/dubbo"} {
+		if _, err := conn.Create(path, nil, 0, zk.WorldACL(zk.PermAll)); err != nil && err != zk.ErrNodeExists {
+			require.NoError(t, err)
+		}
 	}
 	return func(key, value string) error {
-		path := "/dubbo/config/" + key
+		path := "/dubbo/config/dubbo/" + key
 		_, err := conn.Create(path, []byte(value), 0, zk.WorldACL(zk.PermAll))
 		if err == zk.ErrNodeExists {
 			_, err = conn.Set(path, []byte(value), -1)
@@ -260,10 +271,10 @@ func adminConditionRawWriter(t *testing.T, backend string, dc config_center.Dyna
 			return fmt.Errorf("ZooKeeper path=%s content mismatch", path)
 		}
 		return err
-	}, func(key string) error { return conn.Delete("/dubbo/config/"+key, -1) }
+	}, func(key string) error { return conn.Delete("/dubbo/config/dubbo/"+key, -1) }
 }
 
-func adminConditionRPCProviders(t *testing.T) (*common.URL, []base.Invoker) {
+func adminConditionRPCProviders(t *testing.T, group, providerApp, consumerApp string) (*common.URL, []base.Invoker) {
 	t.Helper()
 	second := os.Getenv("DUBBO_GO_CONDITION_PROVIDER_B")
 	if second == "" {
@@ -280,11 +291,13 @@ func adminConditionRPCProviders(t *testing.T) (*common.URL, []base.Invoker) {
 	require.NotEmpty(t, second, "set DUBBO_GO_CONDITION_PROVIDER_B to a second locally reachable IPv4 address")
 	require.NotEqual(t, "127.0.0.1", second, "Admin disables by host, so A and B must have different IPs")
 	consumer, _ := adminConditionURLs(t)
+	consumer.SetParam(constant.GroupKey, group)
+	consumer.SetParam(constant.ApplicationKey, consumerApp)
 	var providers []base.Invoker
 	for i, item := range []struct{ id, host, env string }{{"A", "127.0.0.1", "stable"}, {"B", second, "stable"}, {"C", "127.0.0.1", "canary"}} {
 		handler := tri.NewUnaryHandler("/"+adminConditionInterface+"/Ping", func() any { return &wrapperspb.StringValue{} }, func(_ context.Context, _ *tri.Request) (*tri.Response, error) {
 			return tri.NewResponse(wrapperspb.String(item.id)), nil
-		}, tri.WithGroup("compat"), tri.WithVersion("1.0.0"))
+		}, tri.WithGroup(group), tri.WithVersion("1.0.0"))
 		server := &http.Server{Handler: h2c.NewHandler(handler, &http2.Server{})}
 		listener, err := net.Listen("tcp", "0.0.0.0:0")
 		require.NoError(t, err)
@@ -293,7 +306,7 @@ func adminConditionRPCProviders(t *testing.T) (*common.URL, []base.Invoker) {
 		address := net.JoinHostPort(item.host, fmt.Sprint(listener.Addr().(*net.TCPAddr).Port))
 		u, err := common.NewURL("tri://"+address+"/"+adminConditionInterface,
 			common.WithMethods([]string{"Ping"}), common.WithParamsValue(constant.IDLMode, constant.NONIDL),
-			common.WithParamsValue(constant.ApplicationKey, adminConditionProviderApp), common.WithParamsValue(constant.GroupKey, "compat"), common.WithParamsValue(constant.VersionKey, "1.0.0"),
+			common.WithParamsValue(constant.ApplicationKey, providerApp), common.WithParamsValue(constant.GroupKey, group), common.WithParamsValue(constant.VersionKey, "1.0.0"),
 			common.WithParamsValue("env", item.env), common.WithParamsValue("instance", item.id))
 		require.NoError(t, err)
 		invoker := triple.GetProtocol().Refer(u)

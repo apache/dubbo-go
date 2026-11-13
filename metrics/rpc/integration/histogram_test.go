@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Package integration_test exercises the real filter, asynchronous event bus,
+// Package integration_test exercises the real filter, synchronous recorder,
 // RPC collector and HTTP exposition in a separate test process. The invoker is
 // in-process; this is not a network protocol or Kubernetes integration test.
 package integration_test
@@ -93,13 +93,6 @@ func TestFilterToRPCHistogramHTTP(t *testing.T) {
 		common.WithParamsValue(constant.ApplicationKey, "histogram-fixture"),
 	)
 	provider := &fixtureInvoker{BaseInvoker: base.NewBaseInvoker(providerURL)}
-	// Collector subscription is asynchronous in the existing implementation.
-	// Warm-up uses a distinct method, so retries cannot pollute asserted counts.
-	require.Eventually(t, func() bool {
-		f.Invoke(context.Background(), provider, invocation.NewRPCInvocation("Warmup", nil, nil))
-		counts, err := histogramSampleCounts(reg, "dubbo_provider_rt_milliseconds_histogram_seconds")
-		return err == nil && len(counts) > 0
-	}, 5*time.Second, 10*time.Millisecond)
 	consumerURL := common.NewURLWithOptions(
 		common.WithPath("org.example.HistogramFixture"),
 		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER)),
@@ -107,20 +100,24 @@ func TestFilterToRPCHistogramHTTP(t *testing.T) {
 	)
 	consumer := &fixtureInvoker{BaseInvoker: base.NewBaseInvoker(consumerURL)}
 	for _, invoker := range []*fixtureInvoker{provider, consumer} {
-		for _, err := range []error{nil, errors.New("fixture failure")} {
+		for i, err := range []error{nil, errors.New("fixture failure")} {
 			invoker.err = err
-			f.Invoke(context.Background(), invoker, invocation.NewRPCInvocation("Get", nil, nil))
+			res := f.Invoke(context.Background(), invoker, invocation.NewRPCInvocation("Get", nil, nil))
+			require.Equal(t, err, res.Error())
+			side := "consumer"
+			if invoker == provider {
+				side = "provider"
+			}
+			counts, gatherErr := histogramSampleCounts(reg, "dubbo_"+side+"_rt_milliseconds_histogram_seconds")
+			require.NoError(t, gatherErr)
+			require.Equal(t, uint64(i+1), counts["Get"])
 		}
 	}
-	require.Eventually(t, func() bool {
-		for _, side := range []string{"provider", "consumer"} {
-			counts, err := histogramSampleCounts(reg, "dubbo_"+side+"_rt_milliseconds_histogram_seconds")
-			if err != nil || counts["Get"] != 2 {
-				return false
-			}
-		}
-		return true
-	}, 5*time.Second, 10*time.Millisecond)
+	for _, side := range []string{"provider", "consumer"} {
+		counts, err := histogramSampleCounts(reg, "dubbo_"+side+"_rt_milliseconds_histogram_seconds")
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), counts["Get"])
+	}
 
 	// Exercise the same Prometheus HTTP handler used by the exporter, without
 	// opening a fixed port or starting a background server.
