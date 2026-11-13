@@ -18,9 +18,14 @@
 package rpc
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"maps"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -37,6 +42,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsprom "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -100,17 +106,24 @@ func metricFamily(t *testing.T, reg *prom.Registry, name string) *dto.MetricFami
 
 func TestRPCHistogramRecordsCompletedCalls(t *testing.T) {
 	for _, tt := range []struct {
-		name string
-		role int
+		name   string
+		role   int
+		legacy bool
 	}{
-		{"provider", common.PROVIDER},
-		{"consumer", common.CONSUMER},
+		{"provider", common.PROVIDER, false},
+		{"consumer", common.CONSUMER, false},
+		{"provider", common.PROVIDER, true},
+		{"consumer", common.CONSUMER, true},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s/legacy=%t", tt.name, tt.legacy), func(t *testing.T) {
 			reg := prom.NewRegistry()
 			url := histogramTestURL(tt.role)
 			p := metricsprom.NewPromMetricRegistry(reg, url)
-			c := newRPCCollector(p, url)
+			var registry metrics.MetricRegistry = p
+			if tt.legacy {
+				registry = &histogramLegacyRegistry{MetricRegistry: p, HistogramProvider: p}
+			}
+			c := newRPCCollector(registry, url)
 			invoker := base.NewBaseInvoker(url)
 			inv := invocation.NewRPCInvocation("Get", nil, nil)
 			for _, call := range []struct {
@@ -168,7 +181,7 @@ type legacyHistogramRegistry struct {
 }
 
 func TestRPCHistogramDisabledOrUnsupported(t *testing.T) {
-	for _, mode := range []string{"missing", "disabled", "unsupported"} {
+	for _, mode := range []string{"missing", "disabled", "unsupported", "unsupported-cached"} {
 		t.Run(mode, func(t *testing.T) {
 			reg := prom.NewRegistry()
 			url := histogramTestURL(common.PROVIDER)
@@ -182,6 +195,9 @@ func TestRPCHistogramDisabledOrUnsupported(t *testing.T) {
 			var registry metrics.MetricRegistry = p
 			if mode == "unsupported" {
 				registry = &legacyHistogramRegistry{MetricRegistry: p}
+			}
+			if mode == "unsupported-cached" {
+				registry = &gaugeOnlyHistogramRegistry{MetricRegistry: p, GaugeFuncRegistry: p}
 			}
 			c := newRPCCollector(registry, url)
 			require.Nil(t, c.histogramRegistry)
@@ -235,4 +251,206 @@ func TestRPCHistogramCustomAndInvalidBuckets(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Exposes configurable histograms without collection-time gauges.
+type histogramLegacyRegistry struct {
+	metrics.MetricRegistry
+	metrics.HistogramProvider
+}
+
+type gaugeOnlyHistogramRegistry struct {
+	metrics.MetricRegistry
+	metrics.GaugeFuncRegistry
+}
+
+type countingHistogramRegistry struct {
+	metrics.MetricRegistry
+	metrics.GaugeFuncRegistry
+	provider      metrics.HistogramProvider
+	registrations atomic.Int64
+}
+
+func (r *countingHistogramRegistry) HistogramWithOptions(id *metrics.MetricId, opts *metrics.HistogramOpts) metrics.ObservableMetric {
+	r.registrations.Add(1)
+	return r.provider.HistogramWithOptions(id, opts)
+}
+
+func TestRPCHistogramConcurrentRecording(t *testing.T) {
+	for _, role := range []int{common.PROVIDER, common.CONSUMER} {
+		t.Run(strconv.Itoa(role), func(t *testing.T) {
+			reg := prom.NewRegistry()
+			url := histogramTestURL(role)
+			p := metricsprom.NewPromMetricRegistry(reg, url)
+			r := &countingHistogramRegistry{MetricRegistry: p, GaugeFuncRegistry: p, provider: p}
+			c := newRPCCollector(r, url)
+			events, identities := concurrentHistogramIdentities(c, url)
+			stopGathering := startConcurrentGathering(t, reg)
+			recordHistogramBurst(c, events)
+			stopGathering()
+			family := metricFamily(t, reg, rpcHistogramID(events[0].role, nil).Name)
+			assertHistogramIdentities(t, family, identities)
+			require.Equal(t, int64(16), r.registrations.Load(), "bind once per full identity")
+		})
+	}
+}
+
+func concurrentHistogramIdentities(c *rpcCollector, url *common.URL) ([]*metricsEvent, []map[string]string) {
+	var events []*metricsEvent
+	var identities []map[string]string
+	for i := range 16 {
+		u := histogramTestURL(common.CONSUMER)
+		u.SetParam(constant.RegistryRoleKey, url.GetParam(constant.RegistryRoleKey, ""))
+		u.SetParam(constant.GroupKey, strconv.Itoa(i%4))
+		u.SetParam(constant.VersionKey, strconv.Itoa((i/4)%2))
+		before := NewBeforeInvokeEvent(base.NewBaseInvoker(u), invocation.NewRPCInvocation("Call"+strconv.Itoa(i/8), nil, nil)).(*metricsEvent)
+		before.collector = c
+		events = append(events, before)
+		identities = append(identities, maps.Clone(before.labels))
+	}
+	return events, identities
+}
+
+func recordHistogramBurst(c *rpcCollector, events []*metricsEvent) {
+	start := make(chan struct{})
+	var workers sync.WaitGroup
+	failure := errors.New("histogram failure")
+	for worker := range 32 {
+		workers.Go(func() {
+			<-start
+			before := events[worker%len(events)]
+			for i := range 64 {
+				c.record(before)
+				var err error
+				if i%2 != 0 {
+					err = failure
+				}
+				c.record(NewCompletionEvent(before, 500*time.Microsecond, rpcerror.Completion{Known: true, Err: err}))
+			}
+		})
+	}
+	close(start)
+	workers.Wait()
+}
+
+func assertHistogramIdentities(t *testing.T, family *dto.MetricFamily, identities []map[string]string) {
+	t.Helper()
+	require.Len(t, family.Metric, len(identities))
+	for _, sample := range family.Metric {
+		labels := make(map[string]string)
+		for _, pair := range sample.Label {
+			labels[pair.GetName()] = pair.GetValue()
+		}
+		require.Contains(t, identities, labels)
+		h := sample.GetHistogram()
+		require.Equal(t, uint64(128), h.GetSampleCount())
+		require.InDelta(t, 0.064, h.GetSampleSum(), 1e-12)
+		for _, bucket := range h.Bucket {
+			require.Equal(t, uint64(128), bucket.GetCumulativeCount())
+		}
+	}
+}
+
+func TestRPCHistogramObservationTerminals(t *testing.T) {
+	for _, expire := range []bool{false, true} {
+		t.Run(fmt.Sprintf("expired=%t", expire), func(t *testing.T) {
+			reg := prom.NewRegistry()
+			url := histogramTestURL(common.CONSUMER)
+			p := metricsprom.NewPromMetricRegistry(reg, url)
+			c := newRPCCollector(p, url)
+			before := recordingEvent(t, c, common.CONSUMER)
+			c.record(before)
+			assertNoHistogramSamples(t, reg)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			_, observation := rpcerror.WithObservation(ctx)
+			done := make(chan struct{})
+			observation.OnComplete(func(completion rpcerror.Completion) {
+				c.record(NewCompletionEvent(before, 500*time.Microsecond, completion))
+				close(done)
+			})
+			observation.BeginAsync(ctx, time.Minute)
+			observation.FinishInvoke(nil, true)
+			if expire {
+				cancel()
+			} else {
+				observation.Complete(nil)
+			}
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				t.Fatal("observation did not terminate")
+			}
+			observation.Complete(nil)
+			observation.Complete(errors.New("late failure"))
+			assert.Zero(t, scalarSnapshot(t, reg)["dubbo_consumer_requests_processing_total"])
+			if expire {
+				assertNoHistogramSamples(t, reg)
+				assert.Zero(t, scalarSnapshot(t, reg)["dubbo_consumer_requests_total"])
+				return
+			}
+			h := metricFamily(t, reg, consumerRTHistogram.Name).Metric[0].GetHistogram()
+			require.Equal(t, uint64(1), h.GetSampleCount())
+			require.InDelta(t, 0.0005, h.GetSampleSum(), 1e-12)
+		})
+	}
+}
+
+func assertNoHistogramSamples(t *testing.T, reg *prom.Registry) {
+	t.Helper()
+	families, err := reg.Gather()
+	require.NoError(t, err)
+	for _, family := range families {
+		require.NotContains(t, family.GetName(), "histogram")
+	}
+}
+
+func TestRPCHistogramCompletionExpiryRace(t *testing.T) {
+	reg := prom.NewRegistry()
+	url := histogramTestURL(common.CONSUMER)
+	c := newRPCCollector(metricsprom.NewPromMetricRegistry(reg, url), url)
+	before := recordingEvent(t, c, common.CONSUMER)
+	var completed atomic.Uint64
+	for range 64 {
+		raceHistogramTerminal(c, before, &completed)
+	}
+	assert.Zero(t, scalarSnapshot(t, reg)["dubbo_consumer_requests_processing_total"])
+	families, err := reg.Gather()
+	require.NoError(t, err)
+	var count uint64
+	var sum float64
+	for _, family := range families {
+		if family.GetName() == consumerRTHistogram.Name {
+			count = family.Metric[0].GetHistogram().GetSampleCount()
+			sum = family.Metric[0].GetHistogram().GetSampleSum()
+		}
+	}
+	require.Equal(t, completed.Load(), count)
+	require.InDelta(t, float64(completed.Load())*0.0005, sum, 1e-12)
+	require.InDelta(t, float64(completed.Load()), scalarSnapshot(t, reg)["dubbo_consumer_requests_total"], 1e-9)
+}
+
+func raceHistogramTerminal(c *rpcCollector, before *metricsEvent, completed *atomic.Uint64) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, observation := rpcerror.WithObservation(ctx)
+	done := make(chan struct{})
+	observation.OnComplete(func(completion rpcerror.Completion) {
+		if completion.Known {
+			completed.Add(1)
+		}
+		c.record(NewCompletionEvent(before, 500*time.Microsecond, completion))
+		close(done)
+	})
+	c.record(before)
+	observation.BeginAsync(ctx, time.Minute)
+	observation.FinishInvoke(nil, true)
+	start := make(chan struct{})
+	var contenders sync.WaitGroup
+	contenders.Go(func() { <-start; cancel() })
+	contenders.Go(func() { <-start; observation.Complete(nil) })
+	close(start)
+	contenders.Wait()
+	<-done
+	observation.Complete(errors.New("late result"))
 }
