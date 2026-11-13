@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -84,17 +85,22 @@ func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 	sdReg, ok := reg.(*serviceDiscoveryRegistry)
 	assert.True(t, ok)
 
+	before := time.Now().UnixMilli()
 	err = sdReg.RegisterService()
+	after := time.Now().UnixMilli()
 	require.NoError(t, err)
 
 	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called")
 
-	if mockSD.capturedInstance != nil {
-		assert.Equal(t, testApp, mockSD.capturedInstance.GetServiceName())
-		assert.Equal(t, "127.0.0.1", mockSD.capturedInstance.GetHost())
-		assert.Equal(t, 20880, mockSD.capturedInstance.GetPort())
-		assert.Equal(t, "mock", mockSD.capturedInstance.GetMetadata()[constant.MetadataStorageTypePropertyName])
-	}
+	require.NotNil(t, mockSD.capturedInstance)
+	assert.Equal(t, testApp, mockSD.capturedInstance.GetServiceName())
+	assert.Equal(t, "127.0.0.1", mockSD.capturedInstance.GetHost())
+	assert.Equal(t, 20880, mockSD.capturedInstance.GetPort())
+	assert.Equal(t, "mock", mockSD.capturedInstance.GetMetadata()[constant.MetadataStorageTypePropertyName])
+	timestamp, err := strconv.ParseInt(mockSD.capturedInstance.GetMetadata()[constant.TimestampKey], 10, 64)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, timestamp, before)
+	assert.LessOrEqual(t, timestamp, after)
 }
 
 // TestServiceDiscoveryRegistryRegisterPublishesMetadataOnce verifies that
