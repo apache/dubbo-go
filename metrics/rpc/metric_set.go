@@ -37,6 +37,7 @@ type consumerMetrics struct {
 
 // rpcCommonMetrics is the common metrics for both provider and consumer
 type rpcCommonMetrics struct {
+	keys                          map[string]*metrics.MetricKey
 	qpsTotal                      metrics.QpsMetricVec
 	requestsTotal                 metrics.CounterVec
 	requestsTotalAggregate        metrics.AggregateCounterVec
@@ -79,84 +80,94 @@ func buildMetricSet(registry metrics.MetricRegistry) *metricSet {
 
 func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 	pm.initFailureOrigins(registry, "provider")
-	pm.qpsTotal = metrics.NewQpsMetricVec(registry, metrics.NewMetricKey("dubbo_provider_qps_total", "The number of requests received by the provider per second"))
-	pm.requestsTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_total", "The total number of received requests by the provider"))
-	pm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_total_aggregate", "The total number of received requests by the provider under the sliding window"))
-	pm.requestsProcessingTotal = metrics.NewGaugeVec(registry, metrics.NewMetricKey("dubbo_provider_requests_processing_total", "The number of received requests being processed by the provider"))
-	pm.requestsSucceedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_succeed_total", "The number of requests successfully received by the provider"))
-	pm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_succeed_total_aggregate", "The number of successful requests received by the provider under the sliding window"))
-	pm.requestsFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_failed_total", "Total Failed Requests"))
-	pm.requestsFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_failed_total_aggregate", "Total Failed Aggregate Requests"))
+	pm.qpsTotal = metrics.NewQpsMetricVec(registry, pm.key("dubbo_provider_qps_total", "The number of requests received by the provider per second"))
+	pm.requestsTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_total", "The total number of received requests by the provider"))
+	pm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_total_aggregate", "The total number of received requests by the provider under the sliding window"))
+	pm.requestsProcessingTotal = metrics.NewGaugeVec(registry, pm.key("dubbo_provider_requests_processing_total", "The number of received requests being processed by the provider"))
+	pm.requestsSucceedTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_succeed_total", "The number of requests successfully received by the provider"))
+	pm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_succeed_total_aggregate", "The number of successful requests received by the provider under the sliding window"))
+	pm.requestsFailedTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_failed_total", "Total Failed Requests"))
+	pm.requestsFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_failed_total_aggregate", "Total Failed Aggregate Requests"))
 	pm.rtMilliseconds = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_provider_rt_milliseconds", "response time among all requests processed by the provider"),
+		pm.key("dubbo_provider_rt_milliseconds", "response time among all requests processed by the provider"),
 		&metrics.RtOpts{Aggregate: false},
 	)
 	pm.rtMillisecondsAggregate = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_provider_rt", "response time of the provider under the sliding window"),
+		pm.key("dubbo_provider_rt", "response time of the provider under the sliding window"),
 		&metrics.RtOpts{Aggregate: true, BucketNum: metrics.DefaultBucketNum, TimeWindowSeconds: metrics.DefaultTimeWindowSeconds},
 	)
 	pm.rtMillisecondsQuantiles = metrics.NewQuantileMetricVec(registry, []*metrics.MetricKey{
-		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p50", "The total response time spent by providers processing 50% of requests"),
-		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p90", "The total response time spent by providers processing 90% of requests"),
-		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p95", "The total response time spent by providers processing 95% of requests"),
-		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p99", "The total response time spent by providers processing 99% of requests"),
+		pm.key("dubbo_provider_rt_milliseconds_p50", "The total response time spent by providers processing 50% of requests"),
+		pm.key("dubbo_provider_rt_milliseconds_p90", "The total response time spent by providers processing 90% of requests"),
+		pm.key("dubbo_provider_rt_milliseconds_p95", "The total response time spent by providers processing 95% of requests"),
+		pm.key("dubbo_provider_rt_milliseconds_p99", "The total response time spent by providers processing 99% of requests"),
 	}, []float64{0.5, 0.9, 0.95, 0.99})
 
 	// Granular error metrics
-	pm.requestsTimeoutTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_timeout_total", "Total Timeout Failed Requests"))
-	pm.requestsTimeoutTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_timeout_total_aggregate", "Total Timeout Failed Requests under the sliding window"))
-	pm.requestsLimitTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_limit_total", "Total Limit Failed Requests"))
-	pm.requestsLimitTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_limit_total_aggregate", "Total Limit Failed Requests under the sliding window"))
-	pm.requestsServiceUnavailableTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_failed_service_unavailable_total", "Total Service Unavailable Failed Requests"))
-	pm.requestsServiceUnavailableTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_failed_service_unavailable_total_aggregate", "Total Service Unavailable Failed Requests under the sliding window"))
-	pm.requestsBusinessFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_business_failed_total", "Total Failed Business Requests"))
-	pm.requestsBusinessFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_business_failed_total_aggregate", "Total Failed Business Requests under the sliding window"))
-	pm.requestsUnknownFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_unknown_failed_total", "Total Unknown Failed Requests"))
-	pm.requestsUnknownFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_unknown_failed_total_aggregate", "Total Unknown Failed Requests under the sliding window"))
+	pm.requestsTimeoutTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_timeout_total", "Total Timeout Failed Requests"))
+	pm.requestsTimeoutTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_timeout_total_aggregate", "Total Timeout Failed Requests under the sliding window"))
+	pm.requestsLimitTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_limit_total", "Total Limit Failed Requests"))
+	pm.requestsLimitTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_limit_total_aggregate", "Total Limit Failed Requests under the sliding window"))
+	pm.requestsServiceUnavailableTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_failed_service_unavailable_total", "Total Service Unavailable Failed Requests"))
+	pm.requestsServiceUnavailableTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_failed_service_unavailable_total_aggregate", "Total Service Unavailable Failed Requests under the sliding window"))
+	pm.requestsBusinessFailedTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_business_failed_total", "Total Failed Business Requests"))
+	pm.requestsBusinessFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_business_failed_total_aggregate", "Total Failed Business Requests under the sliding window"))
+	pm.requestsUnknownFailedTotal = metrics.NewCounterVec(registry, pm.key("dubbo_provider_requests_unknown_failed_total", "Total Unknown Failed Requests"))
+	pm.requestsUnknownFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, pm.key("dubbo_provider_requests_unknown_failed_total_aggregate", "Total Unknown Failed Requests under the sliding window"))
 }
 
 func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 	cm.initFailureOrigins(registry, "consumer")
-	cm.qpsTotal = metrics.NewQpsMetricVec(registry, metrics.NewMetricKey("dubbo_consumer_qps_total", "The number of requests sent by consumers per second"))
-	cm.requestsTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_total", "The total number of requests sent by consumers"))
-	cm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_total_aggregate", "The total number of requests sent by consumers under the sliding window"))
-	cm.requestsProcessingTotal = metrics.NewGaugeVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_processing_total", "The number of received requests being processed by the consumer"))
-	cm.requestsSucceedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_succeed_total", "The number of successful requests sent by consumers"))
-	cm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_succeed_total_aggregate", "The number of successful requests sent by consumers under the sliding window"))
-	cm.requestsFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_failed_total", "Total Failed Requests"))
-	cm.requestsFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_failed_total_aggregate", "Total Failed Aggregate Requests"))
+	cm.qpsTotal = metrics.NewQpsMetricVec(registry, cm.key("dubbo_consumer_qps_total", "The number of requests sent by consumers per second"))
+	cm.requestsTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_total", "The total number of requests sent by consumers"))
+	cm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_total_aggregate", "The total number of requests sent by consumers under the sliding window"))
+	cm.requestsProcessingTotal = metrics.NewGaugeVec(registry, cm.key("dubbo_consumer_requests_processing_total", "The number of received requests being processed by the consumer"))
+	cm.requestsSucceedTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_succeed_total", "The number of successful requests sent by consumers"))
+	cm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_succeed_total_aggregate", "The number of successful requests sent by consumers under the sliding window"))
+	cm.requestsFailedTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_failed_total", "Total Failed Requests"))
+	cm.requestsFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_failed_total_aggregate", "Total Failed Aggregate Requests"))
 	cm.rtMilliseconds = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds", "response time among all requests from consumers"),
+		cm.key("dubbo_consumer_rt_milliseconds", "response time among all requests from consumers"),
 		&metrics.RtOpts{Aggregate: false},
 	)
 	cm.rtMillisecondsAggregate = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_consumer_rt", "response time of the consumer under the sliding window"),
+		cm.key("dubbo_consumer_rt", "response time of the consumer under the sliding window"),
 		&metrics.RtOpts{Aggregate: true, BucketNum: metrics.DefaultBucketNum, TimeWindowSeconds: metrics.DefaultTimeWindowSeconds},
 	)
 	cm.rtMillisecondsQuantiles = metrics.NewQuantileMetricVec(registry, []*metrics.MetricKey{
-		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p50", "The total response time spent by consumers processing 50% of requests"),
-		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p90", "The total response time spent by consumers processing 90% of requests"),
-		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p95", "The total response time spent by consumers processing 95% of requests"),
-		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p99", "The total response time spent by consumers processing 99% of requests"),
+		cm.key("dubbo_consumer_rt_milliseconds_p50", "The total response time spent by consumers processing 50% of requests"),
+		cm.key("dubbo_consumer_rt_milliseconds_p90", "The total response time spent by consumers processing 90% of requests"),
+		cm.key("dubbo_consumer_rt_milliseconds_p95", "The total response time spent by consumers processing 95% of requests"),
+		cm.key("dubbo_consumer_rt_milliseconds_p99", "The total response time spent by consumers processing 99% of requests"),
 	}, []float64{0.5, 0.9, 0.95, 0.99})
 
 	// Granular error metrics
-	cm.requestsTimeoutTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_timeout_total", "Total Timeout Failed Requests"))
-	cm.requestsTimeoutTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_timeout_total_aggregate", "Total Timeout Failed Requests under the sliding window"))
-	cm.requestsLimitTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_limit_total", "Total Limit Failed Requests"))
-	cm.requestsLimitTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_limit_total_aggregate", "Total Limit Failed Requests under the sliding window"))
-	cm.requestsServiceUnavailableTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_failed_service_unavailable_total", "Total Service Unavailable Failed Requests"))
-	cm.requestsServiceUnavailableTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_failed_service_unavailable_total_aggregate", "Total Service Unavailable Failed Requests under the sliding window"))
-	cm.requestsBusinessFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_business_failed_total", "Total Failed Business Requests"))
-	cm.requestsBusinessFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_business_failed_total_aggregate", "Total Failed Business Requests under the sliding window"))
-	cm.requestsUnknownFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_unknown_failed_total", "Total Unknown Failed Requests"))
-	cm.requestsUnknownFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_unknown_failed_total_aggregate", "Total Unknown Failed Requests under the sliding window"))
+	cm.requestsTimeoutTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_timeout_total", "Total Timeout Failed Requests"))
+	cm.requestsTimeoutTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_timeout_total_aggregate", "Total Timeout Failed Requests under the sliding window"))
+	cm.requestsLimitTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_limit_total", "Total Limit Failed Requests"))
+	cm.requestsLimitTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_limit_total_aggregate", "Total Limit Failed Requests under the sliding window"))
+	cm.requestsServiceUnavailableTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_failed_service_unavailable_total", "Total Service Unavailable Failed Requests"))
+	cm.requestsServiceUnavailableTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_failed_service_unavailable_total_aggregate", "Total Service Unavailable Failed Requests under the sliding window"))
+	cm.requestsBusinessFailedTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_business_failed_total", "Total Failed Business Requests"))
+	cm.requestsBusinessFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_business_failed_total_aggregate", "Total Failed Business Requests under the sliding window"))
+	cm.requestsUnknownFailedTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_unknown_failed_total", "Total Unknown Failed Requests"))
+	cm.requestsUnknownFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_unknown_failed_total_aggregate", "Total Unknown Failed Requests under the sliding window"))
 }
 
 func (m *rpcCommonMetrics) initFailureOrigins(registry metrics.MetricRegistry, side string) {
 	prefix := "dubbo_" + side + "_requests_failed_"
-	m.requestsNetworkFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey(prefix+"network_total", "Total confirmed network failed requests"))
-	m.requestsNetworkFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey(prefix+"network_total_aggregate", "Network failed requests under the sliding window"))
-	m.requestsCodecFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey(prefix+"codec_total", "Total confirmed codec failed requests"))
-	m.requestsCodecFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey(prefix+"codec_total_aggregate", "Codec failed requests under the sliding window"))
+	m.requestsNetworkFailedTotal = metrics.NewCounterVec(registry, m.key(prefix+"network_total", "Total confirmed network failed requests"))
+	m.requestsNetworkFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, m.key(prefix+"network_total_aggregate", "Network failed requests under the sliding window"))
+	m.requestsCodecFailedTotal = metrics.NewCounterVec(registry, m.key(prefix+"codec_total", "Total confirmed codec failed requests"))
+	m.requestsCodecFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, m.key(prefix+"codec_total_aggregate", "Codec failed requests under the sliding window"))
+}
+
+// key keeps names and help text shared by legacy vectors and bound RPC handles.
+func (m *rpcCommonMetrics) key(name, description string) *metrics.MetricKey {
+	if m.keys == nil {
+		m.keys = make(map[string]*metrics.MetricKey)
+	}
+	key := metrics.NewMetricKey(name, description)
+	m.keys[name] = key
+	return key
 }

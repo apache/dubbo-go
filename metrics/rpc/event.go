@@ -31,6 +31,7 @@ import (
 
 // metricsEvent is the event defined for rpc metrics
 type metricsEvent struct {
+	collector *rpcCollector // snapshot readiness; a call begun before Init stays unrecorded
 	name      metricsName
 	costTime  time.Duration
 	role      string
@@ -55,9 +56,10 @@ const (
 
 func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
 	return &metricsEvent{
-		name:   BeforeInvoke,
-		role:   getRole(invoker.GetURL()),
-		labels: buildLabels(invoker.GetURL(), invocation),
+		collector: activeCollector.Load(),
+		name:      BeforeInvoke,
+		role:      getRole(invoker.GetURL()),
+		labels:    buildLabels(invoker.GetURL(), invocation),
 	}
 }
 
@@ -69,7 +71,7 @@ func NewCompletionEvent(before metrics.MetricsEvent, duration time.Duration, c r
 	if !c.Known {
 		name = ObservationExpired
 	}
-	return &metricsEvent{name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin}
+	return &metricsEvent{collector: start.collector, name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin}
 }
 
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {
@@ -84,6 +86,7 @@ func NewAfterInvokeEventWithOrigin(invoker base.Invoker, invocation base.Invocat
 		err = result.Error()
 	}
 	return &metricsEvent{
+		collector: activeCollector.Load(),
 		name:      AfterInvoke,
 		costTime:  costTime,
 		role:      getRole(invoker.GetURL()),
