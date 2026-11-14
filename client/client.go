@@ -210,6 +210,7 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ...ReferenceOption) (*Connection, error) {
 	newRefOpts := defaultReferenceOptions()
 	newRefOpts.codecConfigs = cli.cliOpts.codecConfigs
+	newRefOpts.serializationDefault = cli.cliOpts.serializationDefault
 	finalOpts := []ReferenceOption{
 		setReference(cli.cliOpts.overallReference.Clone()),
 		setApplication(cli.cliOpts.Application),

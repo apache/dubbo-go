@@ -200,7 +200,7 @@ func (di *DubboInvoker) Destroy() {
 			activeNumber := client.DecreaseActiveNumber()
 			di.setClient(nil)
 			if activeNumber == 0 {
-				exchangeClientMap.Delete(di.GetURL().Location)
+				exchangeClientMap.Delete(exchangeCacheKey(di.GetURL()))
 				client.Close()
 			}
 		}

@@ -40,6 +40,7 @@ import (
 	invct "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 // SerialID serial ID
@@ -48,13 +49,26 @@ type SerialID byte
 func init() {
 	codec := &DubboCodec{}
 	remoting.RegistryCodec("dubbo", codec)
+	remoting.MustRegisterCodec(remoting.CodecRegistration{Protocol: "dubbo", Name: "dubbo", New: newConfiguredDubboCodec})
 }
 
 // DubboCodec  implements remoting.Codec
-type DubboCodec struct{}
+type DubboCodec struct {
+	resources      *serialization.Resources
+	serializers    map[byte]impl.Serializer
+	names          map[string]byte
+	selectedID     byte
+	sendSerializer impl.Serializer
+}
 
 // EncodeRequest encodes request for transport
 func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
+	if c.resources.HasClosers() {
+		if !c.resources.Begin() {
+			return nil, fmt.Errorf("dubbo codec is closed")
+		}
+		defer c.resources.End()
+	}
 	if request.Event {
 		return c.encodeHeartbeatRequest(request)
 	}
@@ -82,11 +96,14 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	header := impl.DubboHeader{}
 	serialization := invocation.GetAttachmentWithDefaultValue(constant.SerializationKey, constant.Hessian2Serialization)
-	if serialization == constant.ProtobufSerialization {
+	if c.serializers != nil {
+		header.SerialID = c.selectedID
+	} else if serialization == constant.ProtobufSerialization {
 		header.SerialID = constant.SProto
 	} else {
 		header.SerialID = constant.SHessian2
 	}
+
 	header.ID = request.ID
 	if request.TwoWay {
 		header.Type = impl.PackageRequest_TwoWay
@@ -99,10 +116,10 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 		Service: svc,
 		Body:    impl.NewRequestPayload(invocation.Arguments(), invocation.Attachments()),
 		Err:     nil,
-		Codec:   impl.NewDubboCodec(nil),
+		Codec:   c.newPackage(nil).Codec,
 	}
 
-	if err := impl.LoadSerializer(pkg); err != nil {
+	if err := c.loadSerializer(pkg); err != nil {
 		return nil, perrors.WithStack(err)
 	}
 
@@ -113,7 +130,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 func (c *DubboCodec) encodeHeartbeatRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	header := impl.DubboHeader{
 		Type:     impl.PackageHeartbeat,
-		SerialID: constant.SHessian2,
+		SerialID: c.heartbeatID(),
 		ID:       request.ID,
 	}
 
@@ -122,10 +139,10 @@ func (c *DubboCodec) encodeHeartbeatRequest(request *remoting.Request) (*bytes.B
 		Service: impl.Service{},
 		Body:    impl.NewRequestPayload([]any{}, nil),
 		Err:     nil,
-		Codec:   impl.NewDubboCodec(nil),
+		Codec:   c.newPackage(nil).Codec,
 	}
 
-	if err := impl.LoadSerializer(pkg); err != nil {
+	if err := c.loadSerializer(pkg); err != nil {
 		return nil, err
 	}
 	return pkg.Marshal()
@@ -133,6 +150,12 @@ func (c *DubboCodec) encodeHeartbeatRequest(request *remoting.Request) (*bytes.B
 
 // EncodeResponse encodes response
 func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
+	if c.resources.HasClosers() {
+		if !c.resources.Begin() {
+			return nil, fmt.Errorf("dubbo codec is closed")
+		}
+		defer c.resources.End()
+	}
 	ptype := impl.PackageResponse
 	if response.IsHeartbeat() {
 		ptype = impl.PackageHeartbeat
@@ -157,7 +180,14 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 		}
 	}
 
-	codec := impl.NewDubboCodec(nil)
+	codec := c.newPackage(nil).Codec
+	if c.serializers != nil {
+		serializer, ok := c.serializers[resp.Header.SerialID]
+		if !ok {
+			return nil, fmt.Errorf("unsupported response serialization ID %d", resp.Header.SerialID)
+		}
+		codec.SetSerializer(serializer)
+	}
 
 	pkg, err := codec.Encode(*resp)
 	if err != nil {
@@ -183,6 +213,12 @@ func rpcResultFromResponse(value any) (result.RPCResult, error) {
 
 // Decode data, including request and response.
 func (c *DubboCodec) Decode(data []byte) (*remoting.DecodeResult, int, error) {
+	if c.resources.HasClosers() {
+		if !c.resources.Begin() {
+			return nil, 0, fmt.Errorf("dubbo codec is closed")
+		}
+		defer c.resources.End()
+	}
 	dataLen := len(data)
 	if dataLen < impl.HEADER_LENGTH { // check whether header bytes is enough or not
 		return nil, 0, nil
@@ -216,7 +252,7 @@ func (c *DubboCodec) isRequest(data []byte) bool {
 func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) {
 	var request *remoting.Request
 	buf := bytes.NewBuffer(data)
-	pkg := impl.NewDubboPackage(buf)
+	pkg := c.newPackage(buf)
 	pkg.SetBody(make([]any, 7))
 	err := pkg.Unmarshal()
 	if err != nil {
@@ -267,7 +303,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 // decode response
 func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error) {
 	buf := bytes.NewBuffer(data)
-	pkg := impl.NewDubboPackage(buf)
+	pkg := c.newPackage(buf)
 	err := pkg.Unmarshal()
 	if err != nil {
 		// if the data is very big, so the receive need much times.
@@ -321,4 +357,34 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	}
 
 	return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+}
+
+func (c *DubboCodec) loadSerializer(p *impl.DubboPackage) error {
+	if c.serializers == nil {
+		return impl.LoadSerializer(p)
+	}
+	serializer, ok := c.serializers[p.Header.SerialID]
+	if p.Header.SerialID == c.selectedID {
+		serializer, ok = c.sendSerializer, true
+	}
+	if !ok {
+		return fmt.Errorf("unsupported serialization ID %d", p.Header.SerialID)
+	}
+	p.SetSerializer(serializer)
+	return nil
+}
+func (c *DubboCodec) heartbeatID() byte {
+	if c.selectedID != 0 {
+		return c.selectedID
+	}
+	return constant.SHessian2
+}
+
+func (c *DubboCodec) Close() error { return c.resources.Close() }
+
+func (c *DubboCodec) newPackage(data *bytes.Buffer) *impl.DubboPackage {
+	if c.serializers == nil {
+		return impl.NewDubboPackage(data)
+	}
+	return impl.NewDubboPackageWithSerializers(data, c.serializers)
 }

@@ -43,17 +43,18 @@ import (
 )
 
 type ReferenceOptions struct {
-	codecConfigs map[string]any
-	Reference    *global.ReferenceConfig
-	Consumer     *global.ConsumerConfig
-	Application  *global.ApplicationConfig
-	Shutdown     *global.ShutdownConfig
-	Metrics      *global.MetricsConfig
-	Otel         *global.OtelConfig
-	TLS          *global.TLSConfig
-	Protocols    map[string]*global.ProtocolConfig
-	Registries   map[string]*global.RegistryConfig
-	Routers      []*global.RouterConfig
+	serializationDefault bool
+	codecConfigs         map[string]any
+	Reference            *global.ReferenceConfig
+	Consumer             *global.ConsumerConfig
+	Application          *global.ApplicationConfig
+	Shutdown             *global.ShutdownConfig
+	Metrics              *global.MetricsConfig
+	Otel                 *global.OtelConfig
+	TLS                  *global.TLSConfig
+	Protocols            map[string]*global.ProtocolConfig
+	Registries           map[string]*global.RegistryConfig
+	Routers              []*global.RouterConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -137,8 +138,11 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init serialization
-	if refConf.Serialization == "" {
+	if refConf.Serialization == "" || (refOpts.serializationDefault && refConf.Serialization == constant.ProtobufSerialization && refConf.Protocol == constant.DubboProtocol) {
 		refConf.Serialization = constant.ProtobufSerialization
+		if refConf.Protocol == constant.DubboProtocol {
+			refConf.Serialization = constant.Hessian2Serialization
+		}
 	}
 
 	// validate generic type, fail fast on unknown value instead of
@@ -405,6 +409,7 @@ func WithVersion(version string) ReferenceOption {
 func WithSerializationJSON() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Serialization = constant.JSONSerialization
+		opts.serializationDefault = false
 	}
 }
 
@@ -414,6 +419,7 @@ func WithSerializationJSON() ReferenceOption {
 func WithSerialization(serialization string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Serialization = serialization
+		opts.serializationDefault = false
 	}
 }
 
@@ -671,15 +677,16 @@ func setRouters(routers []*global.RouterConfig) ReferenceOption {
 }
 
 type ClientOptions struct {
-	Consumer    *global.ConsumerConfig
-	Application *global.ApplicationConfig
-	Registries  map[string]*global.RegistryConfig
-	Shutdown    *global.ShutdownConfig
-	Metrics     *global.MetricsConfig
-	Otel        *global.OtelConfig
-	TLS         *global.TLSConfig
-	Protocols   map[string]*global.ProtocolConfig
-	Routers     []*global.RouterConfig
+	serializationDefault bool
+	Consumer             *global.ConsumerConfig
+	Application          *global.ApplicationConfig
+	Registries           map[string]*global.RegistryConfig
+	Shutdown             *global.ShutdownConfig
+	Metrics              *global.MetricsConfig
+	Otel                 *global.OtelConfig
+	TLS                  *global.TLSConfig
+	Protocols            map[string]*global.ProtocolConfig
+	Routers              []*global.RouterConfig
 
 	overallReference *global.ReferenceConfig
 	extensionOptions []extension.Option
@@ -745,6 +752,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	}
 	// init serialization
 	if cliOpts.overallReference.Serialization == "" {
+		cliOpts.serializationDefault = true
 		cliOpts.overallReference.Serialization = constant.ProtobufSerialization
 	}
 

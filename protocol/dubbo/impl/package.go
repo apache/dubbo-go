@@ -166,3 +166,13 @@ func NewDubboPackage(data *bytes.Buffer) *DubboPackage {
 		Codec:   codec,
 	}
 }
+
+// NewDubboPackageWithSerializers avoids the legacy process registry on the
+// configured runtime path. The caller owns the immutable serializers map.
+func NewDubboPackageWithSerializers(data *bytes.Buffer, items map[byte]Serializer) *DubboPackage {
+	var reader *bufio.Reader
+	if data != nil {
+		reader = bufio.NewReaderSize(data, len(data.Bytes()))
+	}
+	return &DubboPackage{Codec: NewDubboCodecWithSerializers(reader, items)}
+}
