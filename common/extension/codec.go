@@ -17,7 +17,9 @@
 
 package extension
 
-import "dubbo.apache.org/dubbo-go/v3/remoting"
+import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+)
 
 func RegisterCodec(reg remoting.CodecRegistration) error { return remoting.RegisterCodec(reg) }
 func MustRegisterCodec(reg remoting.CodecRegistration)   { remoting.MustRegisterCodec(reg) }

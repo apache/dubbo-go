@@ -26,8 +26,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/serialization"
 	"github.com/mitchellh/mapstructure"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 // Initialize creates and initializes the extensions active for one lifecycle

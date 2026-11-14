@@ -19,7 +19,6 @@ package triple_protocol
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/serialization"
 	"errors"
 	"fmt"
 	"io"
@@ -27,6 +26,10 @@ import (
 	"net/url"
 	"strings"
 	"time"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 type TimeoutKey struct{}

@@ -17,7 +17,9 @@
 
 package extension
 
-import "dubbo.apache.org/dubbo-go/v3/common"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
 
 // PrepareCodecURL binds protocol codecs before reference/export side effects.
 // Protocol implementations may opt into this error-returning initialization.

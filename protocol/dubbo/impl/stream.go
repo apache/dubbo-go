@@ -157,7 +157,7 @@ func (s StreamSerializer) decodeTypedArguments(body []byte, p *DubboPackage) (er
 	types := method.ArgsType()
 	args := request["args"].([]any)
 	// Legacy catch-all methods receive the entire dynamic argument list.
-	if (len(types) == 1 || len(types) == 2 && method.ReplyType() == nil) && types[0] == reflect.TypeOf([]any{}) {
+	if (len(types) == 1 || len(types) == 2 && method.ReplyType() == nil) && types[0] == reflect.TypeFor[[]any]() {
 		return nil
 	}
 	if len(types) != len(args) {
@@ -182,7 +182,7 @@ func (s StreamSerializer) decodeTypedArguments(body []byte, p *DubboPackage) (er
 			err = closeErr
 		}
 	}()
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		var field string
 		if err = decoder.Decode(&field); err != nil {
 			return fmt.Errorf("decode request field %d: %w", i, err)

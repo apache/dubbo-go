@@ -17,7 +17,10 @@
 
 package triple_protocol
 
-import "fmt"
+import (
+	"fmt"
+	"maps"
+)
 
 // BuiltinSerializationCodecs returns fresh bindings for the built-in formats.
 func BuiltinSerializationCodecs() map[string]Codec {
@@ -29,9 +32,7 @@ func BuiltinSerializationCodecs() map[string]Codec {
 func ConfiguredSerializationOptions(selected Codec, inner, messages map[string]Codec, wrapped, acceptResponses bool) ([]ClientOption, []HandlerOption) {
 	clone := func(source map[string]Codec) map[string]Codec {
 		out := make(map[string]Codec, len(source))
-		for n, c := range source {
-			out[n] = c
-		}
+		maps.Copy(out, source)
 		return out
 	}
 	inner, messages = clone(inner), clone(messages)
@@ -50,9 +51,7 @@ type serializationHandlerOption struct{ inner, messages map[string]Codec }
 func (o *serializationHandlerOption) applyToHandler(c *handlerConfig) {
 	c.InnerCodecs = o.inner
 	c.MessageCodecs = o.messages
-	for name, codec := range o.messages {
-		c.Codecs[name] = codec
-	}
+	maps.Copy(c.Codecs, o.messages)
 }
 
 func canonicalInnerName(name string) string {

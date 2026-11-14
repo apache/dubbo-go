@@ -19,6 +19,9 @@ package grpc
 
 import (
 	"fmt"
+)
+
+import (
 	"google.golang.org/grpc/encoding"
 )
 

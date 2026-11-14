@@ -24,7 +24,9 @@ import (
 	"sync"
 )
 
-import "dubbo.apache.org/dubbo-go/v3/serialization"
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
+)
 
 const (
 	defaultImplementationsSize = 4
