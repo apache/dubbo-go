@@ -32,7 +32,9 @@ import (
 
 import (
 	"github.com/stretchr/testify/require"
+
 	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )

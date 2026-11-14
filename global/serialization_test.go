@@ -18,9 +18,13 @@
 package global
 
 import (
-	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v4"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/require"
+
+	"go.yaml.in/yaml/v4"
 )
 
 func TestAcceptedSerializationsClonePresence(t *testing.T) {

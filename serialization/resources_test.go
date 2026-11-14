@@ -19,11 +19,14 @@ package serialization
 
 import (
 	"errors"
-	"github.com/stretchr/testify/require"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+)
+
+import (
+	"github.com/stretchr/testify/require"
 )
 
 type closeProbe struct{ calls *atomic.Int64 }
@@ -68,9 +71,8 @@ func TestResourcesDrainAndCloseOnce(t *testing.T) {
 		t.Fatal("Close did not drain")
 	}
 	var wg sync.WaitGroup
-	for i := 0; i < 8; i++ {
-		wg.Add(1)
-		go func() { defer wg.Done(); resources.Close() }()
+	for range 8 {
+		wg.Go(func() { resources.Close() })
 	}
 	wg.Wait()
 	if calls.Load() != 1 {

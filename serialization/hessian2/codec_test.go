@@ -51,10 +51,8 @@ func TestStreamOwnershipAndRecovery(t *testing.T) {
 	require.Error(t, c.Unmarshal(data, got))
 	require.Error(t, c.Unmarshal(data, new(int)))
 	var wg sync.WaitGroup
-	for i := 0; i < 24; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 24 {
+		wg.Go(func() {
 			b, e := c.Marshal("parallel")
 			if e != nil {
 				t.Error(e)
@@ -66,7 +64,7 @@ func TestStreamOwnershipAndRecovery(t *testing.T) {
 			} else if v != "parallel" {
 				t.Errorf("bad result %s", v)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

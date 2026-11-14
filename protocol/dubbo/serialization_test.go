@@ -19,7 +19,6 @@ package dubbo
 
 import (
 	"bytes"
-	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"encoding/binary"
 	"errors"
 	"runtime"
@@ -33,6 +32,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"

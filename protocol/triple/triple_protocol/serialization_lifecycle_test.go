@@ -19,11 +19,7 @@ package triple_protocol
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/serialization"
 	"errors"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -31,6 +27,17 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+)
+
+import (
+	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 type codecConnProbe struct {

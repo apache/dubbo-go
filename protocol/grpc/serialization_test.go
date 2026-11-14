@@ -19,11 +19,8 @@ package grpc
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"encoding/json"
 	"errors"
-	"google.golang.org/grpc/encoding"
-	"google.golang.org/grpc/mem"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -32,14 +29,18 @@ import (
 
 import (
 	"github.com/stretchr/testify/require"
+
 	grpcgo "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/mem"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/serialization"
 )

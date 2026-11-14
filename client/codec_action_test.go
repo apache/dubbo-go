@@ -18,18 +18,24 @@
 package client
 
 import (
+	"errors"
+	"fmt"
+	"slices"
+	"strings"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/require"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"errors"
-	"fmt"
-	"github.com/stretchr/testify/require"
-	"slices"
-	"strings"
-	"testing"
 )
 
 type codecActionInvoker struct {

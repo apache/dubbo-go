@@ -19,7 +19,6 @@ package client
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"errors"
 	"net/http"
 	"testing"
@@ -31,6 +30,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	"dubbo.apache.org/dubbo-go/v3/common"

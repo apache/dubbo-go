@@ -20,6 +20,7 @@ package extension
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"sync/atomic"
 	"testing"
 )
@@ -121,9 +122,7 @@ func (c *serializationSnapshotConfig) Init(Scope) error         { c.inits.Add(1)
 func (*serializationSnapshotConfig) FilterNames(Scope) []string { return nil }
 func (c *serializationSnapshotConfig) CodecConfig() any {
 	v := make(map[string]string)
-	for k, x := range c.Values {
-		v[k] = x
-	}
+	maps.Copy(v, c.Values)
 	return v
 }
 func TestInitializeSerializationSnapshots(t *testing.T) {
@@ -224,7 +223,7 @@ func TestCodecRegistrationValidationAndAtomicID(t *testing.T) {
 	close(start)
 	wins := 0
 	loser := ""
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		r := <-results
 		if r.err == nil {
 			wins++

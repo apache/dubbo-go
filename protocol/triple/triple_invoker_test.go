@@ -20,11 +20,7 @@ package triple
 import (
 	"bytes"
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/serialization"
 	"fmt"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-	"google.golang.org/protobuf/encoding/protowire"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -43,6 +39,11 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	oteltrace "go.opentelemetry.io/otel/trace"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
 import (
@@ -54,6 +55,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 func headerValues(header http.Header, key string) []string {
