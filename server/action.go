@@ -136,6 +136,24 @@ func (svcOpts *ServiceOptions) Export() error {
 		return nil
 	}
 
+	preparedURLs := make([]*common.URL, 0)
+	prepared := false
+	initialExporters := len(svcOpts.exporters)
+	registeredProtocols := make([]string, 0)
+	defer func() {
+		if !prepared {
+			for i := len(svcOpts.exporters) - 1; i >= initialExporters; i-- {
+				svcOpts.exporters[i].UnExport()
+			}
+			svcOpts.exporters = svcOpts.exporters[:initialExporters]
+			for _, protocolName := range registeredProtocols {
+				_ = common.ServiceMap.UnRegister(svcConf.Interface, protocolName, common.ServiceKey(svcConf.Interface, svcConf.Group, svcConf.Version))
+			}
+			for i := len(preparedURLs) - 1; i >= 0; i-- {
+				_ = extension.ReleaseCodecURL(preparedURLs[i], "provider")
+			}
+		}
+	}()
 	regUrls := make([]*common.URL, 0)
 	if !svcConf.NotRegister {
 		var err error
@@ -168,6 +186,7 @@ func (svcOpts *ServiceOptions) Export() error {
 			logger.Errorf("[Server] failed to validate protocol, err=%v", formatErr)
 			return formatErr
 		}
+		registeredProtocols = append(registeredProtocols, protocolConf.Name)
 
 		port := protocolConf.Port
 		if len(protocolConf.Port) == 0 {
@@ -193,6 +212,7 @@ func (svcOpts *ServiceOptions) Export() error {
 			common.WithMethods(strings.Split(methods, ",")),
 			// TLSConifg
 			common.WithAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS),
+			common.WithAttribute(extension.SerializationConfigAttribute, svcOpts.srvOpts.codecConfigs),
 			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
 			common.WithAttribute(constant.TripleConfigKey, protocolConf.TripleConfig),
 			common.WithToken(svcConf.Token),
@@ -234,6 +254,15 @@ func (svcOpts *ServiceOptions) Export() error {
 
 		// post process the URL to be exported
 		svcOpts.postProcessConfig(ivkURL)
+		if protocolConf.Codec != "" {
+			ivkURL.SetParam("codec", protocolConf.Codec)
+		}
+		extension.SnapshotSerializationPolicy(ivkURL)
+		if err := extension.PrepareCodecURL(ivkURL, "provider"); err != nil {
+			return err
+		}
+		// UnExport may clear the invoker URL before codec rollback runs.
+		preparedURLs = append(preparedURLs, ivkURL.Clone())
 		// config post processor may set "needExport" to false
 		if !ivkURL.GetParamBool(constant.ExportKey, true) {
 			return nil
@@ -268,6 +297,7 @@ func (svcOpts *ServiceOptions) Export() error {
 		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
 		graceful_shutdown.RegisterProtocol(protocolConf.Name)
 	}
+	prepared = true
 	svcOpts.exported.Store(true)
 	return nil
 }
@@ -358,6 +388,9 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
 	// todo: move
 	urlMap.Set(constant.SerializationKey, svcConf.Serialization)
+	if svcConf.AcceptedSerializations != nil {
+		urlMap.Set("accepted-serializations", strings.Join(svcConf.AcceptedSerializations, ","))
+	}
 	// application config info
 	urlMap.Set(constant.ApplicationKey, app.Name)
 	urlMap.Set(constant.OrganizationKey, app.Organization)

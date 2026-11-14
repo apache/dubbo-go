@@ -43,16 +43,18 @@ import (
 )
 
 type ReferenceOptions struct {
-	Reference   *global.ReferenceConfig
-	Consumer    *global.ConsumerConfig
-	Application *global.ApplicationConfig
-	Shutdown    *global.ShutdownConfig
-	Metrics     *global.MetricsConfig
-	Otel        *global.OtelConfig
-	TLS         *global.TLSConfig
-	Protocols   map[string]*global.ProtocolConfig
-	Registries  map[string]*global.RegistryConfig
-	Routers     []*global.RouterConfig
+	serializationDefault bool
+	codecConfigs         map[string]any
+	Reference            *global.ReferenceConfig
+	Consumer             *global.ConsumerConfig
+	Application          *global.ApplicationConfig
+	Shutdown             *global.ShutdownConfig
+	Metrics              *global.MetricsConfig
+	Otel                 *global.OtelConfig
+	TLS                  *global.TLSConfig
+	Protocols            map[string]*global.ProtocolConfig
+	Registries           map[string]*global.RegistryConfig
+	Routers              []*global.RouterConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -136,8 +138,11 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init serialization
-	if refConf.Serialization == "" {
+	if refConf.Serialization == "" || (refOpts.serializationDefault && refConf.Serialization == constant.ProtobufSerialization && refConf.Protocol == constant.DubboProtocol) {
 		refConf.Serialization = constant.ProtobufSerialization
+		if refConf.Protocol == constant.DubboProtocol {
+			refConf.Serialization = constant.Hessian2Serialization
+		}
 	}
 
 	// validate generic type, fail fast on unknown value instead of
@@ -404,6 +409,7 @@ func WithVersion(version string) ReferenceOption {
 func WithSerializationJSON() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Serialization = constant.JSONSerialization
+		opts.serializationDefault = false
 	}
 }
 
@@ -413,6 +419,7 @@ func WithSerializationJSON() ReferenceOption {
 func WithSerialization(serialization string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Serialization = serialization
+		opts.serializationDefault = false
 	}
 }
 
@@ -670,19 +677,21 @@ func setRouters(routers []*global.RouterConfig) ReferenceOption {
 }
 
 type ClientOptions struct {
-	Consumer    *global.ConsumerConfig
-	Application *global.ApplicationConfig
-	Registries  map[string]*global.RegistryConfig
-	Shutdown    *global.ShutdownConfig
-	Metrics     *global.MetricsConfig
-	Otel        *global.OtelConfig
-	TLS         *global.TLSConfig
-	Protocols   map[string]*global.ProtocolConfig
-	Routers     []*global.RouterConfig
+	serializationDefault bool
+	Consumer             *global.ConsumerConfig
+	Application          *global.ApplicationConfig
+	Registries           map[string]*global.RegistryConfig
+	Shutdown             *global.ShutdownConfig
+	Metrics              *global.MetricsConfig
+	Otel                 *global.OtelConfig
+	TLS                  *global.TLSConfig
+	Protocols            map[string]*global.ProtocolConfig
+	Routers              []*global.RouterConfig
 
 	overallReference *global.ReferenceConfig
 	extensionOptions []extension.Option
 	extensionConfigs map[string]any
+	codecConfigs     map[string]any
 }
 
 func defaultClientOptions() *ClientOptions {
@@ -734,8 +743,16 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 		cliOpts.Consumer.Protocol = constant.TriProtocol
 	}
 
+	// Inherit consumer defaults before applying the protocol default.
+	if cliOpts.overallReference.Serialization == "" {
+		cliOpts.overallReference.Serialization = consumerConf.Serialization
+	}
+	if cliOpts.overallReference.AcceptedSerializations == nil && consumerConf.AcceptedSerializations != nil {
+		cliOpts.overallReference.AcceptedSerializations = append([]string{}, consumerConf.AcceptedSerializations...)
+	}
 	// init serialization
 	if cliOpts.overallReference.Serialization == "" {
+		cliOpts.serializationDefault = true
 		cliOpts.overallReference.Serialization = constant.ProtobufSerialization
 	}
 
@@ -757,11 +774,12 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 		}
 	}
 
-	filterNames, err := extension.Initialize(cliOpts.extensionConfigs, cliOpts.extensionOptions, extension.ClientScope)
+	extensionResult, err := extension.InitializeWithResult(cliOpts.extensionConfigs, cliOpts.extensionOptions, extension.ClientScope)
 	if err != nil {
 		return err
 	}
-	cliOpts.overallReference.Filter = extension.MergeFilterNames(cliOpts.overallReference.Filter, filterNames)
+	cliOpts.codecConfigs = extensionResult.CodecConfigs
+	cliOpts.overallReference.Filter = extension.MergeFilterNames(cliOpts.overallReference.Filter, extensionResult.FilterNames)
 
 	// init graceful_shutdown
 	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(cliOpts.Shutdown))
@@ -1338,4 +1356,13 @@ func WithResponseTrailer(trailer *http.Header) CallOption {
 	return func(opts *CallOptions) {
 		opts.ResponseTrailer = trailer
 	}
+}
+
+// WithAcceptedSerializations restricts the formats accepted by this binding.
+func WithAcceptedSerializations(names ...string) ReferenceOption {
+	return func(opts *ReferenceOptions) { opts.Reference.AcceptedSerializations = append([]string{}, names...) }
+}
+
+func WithClientAcceptedSerializations(names ...string) ClientOption {
+	return func(opts *ClientOptions) { opts.overallReference.AcceptedSerializations = append([]string{}, names...) }
 }
