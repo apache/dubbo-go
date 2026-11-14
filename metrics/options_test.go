@@ -33,11 +33,28 @@ func TestDefaultOptions(t *testing.T) {
 	// the metrics module and all sub-modules are disabled by default
 	assert.Nil(t, opts.Metrics.Enable)
 	assert.Nil(t, opts.Metrics.Aggregation.Enabled)
+	assert.Nil(t, opts.Metrics.Histogram.Enabled)
+	assert.Empty(t, opts.Metrics.Histogram.Buckets)
 	assert.Nil(t, opts.Metrics.Probe.Enabled)
 	assert.Nil(t, opts.Metrics.Prometheus.Pushgateway.Enabled)
 	assert.Empty(t, opts.Metrics.Port)
 	assert.Empty(t, opts.Metrics.Path)
 	assert.Empty(t, opts.Metrics.Protocol)
+}
+
+func TestHistogramOptions(t *testing.T) {
+	buckets := []float64{0.001, 0.01, 1}
+	option := WithHistogramBuckets(buckets)
+	buckets[0] = 99
+	first := NewOptions(WithHistogramEnabled(), option)
+	second := NewOptions(option)
+	assert.True(t, *first.Metrics.Histogram.Enabled)
+	assert.Nil(t, first.Metrics.Enable, "histograms must not implicitly enable metrics")
+	assert.Nil(t, first.Metrics.Aggregation.Enabled)
+	assert.Nil(t, second.Metrics.Histogram.Enabled)
+	assert.Equal(t, []float64{0.001, 0.01, 1}, first.Metrics.Histogram.Buckets)
+	first.Metrics.Histogram.Buckets[0] = 10
+	assert.Equal(t, []float64{0.001, 0.01, 1}, second.Metrics.Histogram.Buckets)
 }
 
 func TestNewOptions(t *testing.T) {

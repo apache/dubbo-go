@@ -41,10 +41,7 @@ var (
 func init() {
 	collectorFunc := func(registry metrics.MetricRegistry, url *common.URL) {
 		if url.GetParamBool(constant.RpcEnabledKey, true) {
-			rc := &rpcCollector{
-				registry:  registry,
-				metricSet: buildMetricSet(registry),
-			}
+			rc := newRPCCollector(registry, url)
 			metrics.SubscribeRecorder(constant.MetricsRpc, rc.record)
 			activeCollector.Store(rc)
 		}
@@ -55,12 +52,27 @@ func init() {
 
 // rpcCollector is a collector which will collect the rpc metrics
 type rpcCollector struct {
-	registry      metrics.MetricRegistry
-	metricSet     *metricSet // metricSet is a struct which contains all metrics about rpc
-	series        sync.Map   // seriesKey -> *rpcSeries; owned by this registry
-	bindMu        sync.Mutex
-	fallbackMu    sync.Mutex // preserve serialized calls for legacy registries
-	reportFailure sync.Once
+	registry          metrics.MetricRegistry
+	metricSet         *metricSet // metricSet is a struct which contains all metrics about rpc
+	series            sync.Map   // seriesKey -> *rpcSeries; owned by this registry
+	bindMu            sync.Mutex
+	fallbackMu        sync.Mutex // preserve serialized calls for legacy registries
+	reportFailure     sync.Once
+	histogramRegistry metrics.HistogramProvider
+	histogramOpts     *metrics.HistogramOpts
+}
+
+func newRPCCollector(registry metrics.MetricRegistry, url *common.URL) *rpcCollector {
+	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
+	if url.GetParamBool(constant.HistogramEnabledKey, false) {
+		if configurable, ok := registry.(metrics.HistogramProvider); ok {
+			c.histogramRegistry = configurable
+			c.histogramOpts = rpcHistogramOpts(url.GetParam(constant.HistogramBucketsKey, ""))
+		} else {
+			logger.Warnf("[Metrics][RPC] registry %T does not support configurable histograms; RPC histograms disabled, existing metrics unchanged", registry)
+		}
+	}
+	return c
 }
 
 // record is called by Publish, before best-effort observer delivery. It never
@@ -132,6 +144,7 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 		}
 	}
 	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
+	c.reportRTHistogram(role, labels, event.costTime.Seconds())
 }
 
 func (c *rpcCollector) recordQps(role string, labels map[string]string) {
