@@ -29,6 +29,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
+)
+
 // Initialize creates and initializes the extensions active for one lifecycle
 // scope. rawConfigs is the map below dubbo.extensions, while options contains
 // typed options declared by the corresponding entry point. rawConfigs may be
@@ -42,18 +46,23 @@ import (
 // can merge them into their filter configuration atomically after all
 // extensions have initialized successfully.
 func Initialize(rawConfigs map[string]any, options []Option, scope Scope) ([]string, error) {
+	result, err := InitializeWithResult(rawConfigs, options, scope)
+	return result.FilterNames, err
+}
+
+func InitializeWithResult(rawConfigs map[string]any, options []Option, scope Scope) (InitializationResult, error) {
 	if !scope.valid() {
-		return nil, fmt.Errorf("extension: invalid scope %d", scope)
+		return InitializationResult{}, fmt.Errorf("extension: invalid scope %d", scope)
 	}
 
 	registered := configs.Snapshot()
 	optionsByPrefix, activePrefixes, err := groupOptionsByPrefix(options, registered)
 	if err != nil {
-		return nil, err
+		return InitializationResult{}, err
 	}
 	rawByPrefix, err := collectRawConfigs(rawConfigs, scope, registered, activePrefixes)
 	if err != nil {
-		return nil, err
+		return InitializationResult{}, err
 	}
 
 	return initializeConfigs(registered, rawByPrefix, optionsByPrefix, activePrefixes, scope)
@@ -112,7 +121,7 @@ func collectRawConfigs(rawConfigs map[string]any, scope Scope, registered map[st
 	return rawByPrefix, nil
 }
 
-func initializeConfigs(registered map[string]Config, rawByPrefix map[string]map[string]any, optionsByPrefix map[string][]Option, activePrefixes map[string]struct{}, scope Scope) ([]string, error) {
+func initializeConfigs(registered map[string]Config, rawByPrefix map[string]map[string]any, optionsByPrefix map[string][]Option, activePrefixes map[string]struct{}, scope Scope) (InitializationResult, error) {
 	prefixes := make([]string, 0, len(activePrefixes))
 	for prefix := range activePrefixes {
 		prefixes = append(prefixes, prefix)
@@ -125,7 +134,7 @@ func initializeConfigs(registered map[string]Config, rawByPrefix map[string]map[
 	for _, prefix := range prefixes {
 		config, err := prepareConfig(registered[prefix], rawByPrefix[prefix], optionsByPrefix[prefix], prefix, scope, seenFilters)
 		if err != nil {
-			return nil, err
+			return InitializationResult{}, err
 		}
 		prepared = append(prepared, config)
 		filterNames = append(filterNames, config.filterNames...)
@@ -137,13 +146,19 @@ func initializeConfigs(registered map[string]Config, rawByPrefix map[string]map[
 		if err := config.config.Init(scope); err != nil {
 			initErr := fmt.Errorf("extension %q: initialize scope %d: %w", config.prefix, scope, err)
 			if rollbackErr := rollbackConfigs(initialized, scope); rollbackErr != nil {
-				return nil, errors.Join(initErr, rollbackErr)
+				return InitializationResult{}, errors.Join(initErr, rollbackErr)
 			}
-			return nil, initErr
+			return InitializationResult{}, initErr
 		}
 	}
 
-	return filterNames, nil
+	snapshots := make(map[string]any)
+	for _, config := range initialized {
+		if provider, ok := config.config.(serialization.ConfigProvider); ok {
+			snapshots[config.prefix] = provider.CodecConfig()
+		}
+	}
+	return InitializationResult{FilterNames: filterNames, CodecConfigs: snapshots}, nil
 }
 
 func rollbackConfigs(configs []preparedConfig, scope Scope) error {

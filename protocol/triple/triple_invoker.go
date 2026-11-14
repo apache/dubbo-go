@@ -107,11 +107,15 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 		switch callType {
 		case constant.CallUnary:
 			// todo(DMwangnima): consider inRawLen == 0
-			if err := ti.clientManager.callUnary(ctx, method, inRaw[0:inRawLen-1], inRaw[inRawLen-1], responseHeader, responseTrailer); err != nil {
+			var args any = inRaw[0 : inRawLen-1]
+			if names := invocation.ParameterTypeNames(); len(names) > 0 {
+				args = tri.SerializationArguments{Values: inRaw[0 : inRawLen-1], TypeNames: names}
+			}
+			if err := ti.clientManager.callUnary(ctx, method, args, inRaw[inRawLen-1], responseHeader, responseTrailer); err != nil {
 				result.SetError(err)
 			}
 		default:
-			panic("Triple only supports Unary Invocation for Non-IDL mode")
+			result.SetError(fmt.Errorf("triple only supports unary invocation for non-IDL mode"))
 		}
 		return &result
 	}

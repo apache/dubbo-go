@@ -21,6 +21,10 @@ import (
 	"fmt"
 )
 
+import (
+	"google.golang.org/grpc/encoding"
+)
+
 type (
 	// ServerConfig currently is empty struct,for future expansion
 	ServerConfig struct{}
@@ -51,8 +55,8 @@ func GetClientConfig() ClientConfig {
 
 // Validate check if custom config encoding is supported in dubbo grpc
 func (c *ClientConfig) Validate() error {
-	if c.ContentSubType != codecJson && c.ContentSubType != codecProto {
-		return fmt.Errorf(" dubbo-go grpc codec currently only support proto、json, %s isn't supported,"+
+	if encoding.GetCodec(c.ContentSubType) == nil && encoding.GetCodecV2(c.ContentSubType) == nil {
+		return fmt.Errorf(" dubbo-go grpc codec %s is not registered,"+
 			" please check protocol content_sub_type config", c.ContentSubType)
 	}
 	return nil

@@ -63,6 +63,14 @@ func NewClient(url *common.URL) (*Client, error) {
 		clientInit(url)
 	})
 
+	if err := GetProtocol().(*GrpcProtocol).PrepareCodec(url, "consumer"); err != nil {
+		return nil, err
+	}
+	subtype := url.GetParam("serialization", clientConf.ContentSubType)
+	if subtype == "protobuf" {
+		subtype = "proto"
+	}
+
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
@@ -85,7 +93,7 @@ func NewClient(url *common.URL) (*Client, error) {
 		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
-			grpc.CallContentSubtype(clientConf.ContentSubType),
+			grpc.CallContentSubtype(subtype),
 			grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 			grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
 		),
