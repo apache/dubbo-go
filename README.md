@@ -136,6 +136,7 @@ Common development tools live in `tools/`.
 
 - Official Website: https://dubbo.apache.org/
 - Dubbo-go Documentation: https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/
+- [Serialization and Remoting Codec Extensions](./serialization/README.md)
 - CHANGELOG: https://github.com/apache/dubbo-go/blob/main/CHANGELOG.md
 
 ## Community

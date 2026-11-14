@@ -137,6 +137,7 @@ func main() {
 
 * **官方网站**: https://dubbo.apache.org/
 * **官方文档**: https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/
+* **序列化与 Codec 扩展**: [注册、配置与插件约束](./serialization/README.md)
 * **问题反馈**: [GitHub Issues](https://github.com/apache/dubbo-go/issues)
 
 关于提交补丁和贡献流程的详细信息，请访问 [CONTRIBUTING](./CONTRIBUTING.md)。
