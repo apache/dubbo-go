@@ -50,6 +50,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -60,6 +61,7 @@ const defaultServerCompressMinBytes = 512
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
 // provide functionality.
 type Server struct {
+	codecResources      []*serialization.Resources
 	triServer           *tri.Server
 	cfg                 *global.TripleConfig
 	mu                  sync.RWMutex
@@ -245,6 +247,13 @@ func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
 
 func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, handlerOpts []tri.HandlerOption) {
 	url := invoker.GetURL()
+	if raw, ok := url.GetAttribute("triple.serialization.resources.provider"); ok {
+		if resources, ok := raw.(*serialization.Resources); ok {
+			s.mu.Lock()
+			s.codecResources = append(s.codecResources, resources)
+			s.mu.Unlock()
+		}
+	}
 
 	// IDLMode means that this will only be set when
 	// The new triple is started in non-IDL mode.
@@ -371,14 +380,9 @@ func resolveHandlerOptions(url *common.URL) ([]tri.HandlerOption, error) {
 		return nil, fmt.Errorf("triple server url must not be nil")
 	}
 
-	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
-	switch serialization {
-	case constant.ProtobufSerialization:
-	case constant.JSONSerialization:
-	case constant.Hessian2Serialization:
-	case constant.MsgpackSerialization:
-	default:
-		return nil, fmt.Errorf("unsupported serialization: %s", serialization)
+	_, codecOpts, _, codecErr := SerializationOptions(url, "provider")
+	if codecErr != nil {
+		return nil, codecErr
 	}
 
 	tripleConf, err := resolveTripleConfig(url)
@@ -411,7 +415,7 @@ func resolveHandlerOptions(url *common.URL) ([]tri.HandlerOption, error) {
 		logger.Debugf("[Triple][Server] gzip compression minimum reduced from %d to %d for sendMaxBytes=%d", minBytes, effectiveMinBytes, sendMaxBytes)
 	}
 	handlerOpts = append(handlerOpts, tri.WithCompressMinBytes(effectiveMinBytes))
-	handlerOpts = append(handlerOpts, tri.WithExpectedCodecName(serialization))
+	handlerOpts = append(handlerOpts, codecOpts...)
 	return handlerOpts, nil
 }
 
@@ -791,6 +795,7 @@ func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
 // Stop TRIPLE server
 func (s *Server) Stop() {
 	_ = s.triServer.Stop()
+	s.closeCodecs()
 }
 
 // GracefulStop TRIPLE server
@@ -801,6 +806,7 @@ func (s *Server) GracefulStop() {
 	if err := s.triServer.GracefulStop(shutdownCtx); err != nil {
 		logger.Errorf("[Triple][Server] triple server shutdown failed, err=%v", err)
 	}
+	s.closeCodecs()
 }
 
 // createServiceInfoWithReflection is for non-IDL scenario.
@@ -984,4 +990,14 @@ func generateAttachments(header http.Header) map[string]any {
 	}
 
 	return attachments
+}
+
+func (s *Server) closeCodecs() {
+	s.mu.Lock()
+	resources := s.codecResources
+	s.codecResources = nil
+	s.mu.Unlock()
+	for _, owner := range resources {
+		_ = owner.Close()
+	}
 }

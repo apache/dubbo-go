@@ -87,6 +87,7 @@ func NewCompatStreamHandler(
 	protocolHandlers := config.newProtocolHandlers(typ)
 
 	hdl := &Handler{
+		codecResources:   config.CodecResources,
 		spec:             config.newSpec(typ),
 		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
 		protocolHandlers: protocolHandlers,

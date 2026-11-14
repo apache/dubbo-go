@@ -28,6 +28,10 @@ import (
 	"time"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
+)
+
 type TimeoutKey struct{}
 
 // Client is a reusable, concurrency-safe client for a service.
@@ -135,6 +139,13 @@ func (c *Client) CallUnary(ctx context.Context, request *Request, method string,
 	if c.err != nil {
 		return c.err
 	}
+	if resources := c.config.CodecResources; resources != nil {
+		if !resources.Begin() {
+			return errorf(CodeUnavailable, "serialization runtime closed")
+		}
+		defer resources.End()
+	}
+
 	ctx, flag, cancel := applyDefaultTimeout(ctx, c.config.Timeout)
 	if flag {
 		defer cancel()
@@ -210,10 +221,17 @@ func (c *Client) newConn(ctx context.Context, streamType StreamType, method stri
 	if interceptor := c.config.Interceptor; interceptor != nil {
 		newConn = interceptor.WrapStreamingClient(newConn)
 	}
+	if resources := c.config.CodecResources; resources != nil {
+		if !resources.Begin() {
+			return nil, errorf(CodeUnavailable, "serialization runtime closed")
+		}
+		return &serializationClientConn{StreamingClientConn: newConn(ctx, methodLevelSpec), resources: resources}, nil
+	}
 	return newConn(ctx, methodLevelSpec), nil
 }
 
 type clientConfig struct {
+	CodecResources         *serialization.Resources
 	URL                    *url.URL
 	Protocol               protocol
 	Procedure              string
