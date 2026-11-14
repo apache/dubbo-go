@@ -30,6 +30,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -400,4 +401,53 @@ func TestFilterRegistriesByIDsReturnsAllWhenIDsEmpty(t *testing.T) {
 	require.Len(t, filtered, 2)
 	require.Contains(t, filtered, "r1")
 	require.Contains(t, filtered, "r2")
+}
+
+type codecDefinitionService struct{}
+
+func (*codecDefinitionService) Reference() string { return "codec.Definition" }
+func TestCodecDialConfigurationIsolation(t *testing.T) {
+	const name = "codec-dial-isolation"
+	p := &timeoutCaptureProtocol{}
+	extension.SetProtocol(name, func() base.Protocol { return p })
+	t.Cleanup(func() { extension.UnregisterProtocol(name) })
+	extension.SetCluster(name, func() cluster.Cluster { return timeoutCaptureCluster{} })
+	consumer := global.DefaultConsumerConfig()
+	consumer.Protocol = name
+	consumer.AcceptedSerializations = []string{"hessian2"}
+	consumer.References["codec.Definition"] = &global.ReferenceConfig{Serialization: "json", AcceptedSerializations: []string{}}
+	cli, err := NewClient(WithClientURL(name+"://127.0.0.1:1"), func(o *ClientOptions) {
+		o.Consumer = consumer.Clone()
+		o.overallReference.Cluster = name
+		o.overallReference.Filter = "-default"
+	})
+	require.NoError(t, err)
+	one, err := cli.Dial("codec.One", WithSerialization("private"), WithAcceptedSerializations())
+	require.NoError(t, err)
+	defer one.refOpts.invoker.Destroy()
+	require.Equal(t, "private", one.refOpts.Reference.Serialization)
+	require.NotNil(t, one.refOpts.Reference.AcceptedSerializations)
+	require.Empty(t, one.refOpts.Reference.AcceptedSerializations)
+	allowed, explicit := extension.AcceptedSerializations(p.captured)
+	require.True(t, explicit)
+	require.Empty(t, allowed)
+	definition := &ClientDefinition{Svc: &codecDefinitionService{}}
+	two, err := cli.DialWithDefinition("codec.Definition", definition)
+	require.NoError(t, err)
+	defer two.refOpts.invoker.Destroy()
+	require.Equal(t, "json", two.refOpts.Reference.Serialization)
+	require.NotNil(t, two.refOpts.Reference.AcceptedSerializations)
+	require.Empty(t, two.refOpts.Reference.AcceptedSerializations)
+	three, err := cli.Dial("codec.Three")
+	require.NoError(t, err)
+	defer three.refOpts.invoker.Destroy()
+	require.Equal(t, "protobuf", three.refOpts.Reference.Serialization)
+	require.Equal(t, []string{"hessian2"}, three.refOpts.Reference.AcceptedSerializations)
+	three.refOpts.Reference.AcceptedSerializations[0] = "changed"
+	consumer.AcceptedSerializations[0] = "external-change"
+	require.Equal(t, []string{"hessian2"}, cli.cliOpts.overallReference.AcceptedSerializations)
+	four, err := cli.Dial("codec.Four")
+	require.NoError(t, err)
+	defer four.refOpts.invoker.Destroy()
+	require.Equal(t, []string{"hessian2"}, four.refOpts.Reference.AcceptedSerializations)
 }

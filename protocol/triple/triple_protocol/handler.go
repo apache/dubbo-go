@@ -21,6 +21,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 const (
@@ -34,7 +39,12 @@ const (
 // the binary Protobuf and JSON codecs. They support gzip compression using the
 // standard library's [compress/gzip].
 type Handler struct {
-	spec Spec
+	// Each group/version has an immutable handler view. Updating a route must
+	// publish its codec policy, resources and business implementation together.
+	mu             sync.RWMutex
+	variants       map[string]*Handler
+	codecResources *serialization.Resources
+	spec           Spec
 	// Key is group/version
 	implementations  map[string]StreamingHandlerFunc
 	protocolHandlers []protocolHandler
@@ -55,6 +65,7 @@ func NewUnaryHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeUnary)
 
 	hdl := &Handler{
+		codecResources:   config.CodecResources,
 		spec:             config.newSpec(StreamTypeUnary),
 		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
 		protocolHandlers: protocolHandlers,
@@ -141,6 +152,7 @@ func NewClientStreamHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeClient)
 
 	hdl := &Handler{
+		codecResources:   config.CodecResources,
 		spec:             config.newSpec(StreamTypeClient),
 		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
 		protocolHandlers: protocolHandlers,
@@ -200,6 +212,7 @@ func NewServerStreamHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeServer)
 
 	hdl := &Handler{
+		codecResources:   config.CodecResources,
 		spec:             config.newSpec(StreamTypeServer),
 		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
 		protocolHandlers: protocolHandlers,
@@ -261,6 +274,7 @@ func NewBidiStreamHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeBidi)
 
 	hdl := &Handler{
+		codecResources:   config.CodecResources,
 		spec:             config.newSpec(StreamTypeBidi),
 		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
 		protocolHandlers: protocolHandlers,
@@ -299,10 +313,45 @@ func generateBidiStreamHandlerFunc(
 
 func (h *Handler) processImplementation(identifier string, implementation StreamingHandlerFunc) {
 	h.implementations[identifier] = implementation
+	if h.variants == nil {
+		h.variants = make(map[string]*Handler, defaultImplementationsSize)
+	}
+	h.variants[identifier] = h
+}
+
+// replaceVariants publishes newly constructed contexts without mutating views
+// already captured by in-flight calls.
+func (h *Handler) replaceVariants(next *Handler) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for identifier := range next.implementations {
+		h.variants[identifier] = next
+	}
 }
 
 // ServeHTTP implements [http.Handler].
 func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
+	identifier := getIdentifier(request.Header.Get(tripleServiceGroup), request.Header.Get(tripleServiceVersion))
+	h.mu.RLock()
+	selected := h.variants[identifier]
+	h.mu.RUnlock()
+	if selected == nil {
+		// Preserve protocol-native unimplemented errors without acquiring a codec
+		// owner from an unrelated (possibly retired) group.
+		h.serveHTTP(responseWriter, request, nil)
+		return
+	}
+	selected.serveHTTP(responseWriter, request, selected.implementations[identifier])
+}
+
+func (h *Handler) serveHTTP(responseWriter http.ResponseWriter, request *http.Request, implementation StreamingHandlerFunc) {
+	if implementation != nil && h.codecResources != nil {
+		if !h.codecResources.Begin() {
+			http.Error(responseWriter, "serialization runtime closed", http.StatusServiceUnavailable)
+			return
+		}
+		defer h.codecResources.End()
+	}
 	// We don't need to defer functions  to close the request body or read to
 	// EOF: the stream we construct later on already does that, and we only
 	// return early when dealing with misbehaving clients. In those cases, it's
@@ -383,8 +432,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	svcGroup := request.Header.Get(tripleServiceGroup)
 	svcVersion := request.Header.Get(tripleServiceVersion)
 	// TODO(DMwangnima): inspect ok
-	implementation, ok := h.implementations[getIdentifier(svcGroup, svcVersion)]
-	if !ok {
+	if implementation == nil {
 		_ = connCloser.Close(errorf(CodeUnimplemented, "no implementation found for service group %s and service version %s", svcGroup, svcVersion))
 		return
 	}
@@ -392,10 +440,13 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 }
 
 type handlerConfig struct {
+	CodecResources              *serialization.Resources
 	CompressionPools            map[string]*compressionPool
 	CompressionNames            []string
 	Codecs                      map[string]Codec
 	FallbackCodecName           string
+	InnerCodecs                 map[string]Codec
+	MessageCodecs               map[string]Codec
 	CompressMinBytes            int
 	Interceptor                 Interceptor
 	Procedure                   string
@@ -461,6 +512,7 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 			Codecs:            codecs,
 			CompressionPools:  compressors,
 			FallbackCodecName: c.FallbackCodecName,
+			InnerCodecs:       c.InnerCodecs, MessageCodecs: c.MessageCodecs,
 			// Config content
 			CompressMinBytes:            c.CompressMinBytes,
 			BufferPool:                  c.BufferPool,

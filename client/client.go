@@ -199,6 +199,9 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 			opt(ref)
 		}
 		opts = append(opts, setReference(ref))
+		if refConfig.Serialization != "" {
+			opts = append(opts, WithSerialization(refConfig.Serialization))
+		}
 	}
 
 	return cli.dial(interfaceName, definition.Info, nil, opts...)
@@ -206,6 +209,8 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 
 func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ...ReferenceOption) (*Connection, error) {
 	newRefOpts := defaultReferenceOptions()
+	newRefOpts.codecConfigs = cli.cliOpts.codecConfigs
+	newRefOpts.serializationDefault = cli.cliOpts.serializationDefault
 	finalOpts := []ReferenceOption{
 		setReference(cli.cliOpts.overallReference.Clone()),
 		setApplication(cli.cliOpts.Application),
@@ -231,12 +236,8 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	}
 	newRefOpts.Registries = effectiveRegistries
 
-	if info != nil {
-		newRefOpts.ReferWithInfo(info)
-	} else if srv != nil {
-		newRefOpts.ReferWithService(srv)
-	} else {
-		newRefOpts.Refer()
+	if err := newRefOpts.refer(srv, info); err != nil {
+		return nil, err
 	}
 
 	return &Connection{refOpts: newRefOpts}, nil

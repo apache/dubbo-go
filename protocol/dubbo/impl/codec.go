@@ -43,6 +43,7 @@ type ProtocolCodec struct {
 	pkgType        PackageType
 	bodyLen        int
 	serializer     Serializer
+	serializers    map[byte]Serializer
 	headerRead     bool
 	responseHeader bool
 }
@@ -62,7 +63,7 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 	}
 
 	//// read header
-	if buf[0] != MAGIC_HIGH && buf[1] != MAGIC_LOW {
+	if buf[0] != MAGIC_HIGH || buf[1] != MAGIC_LOW {
 		return hessian.ErrIllegalPackage
 	}
 
@@ -168,6 +169,14 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 			return err
 		}
 	}
+	if c.serializers != nil {
+		selected, ok := c.serializers[p.Header.SerialID]
+		if !ok {
+			return fmt.Errorf("unsupported or disabled serialization ID %d", p.Header.SerialID)
+		}
+		c.serializer = selected
+	}
+
 	if c.reader.Size() < p.GetBodyLen() {
 		return hessian.ErrBodyNotEnough
 	}
@@ -175,7 +184,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 	if err != nil {
 		return err
 	}
-	if p.IsResponseWithException() {
+	if p.IsResponseWithException() && c.serializers == nil {
 		logger.Infof("[Dubbo] response with exception, header=%v", p.Header)
 		decoder := hessian.NewDecoder(body)
 		p.Body = &ResponsePayload{}
@@ -185,12 +194,15 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		}
 		p.Body.(*ResponsePayload).Exception = fmt.Errorf("java exception:%s", exception.(string))
 		return nil
-	} else if p.IsHeartBeat() {
+	} else if p.IsHeartBeat() && c.serializers == nil {
 		// heartbeat no need to unmarshal contents
 		return nil
 	}
 	if c.serializer == nil {
 		return errors.New("codec serializer is nil")
+	}
+	if c.serializers != nil && (p.IsHeartBeat() || p.IsResponseWithException()) {
+		return rpcerror.Mark(c.serializer.Unmarshal(body, p), rpcerror.Codec)
 	}
 	if p.IsResponse() {
 		pending := remoting.GetPendingResponse(remoting.SequenceType(p.Header.ID))
@@ -242,8 +254,18 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 	// body
 	//////////////////////////////////////////
 	if p.IsHeartBeat() {
-		byteArray = append(byteArray, byte('N'))
-		pkgLen = 1
+		var body []byte
+		var err error
+		if _, legacy := serializer.(HessianSerializer); legacy {
+			body = []byte{'N'}
+		} else {
+			body, err = serializer.Marshal(p)
+		}
+		if err != nil {
+			return nil, err
+		}
+		byteArray = append(byteArray, body...)
+		pkgLen = len(body)
 	} else {
 		body, err := serializer.Marshal(p)
 		if err != nil {
@@ -307,4 +329,12 @@ func NewDubboCodec(reader *bufio.Reader) *ProtocolCodec {
 		headerRead: false,
 		serializer: s,
 	}
+}
+
+// SetSerializers installs an immutable endpoint view for header-ID dispatch.
+func (c *ProtocolCodec) SetSerializers(items map[byte]Serializer) { c.serializers = items }
+
+// NewDubboCodecWithSerializers binds an already-constructed endpoint view.
+func NewDubboCodecWithSerializers(reader *bufio.Reader, items map[byte]Serializer) *ProtocolCodec {
+	return &ProtocolCodec{reader: reader, serializers: items}
 }

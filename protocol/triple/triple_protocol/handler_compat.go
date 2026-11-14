@@ -113,6 +113,7 @@ func NewCompatUnaryHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeUnary)
 
 	hdl := &Handler{
+		codecResources:   config.CodecResources,
 		spec:             config.newSpec(StreamTypeUnary),
 		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
 		protocolHandlers: protocolHandlers,

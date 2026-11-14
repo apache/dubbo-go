@@ -1530,3 +1530,30 @@ func TestReferenceOptionsInitFailsOnInvalidMethodConfig(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "tps.limit.rate")
 }
+
+func TestCodecSerializationDefaultsFollowFinalProtocol(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		clientOptions []ClientOption
+		reference     []ReferenceOption
+		want          string
+	}{
+		{"triple", nil, nil, "protobuf"},
+		{"dubbo-client", []ClientOption{WithClientProtocolDubbo()}, nil, "hessian2"},
+		{"dial-overrides-default", nil, []ReferenceOption{WithProtocolDubbo()}, "hessian2"},
+		{"explicit-protobuf", []ClientOption{WithClientProtocolDubbo(), WithClientSerialization("protobuf")}, nil, "protobuf"},
+		{"reference-explicit-protobuf", nil, []ReferenceOption{WithProtocolDubbo(), WithSerialization("protobuf")}, "protobuf"},
+		{"final-protocol-triple", []ClientOption{WithClientProtocolDubbo()}, []ReferenceOption{WithProtocolTriple()}, "protobuf"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cli := defaultClientOptions()
+			require.NoError(t, cli.init(test.clientOptions...))
+			ref := defaultReferenceOptions()
+			ref.serializationDefault = cli.serializationDefault
+			opts := []ReferenceOption{setReference(cli.overallReference.Clone()), setConsumer(cli.Consumer)}
+			opts = append(opts, test.reference...)
+			require.NoError(t, ref.init(opts...))
+			require.Equal(t, test.want, ref.Reference.Serialization)
+		})
+	}
+}
