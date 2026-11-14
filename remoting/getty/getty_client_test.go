@@ -24,6 +24,7 @@ import (
 	"net"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -512,3 +513,102 @@ func TestRequestContextReadTimeout(t *testing.T) {
 	require.ErrorIs(t, err, errClientReadTimeout)
 	require.Less(t, time.Since(start), time.Second)
 }
+
+type leaseCloseCodec struct {
+	DubboTestCodec
+	closes atomic.Int64
+}
+
+func (c *leaseCloseCodec) Close() error { c.closes.Add(1); return nil }
+
+func TestClientCloseReleasesOnlyItsCodecLease(t *testing.T) {
+	const name = "getty-client-lease"
+	codec := &leaseCloseCodec{}
+	require.NoError(t, remoting.RegisterCodec(remoting.CodecRegistration{Protocol: name, Name: name, New: func(*common.URL) (remoting.Codec, error) { return codec, nil }}))
+	ref := common.NewURLWithOptions(common.WithProtocol(name))
+	require.NoError(t, remoting.PrepareCodec(ref))
+	a, b := NewClient(Options{}), NewClient(Options{})
+	var err error
+	a.codec, a.releaseCodec, err = remoting.AcquireCodec(ref.Clone())
+	require.NoError(t, err)
+	b.codec, b.releaseCodec, err = remoting.AcquireCodec(ref.Clone())
+	require.NoError(t, err)
+	a.Close()
+	a.Close()
+	require.Zero(t, codec.closes.Load())
+	b.Close()
+	b.Close()
+	require.EqualValues(t, 1, codec.closes.Load())
+}
+
+func TestCodecGettyRetryAndPublicationLeases(t *testing.T) {
+	const name = "codec-getty-retry"
+	var made, closed atomic.Int64
+	require.NoError(t, remoting.RegisterCodec(remoting.CodecRegistration{Protocol: name, Name: name, New: func(*common.URL) (remoting.Codec, error) {
+		made.Add(1)
+		return &leaseCounterCodec{closed: &closed}, nil
+	}}))
+	ref := common.NewURLWithOptions(common.WithProtocol(name))
+	require.NoError(t, remoting.PrepareCodec(ref))
+	client := NewClient(Options{ConnectTimeout: 30 * time.Millisecond})
+	defer client.Close()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	url, err := common.NewURL(name + "://" + listener.Addr().String())
+	require.NoError(t, err)
+	url = url.MergeURL(ref)
+	require.NoError(t, listener.Close())
+	require.Error(t, client.Connect(url))
+	require.EqualValues(t, 1, closed.Load())
+	established := &gettyRPCClient{gettyClient: &closeTrackingGettyClient{closed: make(chan struct{})}, sessions: []*rpcSession{{session: &mockWriteOnlySession{}}}}
+	client.gettyClient = established
+	require.NoError(t, client.Connect(url))
+	require.EqualValues(t, 2, made.Load())
+	require.EqualValues(t, 1, closed.Load())
+	// Detach the fake pool before exercising the connection publication barrier.
+	client.gettyClient = nil
+	established.sessions = nil
+	_ = established.close()
+	// A ready-but-unpublished connection is discarded after Close; its lease
+	// is released once even if connection completion runs later.
+	require.NotNil(t, client.releaseCodec)
+	raw := &closeTrackingGettyClient{closed: make(chan struct{})}
+	ready, gate, done := make(chan struct{}), make(chan struct{}), make(chan error, 1)
+	var once sync.Once
+	defer once.Do(func() { close(gate) })
+	go func() {
+		_, err := client.getOrCreateGettyClient("", func(*Client, string) (*gettyRPCClient, error) {
+			close(ready)
+			<-gate
+			return &gettyRPCClient{gettyClient: raw}, nil
+		})
+		done <- err
+	}()
+	select {
+	case <-ready:
+	case <-time.After(3 * time.Second):
+		t.Fatal("connection barrier")
+	}
+	client.Close()
+	once.Do(func() { close(gate) })
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, errClientClosed)
+	case <-time.After(3 * time.Second):
+		t.Fatal("connection completion")
+	}
+	require.EqualValues(t, 2, closed.Load())
+	require.Nil(t, client.gettyClient)
+	select {
+	case <-raw.closed:
+	case <-time.After(3 * time.Second):
+		t.Fatal("unpublished transport leaked")
+	}
+}
+
+type leaseCounterCodec struct {
+	DubboTestCodec
+	closed *atomic.Int64
+}
+
+func (c *leaseCounterCodec) Close() error { c.closed.Add(1); return nil }
