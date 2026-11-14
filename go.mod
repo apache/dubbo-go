@@ -59,6 +59,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
 	go.uber.org/atomic v1.10.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.7
