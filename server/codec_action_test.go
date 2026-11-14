@@ -126,11 +126,12 @@ func TestCodecServiceRollback(t *testing.T) {
 			}
 			existing := &codecActionExporter{inv: base.NewBaseInvoker(common.NewURLWithOptions())}
 			opts.exporters = []base.Exporter{existing}
-			if stage == "prepare" {
+			switch stage {
+			case "prepare":
 				b.failPrepare = true
-			} else if stage == "export" {
+			case "export":
 				b.failExport = true
-			} else {
+			default:
 				b.disabled = true
 			}
 			err := opts.Export()

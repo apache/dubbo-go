@@ -85,10 +85,10 @@ func TestConfiguredDubboIDAndFraming(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, normal.Len(), n)
 	for _, size := range []int{0, 7, 15} {
-		value, n, err := c.Decode(data.Bytes()[:size])
-		require.NoError(t, err)
+		value, consumed, decodeErr := c.Decode(data.Bytes()[:size])
+		require.NoError(t, decodeErr)
 		require.Nil(t, value)
-		require.Zero(t, n)
+		require.Zero(t, consumed)
 	}
 	value, n, err := c.Decode(data.Bytes()[:data.Len()-1])
 	require.NoError(t, err)
@@ -209,13 +209,13 @@ func TestCodecRuntimeViewAndLegacyOverride(t *testing.T) {
 	impl.SetSerializer("hessian2", legacy)
 	data, err := view.EncodeRequest(&remoting.Request{ID: 1, Event: true})
 	require.NoError(t, err)
-	require.NotContains(t, string(data.Bytes()), "legacy")
+	require.NotContains(t, data.String(), "legacy")
 	require.Zero(t, legacy.calls)
 	later, err := newConfiguredDubboCodec(streamURL("hessian2"))
 	require.NoError(t, err)
 	data, err = later.EncodeRequest(&remoting.Request{ID: 2, Event: true})
 	require.NoError(t, err)
-	require.Contains(t, string(data.Bytes()), "legacy")
+	require.Contains(t, data.String(), "legacy")
 	require.Equal(t, 1, legacy.calls)
 }
 func TestCodecConfiguredFrameBoundariesAndCorrelation(t *testing.T) {
@@ -230,8 +230,8 @@ func TestCodecConfiguredFrameBoundariesAndCorrelation(t *testing.T) {
 		id     int64
 		length int
 	}{{7, one.Len()}, {8, two.Len()}} {
-		decoded, n, err := c.Decode(frames)
-		require.NoError(t, err)
+		decoded, n, decodeErr := c.Decode(frames)
+		require.NoError(t, decodeErr)
 		require.Equal(t, expected.length, n)
 		require.Equal(t, expected.id, decoded.Result.(*remoting.Request).ID)
 		frames = frames[n:]

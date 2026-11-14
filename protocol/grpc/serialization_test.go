@@ -54,7 +54,7 @@ func TestGRPCSerializationRPCAndConflict(t *testing.T) {
 	var calls, constructions atomic.Int64
 	extension.MustRegisterSerialization(serialization.Registration{Protocol: "grpc", Name: "unit-grpc-json", Mode: serialization.MessageMode, WireName: "unit-grpc-json", ConfigPrefix: "grpc-test", New: func(o serialization.Options) (serialization.Codec, error) {
 		constructions.Add(1)
-		require.Equal(t, "", o.Side)
+		require.Empty(t, o.Side)
 		return testGRPCCodec{calls: &calls}, nil
 	}})
 	url := common.NewURLWithOptions(common.WithProtocol("grpc"), common.WithParamsValue("serialization", "unit-grpc-json"), common.WithAttribute(extension.SerializationConfigAttribute, map[string]any{"grpc-test": "first"}))

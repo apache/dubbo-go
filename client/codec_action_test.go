@@ -118,9 +118,10 @@ func TestCodecReferenceRollback(t *testing.T) {
 			} else {
 				opts.Reference.URL = fmt.Sprintf("%s://127.0.0.1:1;%s://127.0.0.1:2", name, name)
 			}
-			if stage == "prepare" {
+			switch stage {
+			case "prepare":
 				p.failPrepare = 2
-			} else if stage == "refer" {
+			case "refer":
 				p.failRefer = 2
 			}
 			err := opts.refer(nil, nil)

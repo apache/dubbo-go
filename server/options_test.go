@@ -1280,7 +1280,7 @@ func TestCodecServiceReceivePolicyInheritance(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, empty.Service.AcceptedSerializations)
 	require.Empty(t, empty.Service.AcceptedSerializations)
-	require.Equal(t, "", empty.getUrlMap().Get("accepted-serializations"))
+	require.Empty(t, empty.getUrlMap().Get("accepted-serializations"))
 	_, present := empty.getUrlMap()["accepted-serializations"]
 	require.True(t, present)
 	inherited.Service.AcceptedSerializations[0] = "changed"
