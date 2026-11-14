@@ -20,6 +20,8 @@ package remoting
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -66,9 +68,18 @@ type ExchangeClient struct {
 	ConnectTimeout time.Duration // timeout for connecting server
 	address        string        // server address for dialing. The format: ip:port
 	client         Client        // dealing with the transport
-	init           bool          // the tag for init.
+	initState      atomic.Int32  // initialization state
+	initCond       *sync.Cond    // signals waiters when init completes (success or failure)
+	initErr        error         // stored init error for waiters to observe (guarded by initCond.L)
 	activeNum      atomic.Uint32 // the number of service using the exchangeClient
 }
+
+const (
+	initUninitialized int32 = iota
+	initInitializing
+	initInitialized
+	initClosed
+)
 
 // NewExchangeClient returns a ExchangeClient.
 func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
@@ -76,6 +87,7 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 		ConnectTimeout: connectTimeout,
 		address:        url.Location,
 		client:         client,
+		initCond:       sync.NewCond(&sync.Mutex{}),
 	}
 	if !lazyInit {
 		if err := exchangeClient.doInit(url); err != nil {
@@ -86,21 +98,57 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 	return exchangeClient
 }
 
-func (cl *ExchangeClient) doInit(url *common.URL) error {
-	if cl.init {
+func (cl *ExchangeClient) doInit(url *common.URL) (initErr error) {
+	// Fast path: already initialized.
+	if cl.initState.Load() == initInitialized {
 		return nil
 	}
+	// Try to become the initializer.
+	if !cl.initState.CompareAndSwap(initUninitialized, initInitializing) {
+		// Another goroutine is initializing. Wait for it to complete.
+		cl.initCond.L.Lock()
+		for cl.initState.Load() == initInitializing {
+			cl.initCond.Wait()
+		}
+		err := cl.initErr
+		cl.initCond.L.Unlock()
+		return err
+	}
+	// This goroutine won the CAS — perform the actual initialization.
+	defer func() {
+		panicValue := recover()
+		if panicValue != nil {
+			initErr = fmt.Errorf("exchange client init panic: %v", panicValue)
+		}
+		cl.initCond.L.Lock()
+		if cl.initState.Load() == initClosed {
+			// An in-flight Connect must not revive a closed client.
+			initErr = base.ErrClientClosed
+		} else {
+			cl.initErr = initErr
+			if initErr != nil {
+				// Reset to uninitialized so future calls can retry.
+				cl.initState.Store(initUninitialized)
+			} else {
+				cl.initState.Store(initInitialized)
+			}
+		}
+		cl.initCond.L.Unlock()
+		cl.initCond.Broadcast()
+		if panicValue != nil {
+			// Release waiters while preserving the initializer's panic.
+			panic(panicValue)
+		}
+	}()
 	if cl.client.Connect(url) != nil {
 		// retry for a while
 		time.Sleep(100 * time.Millisecond)
 		if cl.client.Connect(url) != nil {
 			logger.Errorf("[Remoting] failed to connect server, url=%v", url.Location)
-			return errors.New("Failed to connect server " + url.Location)
+			initErr = errors.New("Failed to connect server " + url.Location)
 		}
 	}
-	// FIXME atomic operation
-	cl.init = true
-	return nil
+	return initErr
 }
 
 // IncreaseActiveNumber increase number of service using client.
@@ -250,8 +298,12 @@ func (client *ExchangeClient) SendContext(ctx context.Context, invocation *base.
 
 // Close close the client.
 func (client *ExchangeClient) Close() {
+	client.initCond.L.Lock()
+	client.initState.Store(initClosed)
+	client.initErr = base.ErrClientClosed
+	client.initCond.L.Unlock()
+	client.initCond.Broadcast()
 	client.client.Close()
-	client.init = false
 }
 
 // IsAvailable to check if the underlying network client is available yet.
