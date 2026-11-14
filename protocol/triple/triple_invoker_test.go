@@ -18,12 +18,20 @@
 package triple
 
 import (
+	"bytes"
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 	"fmt"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+	"google.golang.org/protobuf/encoding/protowire"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -744,4 +752,76 @@ func contextAttachmentTraceparent(ctx context.Context) string {
 		return value
 	}
 	return ""
+}
+
+func TestCodecInvocationDeclaredTypesReachWrapper(t *testing.T) {
+	const name = "codec-invocation-types"
+	c := &codecEpochProbe{name: name}
+	extension.MustRegisterSerialization(serialization.Registration{Protocol: "triple", Name: name, Mode: serialization.WrappedObjectMode, WireName: "proto", New: func(serialization.Options) (serialization.Codec, error) { return c, nil }})
+	_, opts := tri.ConfiguredSerializationOptions(c, map[string]tri.Codec{name: c}, map[string]tri.Codec{}, true, false)
+	handler := tri.NewUnaryHandler("/codec.Types/Echo", func() any { return []any{new(string)} }, func(context.Context, *tri.Request) (*tri.Response, error) { return tri.NewResponse([]any{"ok"}), nil }, opts...)
+	observed := make(chan []string, 2)
+	server := httptest.NewServer(h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		names := []string{}
+		if len(body) >= 5 {
+			wire := body[5:]
+			for len(wire) > 0 {
+				field, typ, n := protowire.ConsumeTag(wire)
+				if n < 0 {
+					break
+				}
+				wire = wire[n:]
+				if field == 3 && typ == protowire.BytesType {
+					value, size := protowire.ConsumeString(wire)
+					if size < 0 {
+						break
+					}
+					names = append(names, value)
+					wire = wire[size:]
+				} else {
+					size := protowire.ConsumeFieldValue(field, typ, wire)
+					if size < 0 {
+						break
+					}
+					wire = wire[size:]
+				}
+			}
+		}
+		if len(names) > 0 {
+			observed <- names
+		}
+		handler.ServeHTTP(w, r)
+	}), &http2.Server{}))
+	defer server.Close()
+	url, err := common.NewURL("tri://"+strings.TrimPrefix(server.URL, "http://")+"/codec.Types", common.WithParamsValue("serialization", name))
+	require.NoError(t, err)
+	invoker, err := NewTripleInvoker(url)
+	require.NoError(t, err)
+	defer invoker.Destroy()
+	for _, declared := range [][]string{{"declared.Type"}, nil} {
+		var reply string
+		inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("Echo"), invocation.WithArguments([]any{"hello"}), invocation.WithReply(&reply), invocation.WithParameterRawValues([]any{"hello", &reply}), invocation.WithParameterTypeNames(declared))
+		inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		result := invoker.Invoke(ctx, inv)
+		cancel()
+		require.NoError(t, result.Error())
+		require.Equal(t, "ok", reply)
+		want := declared
+		if len(want) == 0 {
+			want = []string{"java.lang.String"}
+		}
+		select {
+		case got := <-observed:
+			require.Equal(t, want, got)
+		case <-time.After(3 * time.Second):
+			t.Fatal("wrapper not observed")
+		}
+	}
 }
