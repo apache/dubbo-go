@@ -187,6 +187,13 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 		env.Data.Len() == 0:
 		// This is a standard message (because none of the top 7 bits are set) and
 		// there's no data, so the zero value of the message is correct.
+		// Configured sessions must still validate message permission and wrapper
+		// structure; legacy codecs retain their historical empty-message shortcut.
+		if codec, ok := r.codec.(interface{ unmarshalEmpty(any) error }); ok {
+			if err := codec.unmarshalEmpty(message); err != nil {
+				return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, rpcerror.Mark(err, rpcerror.Codec))
+			}
+		}
 		return nil
 	case err != nil && errors.Is(err, io.EOF):
 		// The stream has ended. Propagate the EOF to the caller.

@@ -76,6 +76,8 @@ type protocolHandlerParams struct {
 	Spec                        Spec
 	Codecs                      readOnlyCodecs
 	FallbackCodecName           string
+	InnerCodecs                 map[string]Codec
+	MessageCodecs               map[string]Codec
 	CompressionPools            readOnlyCompressionPools
 	CompressMinBytes            int
 	BufferPool                  *bufferPool
