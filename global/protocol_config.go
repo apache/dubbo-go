@@ -23,6 +23,7 @@ import (
 
 // ProtocolConfig represents the config of protocol.
 type ProtocolConfig struct {
+	Codec string `yaml:"codec" json:"codec,omitempty" property:"codec"`
 	// Name defines the protocol name for server.
 	Name string `yaml:"name" json:"name,omitempty" property:"name"`
 
@@ -73,6 +74,7 @@ func (c *ProtocolConfig) Clone() *ProtocolConfig {
 
 	return &ProtocolConfig{
 		Name:                 c.Name,
+		Codec:                c.Codec,
 		Ip:                   c.Ip,
 		Port:                 c.Port,
 		Params:               c.Params,
