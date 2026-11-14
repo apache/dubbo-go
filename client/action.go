@@ -212,7 +212,8 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	}()
 	for _, url := range urls {
 		target := url
-		if url.Protocol == constant.RegistryProtocol {
+		// Both registry URL forms wrap the business protocol that owns codecs.
+		if url.Protocol == constant.RegistryProtocol || url.Protocol == constant.ServiceRegistryProtocol {
 			target = url.SubURL
 		}
 		if target != nil {
