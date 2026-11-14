@@ -19,6 +19,7 @@ package remoting
 
 import (
 	"bytes"
+	"sync"
 )
 
 // Codec is the interface that wrap EncodeRequest、 EncodeResponse and Decode method
@@ -26,6 +27,10 @@ import (
 type Codec interface {
 	EncodeRequest(request *Request) (*bytes.Buffer, error)
 	EncodeResponse(response *Response) (*bytes.Buffer, error)
+	// Decode returns one frame and its consumed length. For an incomplete header
+	// it returns nil, 0, nil; with a complete header and partial body, nil and
+	// the required total frame length. A complete frame followed by more bytes
+	// consumes only that frame. Errors never identify a successfully decoded frame.
 	Decode(data []byte) (*DecodeResult, int, error)
 }
 
@@ -35,11 +40,23 @@ type DecodeResult struct {
 }
 
 var codec = make(map[string]Codec, 2)
+var codecMu sync.RWMutex
+var legacyCodecOverrides = make(map[string]Codec)
 
 func RegistryCodec(protocol string, codecTmp Codec) {
+	codecMu.Lock()
+	defer codecMu.Unlock()
 	codec[protocol] = codecTmp
+	codecFactories.RLock()
+	_, namedDefault := codecFactories.items[protocol+"/"+protocol]
+	codecFactories.RUnlock()
+	if namedDefault {
+		legacyCodecOverrides[protocol] = codecTmp
+	}
 }
 
 func GetCodec(protocol string) Codec {
+	codecMu.RLock()
+	defer codecMu.RUnlock()
 	return codec[protocol]
 }
