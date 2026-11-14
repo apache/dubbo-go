@@ -366,3 +366,69 @@ func TestCodecStreamingEmptyMessagePolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestCodecIDLResponseRejectsNonMessageResults(t *testing.T) {
+	for _, wire := range []string{"grpc", "triple"} {
+		for _, fast := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s/fast=%t", wire, fast), func(t *testing.T) {
+				codecs := BuiltinSerializationCodecs()
+				_, options := ConfiguredSerializationOptions(codecs["proto"], map[string]Codec{"hessian2": codecs["hessian2"]}, map[string]Codec{"proto": codecs["proto"]}, false, false)
+				mux := http.NewServeMux()
+				mux.Handle("/review.Service/Run", NewUnaryHandler("/review.Service/Run", func() any { return &wrapperspb.StringValue{} }, func(context.Context, *Request) (*Response, error) {
+					// A filter may short-circuit with an empty result. This must not
+					// change a Protobuf call into a wrapped-object response.
+					return NewResponse([]any{nil}), nil
+				}, options...))
+				srv := httptest.NewUnstartedServer(mux)
+				srv.EnableHTTP2 = true
+				srv.StartTLS()
+				defer srv.Close()
+				var clientOptions []ClientOption
+				if wire == "triple" {
+					clientOptions = append(clientOptions, WithTriple())
+				}
+				if !fast {
+					clientOptions = append(clientOptions, WithoutUnaryFastPath())
+				}
+				client := NewClient(srv.Client(), srv.URL+"/review.Service", clientOptions...)
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				err := client.CallUnary(ctx, NewRequest(wrapperspb.String("request")), "Run", NewResponse(&wrapperspb.StringValue{}))
+				require.Error(t, err)
+				require.Equal(t, CodeInternal, CodeOf(err))
+			})
+		}
+	}
+}
+
+func TestCodecIDLSessionKeepsResponseEncoding(t *testing.T) {
+	codecs := BuiltinSerializationCodecs()
+	for _, appendMode := range []bool{false, true} {
+		t.Run(fmt.Sprintf("append=%t", appendMode), func(t *testing.T) {
+			session := &tripleServerCodecSession{delegate: codecs["proto"], runtimeCodecs: map[string]Codec{"hessian2": codecs["hessian2"]}, messageCodecs: map[string]Codec{"proto": codecs["proto"]}}
+			raw, err := proto.Marshal(wrapperspb.String("request"))
+			require.NoError(t, err)
+			require.NoError(t, session.Unmarshal(raw, &wrapperspb.StringValue{}))
+			for _, invalid := range []any{nil, []any{}, []any{nil}, []any{"invalid"}} {
+				if appendMode {
+					_, err = session.MarshalAppend([]byte("prefix"), invalid)
+				} else {
+					_, err = session.Marshal(invalid)
+				}
+				require.Error(t, err, "invalid response %T must not select an object codec", invalid)
+			}
+			if appendMode {
+				raw, err = session.MarshalAppend([]byte("prefix"), wrapperspb.String("response"))
+				require.NoError(t, err)
+				require.True(t, bytes.HasPrefix(raw, []byte("prefix")))
+				raw = raw[len("prefix"):]
+			} else {
+				raw, err = session.Marshal(wrapperspb.String("response"))
+				require.NoError(t, err)
+			}
+			var reply wrapperspb.StringValue
+			require.NoError(t, proto.Unmarshal(raw, &reply))
+			require.Equal(t, "response", reply.Value)
+		})
+	}
+}
