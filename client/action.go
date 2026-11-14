@@ -219,8 +219,8 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 			target = url.SubURL
 		}
 		if target != nil {
-			if err := extension.PrepareCodecURL(target, "consumer"); err != nil {
-				return err
+			if prepareErr := extension.PrepareCodecURL(target, "consumer"); prepareErr != nil {
+				return prepareErr
 			}
 			// Destroy clears attributes on the invoker URL; rollback owns a snapshot.
 			preparedURLs = append(preparedURLs, target.Clone())

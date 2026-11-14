@@ -115,7 +115,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 				result.SetError(err)
 			}
 		default:
-			result.SetError(fmt.Errorf("Triple only supports Unary Invocation for Non-IDL mode"))
+			result.SetError(fmt.Errorf("triple only supports unary invocation for non-IDL mode"))
 		}
 		return &result
 	}

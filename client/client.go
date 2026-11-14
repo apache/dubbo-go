@@ -236,8 +236,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	}
 	newRefOpts.Registries = effectiveRegistries
 
-	rpcService, _ := srv.(common.RPCService)
-	if err := newRefOpts.refer(rpcService, info); err != nil {
+	if err := newRefOpts.refer(srv, info); err != nil {
 		return nil, err
 	}
 

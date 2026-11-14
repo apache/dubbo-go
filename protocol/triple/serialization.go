@@ -71,11 +71,11 @@ func SerializationOptions(url *common.URL, side string) (client []tri.ClientOpti
 				config = configs[r.ConfigPrefix]
 			}
 		}
-		codec, err := extension.BuildSerialization(r, serialization.Options{Protocol: "triple", Side: side, Parameters: parameters, Config: config})
-		if err == nil {
+		codec, buildErr := extension.BuildSerialization(r, serialization.Options{Protocol: "triple", Side: side, Parameters: parameters, Config: config})
+		if buildErr == nil {
 			resources.Add(codec)
 		}
-		return codec, err
+		return codec, buildErr
 	}
 	selected, err := makeCodec(reg)
 	if err != nil {
