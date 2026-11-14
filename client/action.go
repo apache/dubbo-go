@@ -189,6 +189,9 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		cfgURL.SetParam(constant.ForceUseTag, "true")
 	}
 	refOpts.postProcessConfig(cfgURL)
+	if ref.ProtocolClientConfig.Codec != "" {
+		cfgURL.SetParam("codec", ref.ProtocolClientConfig.Codec)
+	}
 
 	extension.SnapshotSerializationPolicy(cfgURL)
 

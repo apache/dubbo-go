@@ -23,6 +23,7 @@ import (
 
 // ClientProtocolConfig represents the config of client's protocol.
 type ClientProtocolConfig struct {
+	Codec string `yaml:"codec" json:"codec,omitempty" property:"codec"`
 	// TODO: maybe we could use this field
 	Name string `yaml:"name" json:"name,omitempty" property:"name"`
 
@@ -46,6 +47,7 @@ func (c *ClientProtocolConfig) Clone() *ClientProtocolConfig {
 
 	return &ClientProtocolConfig{
 		Name:         c.Name,
+		Codec:        c.Codec,
 		TripleConfig: c.TripleConfig.Clone(),
 	}
 }

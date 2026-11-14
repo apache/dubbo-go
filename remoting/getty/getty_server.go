@@ -127,6 +127,7 @@ func GetServerConfig() ServerConfig {
 
 // Server define getty server
 type Server struct {
+	codecURL       *common.URL
 	conf           ServerConfig
 	addr           string
 	codec          remoting.Codec
@@ -137,18 +138,35 @@ type Server struct {
 
 // NewServer create a new Server
 func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) result.RPCResult) *Server {
+	server, err := NewServerWithError(url, handlers)
+	if err != nil {
+		panic(err)
+	}
+	return server
+}
+
+func NewServerWithError(url *common.URL, handlers func(*invocation.RPCInvocation) result.RPCResult) (*Server, error) {
+	if err := remoting.PrepareCodec(url); err != nil {
+		return nil, err
+	}
+	selectedCodec, err := remoting.NewCodec(url)
+	if err != nil {
+		return nil, err
+	}
+
 	// init
 	initServer(url)
 	s := &Server{
+		codecURL:       url.Clone(),
 		conf:           *srvConf,
 		addr:           url.Location,
-		codec:          remoting.GetCodec(url.Protocol),
+		codec:          selectedCodec,
 		requestHandler: handlers,
 	}
 
 	s.rpcHandler = NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout, s)
 
-	return s
+	return s, nil
 }
 
 func (s *Server) newSession(session getty.Session) error {
@@ -240,4 +258,5 @@ func (s *Server) Start() {
 // Stop dubbo server
 func (s *Server) Stop() {
 	s.tcpServer.Close()
+	_ = remoting.ReleaseCodec(s.codecURL)
 }

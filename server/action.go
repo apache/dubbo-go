@@ -254,6 +254,9 @@ func (svcOpts *ServiceOptions) Export() error {
 
 		// post process the URL to be exported
 		svcOpts.postProcessConfig(ivkURL)
+		if protocolConf.Codec != "" {
+			ivkURL.SetParam("codec", protocolConf.Codec)
+		}
 		extension.SnapshotSerializationPolicy(ivkURL)
 		if err := extension.PrepareCodecURL(ivkURL, "provider"); err != nil {
 			return err
