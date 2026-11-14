@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -214,5 +215,69 @@ func TestCodecClusterAssemblyRollback(t *testing.T) {
 			}
 			require.Len(t, p.released, len(p.prepared))
 		})
+	}
+}
+
+// Registry envelopes must prepare and release the business SubURL, including
+// application-level discovery, which does not register its own RPC protocol.
+func TestCodecRegistryReferenceInitialization(t *testing.T) {
+	for _, registryType := range []string{"", constant.RegistryTypeService, constant.RegistryTypeInterface, constant.RegistryTypeAll} {
+		for _, stage := range []string{"prepare", "refer"} {
+			t.Run(registryType+"/"+stage, func(t *testing.T) {
+				const name = "codec-discovery-reference"
+				business := &codecActionProtocol{sentinel: errors.New("business preparation failed")}
+				registry := &codecActionProtocol{failRefer: 1}
+				extension.SetProtocol(name, func() base.Protocol { return business })
+				t.Cleanup(func() { extension.UnregisterProtocol(name) })
+				hadRegistry := slices.Contains(extension.GetAllProtocolNames(), constant.RegistryProtocol)
+				var previous base.Protocol
+				if hadRegistry {
+					previous = extension.GetProtocol(constant.RegistryProtocol)
+				}
+				extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol { return registry })
+				t.Cleanup(func() {
+					if hadRegistry {
+						extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol { return previous })
+					} else {
+						extension.UnregisterProtocol(constant.RegistryProtocol)
+					}
+				})
+				opts := defaultReferenceOptions()
+				opts.Consumer = global.DefaultConsumerConfig()
+				opts.Reference.ProtocolClientConfig = global.DefaultClientProtocolConfig()
+				opts.Reference.Protocol = name
+				opts.Reference.InterfaceName = "codec.Discovery"
+				opts.Reference.Filter = "-default"
+				opts.Registries = map[string]*global.RegistryConfig{
+					"zk": {Protocol: "zookeeper", Address: "127.0.0.1:2181", RegistryType: registryType},
+				}
+				if stage == "prepare" {
+					business.failPrepare = 1
+				}
+				err := opts.refer(nil, nil)
+				require.Error(t, err)
+				require.Nil(t, opts.invoker)
+				require.Empty(t, opts.urls)
+				require.Empty(t, registry.sides, "registry envelopes must not own business codecs")
+				if stage == "prepare" {
+					require.ErrorIs(t, err, business.sentinel)
+					require.Equal(t, []string{"consumer"}, business.sides)
+				} else {
+					expected := 1
+					if registryType == constant.RegistryTypeAll {
+						expected = 2
+					}
+					require.Len(t, business.prepared, expected)
+					require.Len(t, business.released, expected)
+					for _, u := range business.prepared {
+						require.Equal(t, name, u.Protocol)
+						require.Equal(t, "codec.Discovery", strings.TrimPrefix(u.Path, "/"))
+					}
+					for _, owner := range business.owners {
+						require.Equal(t, 1, owner.closes)
+					}
+				}
+			})
+		}
 	}
 }
