@@ -18,12 +18,12 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -87,22 +87,30 @@ func updateOrCreateMeshURL(opts *ReferenceOptions) {
 
 // ReferWithService retrieves invokers from urls.
 func (refOpts *ReferenceOptions) ReferWithService(srv common.RPCService) {
-	refOpts.refer(srv, nil)
+	if err := refOpts.refer(srv, nil); err != nil {
+		panic(err)
+	}
 }
 
 func (refOpts *ReferenceOptions) Refer() {
-	refOpts.refer(nil, nil)
+	if err := refOpts.refer(nil, nil); err != nil {
+		panic(err)
+	}
 }
 
 func (refOpts *ReferenceOptions) ReferWithInfo(info *ClientInfo) {
-	refOpts.refer(nil, info)
+	if err := refOpts.refer(nil, info); err != nil {
+		panic(err)
+	}
 }
 
 func (refOpts *ReferenceOptions) ReferWithServiceAndInfo(srv common.RPCService, info *ClientInfo) {
-	refOpts.refer(srv, info)
+	if err := refOpts.refer(srv, info); err != nil {
+		panic(err)
+	}
 }
 
-func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) {
+func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) error {
 	ref := refOpts.Reference
 	con := refOpts.Consumer
 
@@ -151,6 +159,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		// attribute
 		common.WithAttribute(constant.TripleConfigKey, ref.ProtocolClientConfig.TripleConfig),
 		common.WithAttribute(constant.TLSConfigKey, refOpts.TLS),
+		common.WithAttribute(extension.SerializationConfigAttribute, refOpts.codecConfigs),
 
 		// for new triple non-IDL mode
 		// TODO: remove ISIDL after old triple removed
@@ -181,19 +190,44 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	}
 	refOpts.postProcessConfig(cfgURL)
 
+	extension.SnapshotSerializationPolicy(cfgURL)
+
 	// if mesh-enabled is set
 	updateOrCreateMeshURL(refOpts)
 
 	// retrieving urls from config, and appending the urls to refOpts.urls
 	urls, err := processURL(ref, refOpts.Registries, cfgURL)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
+	preparedURLs := make([]*common.URL, 0, len(urls))
+	prepared := false
+	defer func() {
+		if !prepared {
+			for i := len(preparedURLs) - 1; i >= 0; i-- {
+				_ = extension.ReleaseCodecURL(preparedURLs[i], "consumer")
+			}
+		}
+	}()
+	for _, url := range urls {
+		target := url
+		// Both registry URL forms wrap the business protocol that owns codecs.
+		if url.Protocol == constant.RegistryProtocol || url.Protocol == constant.ServiceRegistryProtocol {
+			target = url.SubURL
+		}
+		if target != nil {
+			if prepareErr := extension.PrepareCodecURL(target, "consumer"); prepareErr != nil {
+				return prepareErr
+			}
+			// Destroy clears attributes on the invoker URL; rollback owns a snapshot.
+			preparedURLs = append(preparedURLs, target.Clone())
+		}
+	}
 	// build invoker according to urls
 	invoker, err := buildInvoker(urls, ref)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	refOpts.urls = urls
 	refOpts.invoker = invoker
@@ -214,6 +248,8 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	// this protocol would be destroyed in graceful_shutdown
 	// please refer to (https://github.com/apache/dubbo-go/issues/2429)
 	graceful_shutdown.RegisterProtocol(ref.Protocol)
+	prepared = true
+	return nil
 }
 
 func processURL(ref *global.ReferenceConfig, registries map[string]*global.RegistryConfig, cfgURL *common.URL) ([]*common.URL, error) {
@@ -297,17 +333,29 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker
 		regURL  *common.URL
 	)
 
-	if len(urls) == 0 {
-		return nil, errors.New("invoker list is empty")
-	}
-
 	invokers := make([]base.Invoker, len(urls))
+	transferred := false
+	defer func() {
+		if !transferred {
+			for i := len(invokers) - 1; i >= 0; i-- {
+				if invokers[i] != nil {
+					invokers[i].Destroy()
+				}
+			}
+		}
+	}()
 	for i, u := range urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {
 			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
 		} else {
 			invoker = extension.GetProtocol(u.Protocol).Refer(u)
 		}
+
+		if invoker == nil {
+			return nil, fmt.Errorf("protocol %s could not initialize reference %s", u.Protocol, u.ServiceKey())
+		}
+		// Keep ownership even if later filter or cluster assembly fails.
+		invokers[i] = invoker
 
 		if ref.URL != "" {
 			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.ReferenceFilterKey)
@@ -334,6 +382,10 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker
 			}
 			resInvoker = cluster.Join(static.NewDirectory(invokers))
 		}
+		if resInvoker == nil {
+			return nil, fmt.Errorf("cluster could not initialize reference")
+		}
+		transferred = true
 		return resInvoker, nil
 	}
 
@@ -353,7 +405,10 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker
 		return nil, err
 	}
 	resInvoker = cluster.Join(static.NewDirectory(invokers))
-
+	if resInvoker == nil {
+		return nil, fmt.Errorf("cluster %s could not initialize reference", hitClu)
+	}
+	transferred = true
 	return resInvoker, nil
 }
 
@@ -413,6 +468,9 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.ProvidedBy, ref.ProvidedBy)
 	urlMap.Set(constant.SerializationKey, ref.Serialization)
+	if ref.AcceptedSerializations != nil {
+		urlMap.Set("accepted-serializations", strings.Join(ref.AcceptedSerializations, ","))
+	}
 	urlMap.Set(constant.TracingConfigKey, ref.TracingKey)
 
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)

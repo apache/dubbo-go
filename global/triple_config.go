@@ -21,6 +21,7 @@ package global
 
 // TripleConfig represents the config of triple protocol.
 type TripleConfig struct {
+	WireProtocol string `yaml:"wire-protocol" json:"wire-protocol,omitempty" property:"wire-protocol"`
 	//
 	// for server
 	//
@@ -110,6 +111,7 @@ func (t *TripleConfig) Clone() *TripleConfig {
 	}
 
 	return &TripleConfig{
+		WireProtocol:           t.WireProtocol,
 		ServerCompressMinBytes: newServerCompressMinBytes,
 		MaxServerSendMsgSize:   t.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize:   t.MaxServerRecvMsgSize,

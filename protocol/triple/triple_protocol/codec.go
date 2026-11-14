@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync/atomic"
 	"time"
 )
 
@@ -40,6 +41,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 const (
@@ -51,26 +53,7 @@ const (
 )
 
 // Codec marshals structs (typically generated from a schema) to and from bytes.
-type Codec interface {
-	// Name returns the name of the Codec.
-	//
-	// This may be used as part of the Content-Type within HTTP. For example,
-	// with gRPC this is the content subtype, so "application/grpc+proto" will
-	// map to the Codec with name "proto".
-	//
-	// Names must not be empty.
-	Name() string
-	// Marshal marshals the given message.
-	//
-	// Marshal may expect a specific type of message, and will error if this type
-	// is not given.
-	Marshal(any) ([]byte, error)
-	// Unmarshal unmarshals the given message.
-	//
-	// Unmarshal may expect a specific type of message, and will error if this
-	// type is not given.
-	Unmarshal([]byte, any) error
-}
+type Codec = serialization.Codec
 
 // stableCodec is an extension to Codec for serializing with stable output.
 type stableCodec interface {
@@ -104,10 +87,7 @@ type stableCodec interface {
 // itself grows the buffer. MarshalAppend must produce output byte-identical to
 // Marshal for the same message — the extension only changes where the bytes are
 // written. Codecs that do not implement it are unaffected.
-type marshalAppender interface {
-	// MarshalAppend marshals the given message, appending the result to dst.
-	MarshalAppend(dst []byte, message any) ([]byte, error)
-}
+type marshalAppender = serialization.MarshalAppender
 
 // protoBinaryCodec handles standard protobuf binary serialization for IDL
 // calls. Non-IDL (Java Dubbo Triple generic call) wrapper handling on the
@@ -247,7 +227,8 @@ func getWireCodecName(codec Codec) string {
 // The Content-Type is "application/proto" because the outer format is protobuf.
 // The inner serialization type (e.g., "hessian2") is stored in the wrapper's serializeType field.
 type protoWrapperCodec struct {
-	innerCodec Codec
+	innerCodec    Codec
+	runtimeCodecs map[string]Codec
 }
 
 var _ WrapperCodec = (*protoWrapperCodec)(nil)
@@ -295,6 +276,13 @@ func (c *protoWrapperCodec) requestWrapper(message any) (*interoperability.Tripl
 		reqs = []any{message}
 	}
 
+	var declared []string
+	if args, ok := message.(SerializationArguments); ok {
+		reqs, declared = args.Values, args.TypeNames
+	}
+	if len(declared) > 0 && len(declared) != len(reqs) {
+		return nil, fmt.Errorf("wrapper codec: declared type count %d differs from argument count %d", len(declared), len(reqs))
+	}
 	reqsLen := len(reqs)
 	reqsBytes := make([][]byte, reqsLen)
 	reqsTypes := make([]string, reqsLen)
@@ -304,7 +292,22 @@ func (c *protoWrapperCodec) requestWrapper(message any) (*interoperability.Tripl
 			return nil, err
 		}
 		reqsBytes[i] = reqBytes
-		reqsTypes[i] = getArgType(req)
+		if len(declared) > 0 {
+			reqsTypes[i] = declared[i]
+		} else if resolver, ok := c.innerCodec.(serialization.ArgumentTypeResolver); ok {
+			reqsTypes[i], err = resolver.ArgumentType(req)
+			if err != nil {
+				return nil, fmt.Errorf("argument type %d: %w", i, err)
+			}
+		} else {
+			reqsTypes[i] = getArgType(req)
+			if c.runtimeCodecs != nil && c.innerCodec.Name() != "hessian2" && c.innerCodec.Name() != "msgpack" && reqsTypes[i] == "java.lang.Object" {
+				return nil, fmt.Errorf("wrapper codec: argument %d (%T) needs a declared type or ArgumentTypeResolver", i, req)
+			}
+		}
+		if reqsTypes[i] == "" {
+			return nil, fmt.Errorf("wrapper codec: empty argument type at %d", i)
+		}
 	}
 
 	return &interoperability.TripleRequestWrapper{
@@ -328,7 +331,7 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 			return fmt.Errorf("wrapper codec: expected %d params, got %d args", len(params), len(wrapperReq.Args))
 		}
 
-		inner, err := resolveInnerCodec(wrapperReq.SerializeType)
+		inner, err := resolveRuntimeInner(c.runtimeCodecs, wrapperReq.SerializeType)
 		if err != nil {
 			return fmt.Errorf("wrapper codec: %w", err)
 		}
@@ -340,10 +343,26 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 		return nil
 	}
 
+	// Legacy gRPC-wire non-IDL responses used a one-argument request wrapper.
+	// Field 3 uniquely identifies that historical layout. Select by schema, never
+	// by a failed payload decode, then apply the same response allowlist.
+	if c.runtimeCodecs != nil {
+		var legacy interoperability.TripleRequestWrapper
+		if err := proto.Unmarshal(binary, &legacy); err == nil && len(legacy.Args) > 0 {
+			if len(legacy.Args) != 1 {
+				return fmt.Errorf("wrapper codec: legacy response has %d values", len(legacy.Args))
+			}
+			inner, err := resolveRuntimeInner(c.runtimeCodecs, legacy.SerializeType)
+			if err != nil {
+				return err
+			}
+			return inner.Unmarshal(legacy.Args[0], message)
+		}
+	}
 	// Response format: TripleResponseWrapper with single data field
 	var wrapperResp interoperability.TripleResponseWrapper
 	if err := proto.Unmarshal(binary, &wrapperResp); err == nil {
-		inner, err := resolveInnerCodec(wrapperResp.SerializeType)
+		inner, err := resolveRuntimeInner(c.runtimeCodecs, wrapperResp.SerializeType)
 		if err != nil {
 			return fmt.Errorf("wrapper codec: %w", err)
 		}
@@ -355,6 +374,9 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 		return nil
 	}
 
+	if c.runtimeCodecs != nil {
+		return fmt.Errorf("wrapper codec: invalid response wrapper")
+	}
 	// Fallback: try as single-arg request (not a response wrapper)
 	var wrapperReq interoperability.TripleRequestWrapper
 	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
@@ -363,7 +385,7 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 	if len(wrapperReq.Args) != 1 {
 		return fmt.Errorf("wrapper codec: expected 1 arg for single param, got %d", len(wrapperReq.Args))
 	}
-	inner, err := resolveInnerCodec(wrapperReq.SerializeType)
+	inner, err := resolveRuntimeInner(c.runtimeCodecs, wrapperReq.SerializeType)
 	if err != nil {
 		return fmt.Errorf("wrapper codec: %w", err)
 	}
@@ -628,8 +650,11 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 // single decode, and Marshal reads it to wrap the response in a
 // TripleResponseWrapper.
 type tripleServerCodecSession struct {
-	delegate             Codec  // IDL path codec, resolved from Content-Type
-	serializeType        string // captured by Unmarshal when Non-IDL; read by Marshal
+	messageMode          atomic.Bool // captured from the request; response values cannot change the encoding mode
+	delegate             Codec       // IDL path codec, resolved from Content-Type
+	serializeType        string      // captured by Unmarshal when Non-IDL; read by Marshal
+	runtimeCodecs        map[string]Codec
+	messageCodecs        map[string]Codec
 	allowedSerializeType string // provider "serialization" param; effective allowlist = {hessian2} ∪ {this}. TODO: support Java's multi-valued prefer-serialization
 }
 
@@ -641,6 +666,10 @@ func (s *tripleServerCodecSession) Name() string { return s.delegate.Name() }
 // hessian2 is always allowed (Non-IDL interop default); any other name must
 // match the provider's configured serialization.
 func (s *tripleServerCodecSession) checkAllowed(codecName string) error {
+	if s.runtimeCodecs != nil {
+		_, err := resolveRuntimeInner(s.runtimeCodecs, codecName)
+		return err
+	}
 	if codecName == codecNameHessian2 || codecName == s.allowedSerializeType {
 		return nil
 	}
@@ -648,9 +677,26 @@ func (s *tripleServerCodecSession) checkAllowed(codecName string) error {
 		codecName, codecNameHessian2, s.allowedSerializeType)
 }
 
+func (s *tripleServerCodecSession) unmarshalEmpty(message any) error {
+	return s.Unmarshal(nil, message)
+}
+
 func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
+	if s.runtimeCodecs != nil && s.delegate.Name() != "proto" {
+		if _, ok := s.messageCodecs[s.delegate.Name()]; !ok {
+			return fmt.Errorf("message serialization %q disabled", s.delegate.Name())
+		}
+		return s.delegate.Unmarshal(data, message)
+	}
 	if _, isProto := message.(proto.Message); isProto {
-		// IDL: standard proto message.
+		// Preserve the request's message encoding even if a filter returns an
+		// invalid or empty response value instead of a Protobuf message.
+		s.messageMode.Store(true)
+		if s.messageCodecs != nil {
+			if _, ok := s.messageCodecs[s.delegate.Name()]; !ok {
+				return fmt.Errorf("message serialization %q disabled", s.delegate.Name())
+			}
+		}
 		return s.delegate.Unmarshal(data, message)
 	}
 	// Non-IDL: decode the TripleRequestWrapper once, capturing SerializeType
@@ -661,7 +707,7 @@ func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 		return fmt.Errorf("unmarshal triple wrapper request: %w", err)
 	}
 	s.serializeType = reqWrapper.SerializeType
-	inner, err := resolveInnerCodec(reqWrapper.SerializeType)
+	inner, err := resolveRuntimeInner(s.runtimeCodecs, reqWrapper.SerializeType)
 	if err != nil {
 		return fmt.Errorf("unmarshal triple wrapper request: %w", err)
 	}
@@ -672,6 +718,9 @@ func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 }
 
 func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
+	if s.messageMode.Load() || (s.runtimeCodecs != nil && s.delegate.Name() != "proto") {
+		return s.delegate.Marshal(message)
+	}
 	if _, isProto := message.(proto.Message); isProto {
 		// IDL: standard proto message.
 		return s.delegate.Marshal(message)
@@ -692,6 +741,13 @@ func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
 // TripleResponseWrapper into the caller-provided buffer instead of allocating
 // a fresh slice.
 func (s *tripleServerCodecSession) MarshalAppend(dst []byte, message any) ([]byte, error) {
+	if s.messageMode.Load() || (s.runtimeCodecs != nil && s.delegate.Name() != "proto") {
+		if appender, ok := s.delegate.(marshalAppender); ok {
+			return appender.MarshalAppend(dst, message)
+		}
+		raw, err := s.delegate.Marshal(message)
+		return append(dst, raw...), err
+	}
 	if pm, isProto := message.(proto.Message); isProto {
 		if appender, ok := s.delegate.(marshalAppender); ok {
 			return appender.MarshalAppend(dst, pm)
@@ -715,7 +771,7 @@ func (s *tripleServerCodecSession) MarshalAppend(dst []byte, message any) ([]byt
 // responseWrapper builds the TripleResponseWrapper for a Non-IDL response,
 // resolving the inner codec from the SerializeType captured by Unmarshal.
 func (s *tripleServerCodecSession) responseWrapper(message any) (*interoperability.TripleResponseWrapper, error) {
-	inner, err := resolveInnerCodec(s.serializeType)
+	inner, err := resolveRuntimeInner(s.runtimeCodecs, s.serializeType)
 	if err != nil {
 		return nil, fmt.Errorf("marshal triple wrapper response: %w", err)
 	}
