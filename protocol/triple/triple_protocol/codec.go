@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync/atomic"
 	"time"
 )
 
@@ -649,8 +650,9 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 // single decode, and Marshal reads it to wrap the response in a
 // TripleResponseWrapper.
 type tripleServerCodecSession struct {
-	delegate             Codec  // IDL path codec, resolved from Content-Type
-	serializeType        string // captured by Unmarshal when Non-IDL; read by Marshal
+	messageMode          atomic.Bool // captured from the request; response values cannot change the encoding mode
+	delegate             Codec       // IDL path codec, resolved from Content-Type
+	serializeType        string      // captured by Unmarshal when Non-IDL; read by Marshal
 	runtimeCodecs        map[string]Codec
 	messageCodecs        map[string]Codec
 	allowedSerializeType string // provider "serialization" param; effective allowlist = {hessian2} ∪ {this}. TODO: support Java's multi-valued prefer-serialization
@@ -687,7 +689,9 @@ func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 		return s.delegate.Unmarshal(data, message)
 	}
 	if _, isProto := message.(proto.Message); isProto {
-		// IDL: standard proto message.
+		// Preserve the request's message encoding even if a filter returns an
+		// invalid or empty response value instead of a Protobuf message.
+		s.messageMode.Store(true)
 		if s.messageCodecs != nil {
 			if _, ok := s.messageCodecs[s.delegate.Name()]; !ok {
 				return fmt.Errorf("message serialization %q disabled", s.delegate.Name())
@@ -714,7 +718,7 @@ func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 }
 
 func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
-	if s.runtimeCodecs != nil && s.delegate.Name() != "proto" {
+	if s.messageMode.Load() || (s.runtimeCodecs != nil && s.delegate.Name() != "proto") {
 		return s.delegate.Marshal(message)
 	}
 	if _, isProto := message.(proto.Message); isProto {
@@ -737,7 +741,7 @@ func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
 // TripleResponseWrapper into the caller-provided buffer instead of allocating
 // a fresh slice.
 func (s *tripleServerCodecSession) MarshalAppend(dst []byte, message any) ([]byte, error) {
-	if s.runtimeCodecs != nil && s.delegate.Name() != "proto" {
+	if s.messageMode.Load() || (s.runtimeCodecs != nil && s.delegate.Name() != "proto") {
 		if appender, ok := s.delegate.(marshalAppender); ok {
 			return appender.MarshalAppend(dst, message)
 		}
