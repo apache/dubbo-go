@@ -59,18 +59,22 @@ type completionMetrics struct {
 // Each cached series references the real registered metrics, not a second copy.
 // Only the first record of each result/category binds its counter and window.
 type rpcSeries struct {
-	registry    metrics.MetricRegistry
-	gauges      metrics.GaugeFuncRegistry
-	definitions map[string]*metrics.MetricKey
-	prefix      string
-	labels      map[string]string
-	processing  metrics.GaugeMetric
-	qps         *aggregate.TimeWindowCounter
-	mu          sync.Mutex
-	completion  atomic.Pointer[completionMetrics]
-	succeeded   atomic.Pointer[counterPair]
-	failed      atomic.Pointer[counterPair]
-	failures    [7]atomic.Pointer[counterPair]
+	registry          metrics.MetricRegistry
+	gauges            metrics.GaugeFuncRegistry
+	definitions       map[string]*metrics.MetricKey
+	prefix            string
+	labels            map[string]string
+	processing        metrics.GaugeMetric
+	qps               *aggregate.TimeWindowCounter
+	mu                sync.Mutex
+	completion        atomic.Pointer[completionMetrics]
+	succeeded         atomic.Pointer[counterPair]
+	failed            atomic.Pointer[counterPair]
+	failures          [7]atomic.Pointer[counterPair]
+	histogramRegistry metrics.HistogramProvider
+	histogramOpts     *metrics.HistogramOpts
+	histogramID       *metrics.MetricId
+	histogram         atomic.Pointer[histogramMetric]
 }
 
 func (c *rpcCollector) getSeries(e *metricsEvent) *rpcSeries {
@@ -90,6 +94,11 @@ func (c *rpcCollector) getSeries(e *metricsEvent) *rpcSeries {
 	s := &rpcSeries{registry: c.registry, gauges: c.registry.(metrics.GaugeFuncRegistry),
 		definitions: common.keys, prefix: "dubbo_" + e.role + "_", labels: maps.Clone(e.labels),
 		qps: aggregate.NewTimeWindowCounter(metrics.DefaultBucketNum, metrics.DefaultTimeWindowSeconds)}
+	if c.histogramRegistry != nil {
+		s.histogramRegistry = c.histogramRegistry
+		s.histogramOpts = c.histogramOpts
+		s.histogramID = rpcHistogramID(e.role, s.labels)
+	}
 	s.processing = s.registry.Gauge(s.id("requests_processing_total"))
 	s.gauges.GaugeFunc(s.id("qps_total"), s.qps.QPS)
 	// Publish only a fully bound series. On initialization failure, later calls
@@ -168,5 +177,10 @@ func (s *rpcSeries) record(e *metricsEvent) {
 		m.rt.Observe(cost)
 		m.rtWindow.Observe(cost)
 		m.quantiles.Add(cost)
+		// Record optional histograms last so a broken registry cannot interrupt
+		// the existing counters, processing gauge or RT observations.
+		if s.histogramRegistry != nil {
+			s.rtHistogram().Observe(e.costTime.Seconds())
+		}
 	}
 }

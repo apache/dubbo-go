@@ -240,6 +240,9 @@ func (rc *InstanceOptions) initGlobalMetrics(activateRuntime bool) error {
 	if rc.Metrics.Aggregation == nil {
 		rc.Metrics.Aggregation = &global.AggregateConfig{}
 	}
+	if rc.Metrics.Histogram == nil {
+		rc.Metrics.Histogram = &global.HistogramConfig{}
+	}
 	if rc.Metrics.Probe == nil {
 		rc.Metrics.Probe = &global.ProbeConfig{}
 	}
@@ -268,6 +271,14 @@ func metricsURL(rc *InstanceOptions) *common.URL {
 	u.SetParam(constant.MetadataEnabledKey, strconv.FormatBool(*mc.EnableMetadata))
 	u.SetParam(constant.RegistryEnabledKey, strconv.FormatBool(*mc.EnableRegistry))
 	u.SetParam(constant.ConfigCenterEnabledKey, strconv.FormatBool(*mc.EnableConfigCenter))
+	if mc.Histogram != nil {
+		u.SetParam(constant.HistogramEnabledKey, strconv.FormatBool(*mc.Histogram.Enabled))
+		bounds := make([]string, len(mc.Histogram.Buckets))
+		for i, bound := range mc.Histogram.Buckets {
+			bounds[i] = strconv.FormatFloat(bound, 'g', -1, 64)
+		}
+		u.SetParam(constant.HistogramBucketsKey, strings.Join(bounds, ","))
+	}
 	if mc.Aggregation != nil {
 		u.SetParam(constant.AggregationEnabledKey, strconv.FormatBool(*mc.Aggregation.Enabled))
 		u.SetParam(constant.AggregationBucketNumKey, strconv.Itoa(mc.Aggregation.BucketNum))

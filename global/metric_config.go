@@ -25,10 +25,18 @@ type MetricsConfig struct {
 	Protocol           string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
 	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
 	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
+	Histogram          *HistogramConfig  `yaml:"histogram" json:"histogram" property:"histogram"`
 	EnableMetadata     *bool             `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
 	EnableRegistry     *bool             `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
 	EnableConfigCenter *bool             `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
 	Probe              *ProbeConfig      `yaml:"probe" json:"probe" property:"probe"`
+}
+
+// HistogramConfig enables cumulative RPC latency buckets independently of the
+// sliding-window aggregation. Bucket upper bounds are in seconds.
+type HistogramConfig struct {
+	Enabled *bool     `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Buckets []float64 `default:"[0.1,0.3,0.5,1,3,5,10]" yaml:"buckets" json:"buckets,omitempty" property:"buckets"`
 }
 
 type AggregateConfig struct {
@@ -67,7 +75,7 @@ type PushgatewayConfig struct {
 
 func DefaultMetricsConfig() *MetricsConfig {
 	// return a new config without setting any field means there is not any default value for initialization
-	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig(), Probe: defaultProbeConfig()}
+	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig(), Histogram: &HistogramConfig{}, Probe: defaultProbeConfig()}
 }
 
 // Clone a new MetricsConfig
@@ -107,11 +115,24 @@ func (c *MetricsConfig) Clone() *MetricsConfig {
 		Protocol:           c.Protocol,
 		Prometheus:         c.Prometheus.Clone(),
 		Aggregation:        c.Aggregation.Clone(),
+		Histogram:          c.Histogram.Clone(),
 		EnableMetadata:     newEnableMetadata,
 		EnableRegistry:     newEnableRegistry,
 		EnableConfigCenter: newEnableConfigCenter,
 		Probe:              c.Probe.Clone(),
 	}
+}
+
+func (c *HistogramConfig) Clone() *HistogramConfig {
+	if c == nil {
+		return nil
+	}
+	var enabled *bool
+	if c.Enabled != nil {
+		enabled = new(bool)
+		*enabled = *c.Enabled
+	}
+	return &HistogramConfig{Enabled: enabled, Buckets: append([]float64(nil), c.Buckets...)}
 }
 
 func defaultPrometheusConfig() *PrometheusConfig {

@@ -60,6 +60,27 @@ func NewOptions(opts ...Option) *Options {
 // Option is a functional option used to customize the metrics Options.
 type Option func(*Options)
 
+// WithHistogramEnabled enables cumulative provider and consumer RPC latency
+// histograms. It does not enable metrics or sliding-window aggregation.
+// Histograms are disabled by default at instance initialization.
+func WithHistogramEnabled() Option {
+	return func(opts *Options) {
+		enabled := true
+		opts.Metrics.Histogram.Enabled = &enabled
+	}
+}
+
+// WithHistogramBuckets sets finite RPC latency bucket upper bounds in seconds.
+// Bounds must be positive, finite and strictly increasing. Missing or invalid
+// bounds use [0.1, 0.3, 0.5, 1, 3, 5, 10]; invalid bounds produce a startup warning.
+// This option does not enable histograms. The caller's slice is copied.
+func WithHistogramBuckets(buckets []float64) Option {
+	bounds := append([]float64(nil), buckets...)
+	return func(opts *Options) {
+		opts.Metrics.Histogram.Buckets = append([]float64(nil), bounds...)
+	}
+}
+
 // WithAggregationEnabled enables metrics aggregation, such as the
 // time-window based aggregation for counters and rt metrics.
 //

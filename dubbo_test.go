@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -543,6 +544,38 @@ func TestInstanceInitUsesGlobalMetricsDefaults(t *testing.T) {
 	assert.False(t, *rc.Metrics.EnableRegistry)
 	assert.False(t, *rc.Metrics.EnableConfigCenter)
 	assert.True(t, *rc.Metrics.Prometheus.Exporter.Enabled)
+}
+
+func TestHistogramConfigDefaultsAndURL(t *testing.T) {
+	for _, present := range []bool{false, true} {
+		rc := defaultInstanceOptions()
+		rc.Metrics = &global.MetricsConfig{}
+		if present {
+			rc.Metrics.Histogram = &global.HistogramConfig{}
+		}
+		require.NoError(t, rc.initGlobalMetrics(false))
+		require.NotNil(t, rc.Metrics.Histogram)
+		require.NotNil(t, rc.Metrics.Histogram.Enabled)
+		assert.False(t, *rc.Metrics.Histogram.Enabled)
+		assert.Equal(t, []float64{0.1, 0.3, 0.5, 1, 3, 5, 10}, rc.Metrics.Histogram.Buckets)
+		u := metricsURL(rc)
+		assert.False(t, u.GetParamBool(constant.HistogramEnabledKey, true))
+		assert.Equal(t, "0.1,0.3,0.5,1,3,5,10", u.GetParam(constant.HistogramBucketsKey, ""))
+	}
+}
+
+func TestHistogramFunctionalConfigAndClone(t *testing.T) {
+	rc := defaultInstanceOptions()
+	WithMetrics(metrics.WithEnabled(), metrics.WithHistogramEnabled(), metrics.WithHistogramBuckets([]float64{0.0005, 0.005}))(rc)
+	require.NoError(t, rc.initGlobalMetrics(false))
+	u := metricsURL(rc)
+	assert.True(t, u.GetParamBool(constant.HistogramEnabledKey, false))
+	assert.Equal(t, "0.0005,0.005", u.GetParam(constant.HistogramBucketsKey, ""))
+	clone := rc.CloneMetrics()
+	clone.Histogram.Buckets[0] = 10
+	*clone.Histogram.Enabled = false
+	assert.Equal(t, []float64{0.0005, 0.005}, rc.Metrics.Histogram.Buckets)
+	assert.True(t, *rc.Metrics.Histogram.Enabled)
 }
 
 func TestInstanceInitPreservesGlobalTracingConfig(t *testing.T) {

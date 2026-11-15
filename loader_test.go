@@ -31,6 +31,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
@@ -71,6 +72,29 @@ func writeFile(t *testing.T, dir, name, content string) string {
 		t.Fatalf("write file: %v", err)
 	}
 	return p
+}
+
+func TestHistogramYAMLConfigAndURL(t *testing.T) {
+	conf := NewLoaderConf(WithGenre("yaml"), WithBytes([]byte(`
+dubbo:
+  application:
+    name: histogram-yaml
+  metrics:
+    enable: true
+    histogram:
+      enabled: true
+      buckets: [0.0001, 0.001, 0.01, 1]
+`)))
+	rc, err := loadInstanceOptions(conf)
+	require.NoError(t, err)
+	require.NoError(t, rc.initGlobalMetrics(false))
+	require.True(t, *rc.Metrics.Enable)
+	require.True(t, *rc.Metrics.Histogram.Enabled)
+	assert.False(t, *rc.Metrics.Aggregation.Enabled)
+	assert.Equal(t, []float64{0.0001, 0.001, 0.01, 1}, rc.Metrics.Histogram.Buckets)
+	u := metricsURL(rc)
+	assert.True(t, u.GetParamBool(constant.HistogramEnabledKey, false))
+	assert.Equal(t, "0.0001,0.001,0.01,1", u.GetParam(constant.HistogramBucketsKey, ""))
 }
 
 func TestHotUpdateConfig_AllowsLoggerLevelChange(t *testing.T) {
