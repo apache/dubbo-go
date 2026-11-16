@@ -43,9 +43,7 @@ endif
 # Tests with known issues (data races or test design defects) tracked in the
 # race-detector issue. Skipped via -skip so the whole-repo race run can pass;
 # each test should be fixed and removed from this list over time.
-RACE_SKIP_TESTS := TestFailbackRetryFailed \
-TestFailbackOutOfLimit \
-TestListener \
+RACE_SKIP_TESTS := TestListener \
 TestDubboProtocol_Refer \
 TestServiceDiscoveryRegistryUnRegister_Concurrent \
 TestCfgAPI_Export \
