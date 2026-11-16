@@ -94,8 +94,22 @@ func configCacheResponse(rw http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintf(rw, "%s", result)
 }
 
+var mockConfigResMu sync.RWMutex
+
+func getMockConfigRes() string {
+	mockConfigResMu.RLock()
+	defer mockConfigResMu.RUnlock()
+	return mockConfigRes
+}
+
+func setMockConfigRes(res string) {
+	mockConfigResMu.Lock()
+	defer mockConfigResMu.Unlock()
+	mockConfigRes = res
+}
+
 func configResponse(rw http.ResponseWriter, _ *http.Request) {
-	result := mockConfigRes
+	result := getMockConfigRes()
 	fmt.Fprintf(rw, "%s", result)
 }
 
@@ -304,7 +318,7 @@ func TestListener(t *testing.T) {
 	listener := &apolloDataListener{}
 	listener.wg.Add(2)
 	apollo := initMockApollo(t)
-	mockConfigRes = `{
+	setMockConfigRes(`{
 	"appId": "testApplication_yang",
 	"cluster": "default",
 	"namespaceName": "mockDubbogo.yaml",
@@ -312,19 +326,20 @@ func TestListener(t *testing.T) {
 		"registries.hangzhouzk.username": "11111"
 	},
 	"releaseKey": "20191104105242-0f13805d89f834a4"
-}`
+}`)
 	// test add
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
-	assert.Equal(t, "mockDubbogo.yaml", listener.event)
-	assert.Positive(t, listener.count)
+	count, event := listener.state()
+	assert.Equal(t, "mockDubbogo.yaml", event)
+	assert.Positive(t, count)
 
 	// test remove
 	apollo.RemoveListener(mockNamespace, listener)
 	listenerCount := 0
 	apollo.listeners.Range(func(_, value any) bool {
 		apolloListener := value.(*apolloListener)
-		for e := range apolloListener.listeners {
+		for _, e := range apolloListener.snapshot() {
 			t.Logf("listener:%v", e)
 			listenerCount++
 		}
@@ -335,17 +350,31 @@ func TestListener(t *testing.T) {
 
 type apolloDataListener struct {
 	wg    sync.WaitGroup
+	mu    sync.Mutex
 	count int
 	event string
+}
+
+func (l *apolloDataListener) state() (int, string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.count, l.event
 }
 
 func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent) {
 	if configType.ConfigType != remoting.EventTypeUpdate {
 		return
 	}
-	l.wg.Done()
+	l.mu.Lock()
 	l.count++
 	l.event = configType.Key
+	// The test waits for two events; ignore any further ones so the WaitGroup
+	// counter never goes negative.
+	done := l.count <= 2
+	l.mu.Unlock()
+	if done {
+		l.wg.Done()
+	}
 }
 
 // custom parser with concurrent safety

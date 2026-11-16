@@ -18,6 +18,7 @@
 package apollo
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -68,5 +69,47 @@ func TestApolloListener(t *testing.T) {
 	l.RemoveListener(rec)
 	if !l.IsEmpty() {
 		t.Fatalf("listener should be empty after remove")
+	}
+}
+
+type noopListener struct{}
+
+func (noopListener) Process(*config_center.ConfigChangeEvent) {}
+
+// TestApolloListenerConcurrent exercises AddListener, RemoveListener, IsEmpty and
+// OnNewestChange concurrently; it is meaningful under `go test -race`.
+func TestApolloListenerConcurrent(t *testing.T) {
+	l := newApolloListener()
+	change := &storage.FullChangeEvent{Changes: map[string]any{"k": "v"}}
+	change.Namespace = "application"
+
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Add(3)
+		go func() {
+			defer wg.Done()
+			for range 100 {
+				ls := &noopListener{}
+				l.AddListener(ls)
+				l.RemoveListener(ls)
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			for range 100 {
+				l.OnNewestChange(change)
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			for range 100 {
+				_ = l.IsEmpty()
+			}
+		}()
+	}
+	wg.Wait()
+
+	if !l.IsEmpty() {
+		t.Fatalf("listener should be empty after all removals")
 	}
 }
