@@ -225,7 +225,10 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 // Once we decided to transfer more context's key-value, we should change this.
 // now we only support rebuild the tracing context
 func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
-	ctx := context.WithValue(context.Background(), constant.DubboCtxKey("attachment"), inv.Attachments())
+	// Prefer the request context derived from the transport session so
+	// cancellation and deadlines propagate into filters and business code.
+	// Context() already falls back to context.Background() when unset.
+	ctx := context.WithValue(inv.Context(), constant.DubboCtxKey("attachment"), inv.Attachments())
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,

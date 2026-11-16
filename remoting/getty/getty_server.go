@@ -239,5 +239,15 @@ func (s *Server) Start() {
 
 // Stop dubbo server
 func (s *Server) Stop() {
-	s.tcpServer.Close()
+	if s.rpcHandler != nil {
+		s.rpcHandler.cancelAll()
+	}
+	if s.tcpServer != nil {
+		s.tcpServer.Close()
+	}
+	// A session may OnOpen after the first cancelAll and before Close
+	// finishes; sweep again so it cannot outlive Stop.
+	if s.rpcHandler != nil {
+		s.rpcHandler.cancelAll()
+	}
 }
