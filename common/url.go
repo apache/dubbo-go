@@ -1007,9 +1007,10 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 			}
 		}
 
-		// remote timestamp
-		if !baseHasTimestamp {
+		// remote timestamp: keep the provider's export time, warmup weight is computed from it
+		if baseHasTimestamp {
 			params[constant.RemoteTimestampKey] = []string{baseTimestamp}
+		} else {
 			params[constant.TimestampKey] = []string{anotherUrl.params.Get(constant.TimestampKey)}
 		}
 

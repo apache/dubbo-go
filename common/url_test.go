@@ -1498,6 +1498,16 @@ func TestMergeURLWithMethodParams(t *testing.T) {
 	assert.Equal(t, "5000", mergedUrl.GetParam("methods.testMethod."+constant.TimeoutKey, ""))
 }
 
+func TestMergeURLKeepsProviderTimestampAsRemoteTimestamp(t *testing.T) {
+	serviceUrl, _ := NewURL("mock2://127.0.0.1:20000", WithParamsValue(constant.TimestampKey, "1700000000"))
+	referenceUrl, _ := NewURL("mock1://127.0.0.1:1111", WithParamsValue(constant.TimestampKey, "1600000000"))
+
+	mergedUrl := serviceUrl.MergeURL(referenceUrl)
+	// remote.timestamp carries the provider's export time, which warmup weight is computed from
+	assert.Equal(t, "1700000000", mergedUrl.GetParam(constant.RemoteTimestampKey, ""))
+	assert.Equal(t, "1700000000", mergedUrl.GetParam(constant.TimestampKey, ""))
+}
+
 func TestMergeURLPreservesMultiValueParams(t *testing.T) {
 	local := &URL{}
 	local.SetParams(url.Values{
