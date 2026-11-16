@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"sync"
 )
 
 import (
@@ -44,7 +45,8 @@ import (
 )
 
 var (
-	srvConf = GetDefaultServerConfig()
+	srvConf     = GetDefaultServerConfig()
+	srvConfLock sync.RWMutex
 )
 
 func initServer(url *common.URL) {
@@ -112,6 +114,9 @@ func initServer(url *common.URL) {
 
 // SetServerConfig set dubbo server config.
 func SetServerConfig(s ServerConfig) {
+	srvConfLock.Lock()
+	defer srvConfLock.Unlock()
+
 	srvConf = &s
 	err := srvConf.CheckValidity()
 	if err != nil {
@@ -122,6 +127,9 @@ func SetServerConfig(s ServerConfig) {
 
 // GetServerConfig get getty server config.
 func GetServerConfig() ServerConfig {
+	srvConfLock.RLock()
+	defer srvConfLock.RUnlock()
+
 	return *srvConf
 }
 
@@ -137,6 +145,9 @@ type Server struct {
 
 // NewServer create a new Server
 func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) result.RPCResult) *Server {
+	srvConfLock.Lock()
+	defer srvConfLock.Unlock()
+
 	// init
 	initServer(url)
 	s := &Server{
@@ -225,7 +236,7 @@ func (s *Server) Start() {
 	serverOpts := []getty.ServerOption{getty.WithLocalAddress(addr)}
 	if s.conf.SSLEnabled {
 		serverOpts = append(serverOpts, getty.WithServerSslEnabled(s.conf.SSLEnabled),
-			getty.WithServerTlsConfigBuilder(srvConf.TLSBuilder))
+			getty.WithServerTlsConfigBuilder(s.conf.TLSBuilder))
 		logger.Info("[Remoting][Getty] getty server initialized the TLSConfig configuration")
 	}
 

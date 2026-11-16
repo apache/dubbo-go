@@ -20,6 +20,7 @@ package getty
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -47,6 +48,41 @@ func TestTCPPackageHandle(t *testing.T) {
 	client := getClient(url)
 	testDecodeTCPPackage(t, svr, client)
 	svr.Stop()
+}
+
+func TestRpcServerPackageHandlerWriteUsesServerConfig(t *testing.T) {
+	origin := srvConf
+	t.Cleanup(func() { srvConf = origin })
+
+	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
+	url, err := common.NewURL("dubbo://127.0.0.1:20062/com.ikurento.user.AdminProvider")
+	require.NoError(t, err)
+
+	conf := *GetDefaultServerConfig()
+	conf.GettySessionParam.MaxMsgLen = 64
+	SetServerConfig(conf)
+	handler := NewRpcServerPackageHandler(NewServer(url, nil))
+	SetServerConfig(*GetDefaultServerConfig())
+
+	res := remoting.NewResponse(1, "2.0.2")
+	res.SerialID = constant.SHessian2
+	res.Result = result.RPCResult{Rest: strings.Repeat("a", 1024)}
+
+	_, err = handler.Write(nil, res)
+	require.ErrorContains(t, err, "max payload 64")
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 100 {
+			SetServerConfig(*GetDefaultServerConfig())
+		}
+	}()
+	for range 100 {
+		_, err = handler.Write(nil, res)
+		require.Error(t, err)
+	}
+	<-done
 }
 
 func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
