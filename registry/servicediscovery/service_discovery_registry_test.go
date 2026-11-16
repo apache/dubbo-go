@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"sync"
 	"testing"
@@ -817,9 +818,7 @@ func (m *mockServiceDiscovery) getRegisteredInstances() map[string]registry.Serv
 	m.instMu.Lock()
 	defer m.instMu.Unlock()
 	cp := make(map[string]registry.ServiceInstance, len(m.instances))
-	for k, v := range m.instances {
-		cp[k] = v
-	}
+	maps.Copy(cp, m.instances)
 	return cp
 }
 
