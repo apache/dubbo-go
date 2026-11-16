@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -247,30 +248,36 @@ func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 
 func (s *serviceDiscoveryRegistry) unregisterService(targetURL *common.URL) error {
 	s.lock.Lock()
-	keep := s.instances[:0]
-	origin := s.instances[:]
+	origin := append([]registry.ServiceInstance(nil), s.instances...)
 	s.lock.Unlock()
 
 	var errs []error
-	keepInstanceURLs := make(map[registry.ServiceInstance]*common.URL)
+	unregistered := make(map[registry.ServiceInstance]struct{}, len(origin))
 
 	for _, v := range origin {
 		if err := s.serviceDiscovery.Unregister(v); err != nil {
-			// fail to unregister
-			keep = append(keep, v)
 			errs = append(errs, err)
-			s.lock.RLock()
-			if sourceURL, ok := s.instanceURLs[v]; ok {
-				keepInstanceURLs[v] = sourceURL
-			}
-			s.lock.RUnlock()
+		} else {
+			unregistered[v] = struct{}{}
 		}
 	}
 
 	s.lock.Lock()
-	s.instances = keep
-	s.instanceURLs = keepInstanceURLs
+	newInstances := make([]registry.ServiceInstance, 0, len(s.instances))
+	var keep []registry.ServiceInstance
+	for _, inst := range s.instances {
+		if _, ok := unregistered[inst]; ok {
+			delete(s.instanceURLs, inst)
+		} else {
+			newInstances = append(newInstances, inst)
+			if slices.Contains(origin, inst) {
+				keep = append(keep, inst)
+			}
+		}
+	}
+	s.instances = newInstances
 	s.lock.Unlock()
+
 	if err := s.syncExportedMetadataAfterUnregister(targetURL, origin, keep); err != nil {
 		errs = append(errs, err)
 	}

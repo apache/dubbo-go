@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -1526,8 +1527,9 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 				Enable:      true,
 				Healthy:     true,
 			}
-			// intentionally no lock: simulating real race
+			sdReg.lock.Lock()
 			sdReg.instances = append(sdReg.instances, inst)
+			sdReg.lock.Unlock()
 			time.Sleep(10 * time.Millisecond)
 		}
 	})
@@ -1540,15 +1542,28 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 		t.Fatalf("panic occurred during concurrent unregister: %v", p)
 	}
 
-	// at least the failed instance should remain
-	foundFailed := false
+	sdReg.lock.RLock()
+	remainingIDs := make([]string, 0, len(sdReg.instances))
 	for _, inst := range sdReg.instances {
-		if inst.GetID() == "init-2" {
-			foundFailed = true
-			break
-		}
+		remainingIDs = append(remainingIDs, inst.GetID())
 	}
-	assert.True(t, foundFailed, "failed instance should be kept after UnRegisterService")
+	sdReg.lock.RUnlock()
+
+	// at least the failed instance should remain
+	assert.Contains(t, remainingIDs, "init-2", "failed instance should be kept after UnRegisterService")
+
+	// successfully unregistered initial instances should be removed
+	for _, id := range []string{"init-0", "init-1", "init-3", "init-4"} {
+		assert.NotContains(t, remainingIDs, id, "successfully unregistered instance should be removed")
+	}
+
+	// concurrently registered instances must not be lost (must either be safely unregistered or retained)
+	for i := range 3 {
+		concurrentID := fmt.Sprintf("concurrent-%d", i)
+		inRemaining := slices.Contains(remainingIDs, concurrentID)
+		inUnregistered := slices.Contains(mockSD.unregisterIDs, concurrentID)
+		assert.True(t, inRemaining || inUnregistered, "concurrent instance %s must not be lost", concurrentID)
+	}
 
 	// unregister should be called
 	assert.True(t, mockSD.unregisterCalled)
