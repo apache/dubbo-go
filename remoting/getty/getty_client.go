@@ -267,6 +267,11 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 	case <-response.Done:
 		err = response.Err
 	case <-ctx.Done():
+		// Drop the pending waiter, but keep the shared session. Caller
+		// cancellation is not a transport failure; a later request may
+		// reuse this connection. The read-timeout branch still closes
+		// the session because that path can no longer trust it.
+		remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
 		return perrors.WithStack(ctx.Err())
 	}
 

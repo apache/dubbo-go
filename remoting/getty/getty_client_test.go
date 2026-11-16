@@ -512,3 +512,144 @@ func TestRequestContextReadTimeout(t *testing.T) {
 	require.ErrorIs(t, err, errClientReadTimeout)
 	require.Less(t, time.Since(start), time.Second)
 }
+
+// cancelAfterWriteSession writes successfully, then cancels the request
+// context so RequestContext hits the ctx.Done wait branch without sleeping.
+type cancelAfterWriteSession struct {
+	dubboGetty.Session
+	mu         sync.Mutex
+	closeCount int
+	afterWrite func()
+}
+
+func (s *cancelAfterWriteSession) WritePkg(pkg any, _ time.Duration) (int, int, error) {
+	s.mu.Lock()
+	cb := s.afterWrite
+	s.mu.Unlock()
+	if cb != nil {
+		cb()
+	}
+	return 0, 0, nil
+}
+
+func (s *cancelAfterWriteSession) IsClosed() bool { return false }
+
+func (s *cancelAfterWriteSession) Stat() string { return "mock-session" }
+
+func (s *cancelAfterWriteSession) Close() {
+	s.mu.Lock()
+	s.closeCount++
+	s.mu.Unlock()
+}
+
+func (s *cancelAfterWriteSession) closes() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.closeCount
+}
+
+func (s *cancelAfterWriteSession) setAfterWrite(cb func()) {
+	s.mu.Lock()
+	s.afterWrite = cb
+	s.mu.Unlock()
+}
+
+// TestRequestContextCancelRemovesPending is a regression test for the
+// ctx.Done() wait branch. Cancellation must return ctx.Err(), drop the
+// pending response, leave the shared session open for reuse, and tolerate
+// a late Handle without panicking. Unlike the read-timeout path,
+// cancellation must not close the session.
+func TestRequestContextCancelRemovesPending(t *testing.T) {
+	session := &cancelAfterWriteSession{}
+	client := NewClient(Options{RequestTimeout: 2 * time.Second})
+	client.gettyClient = &gettyRPCClient{
+		rpcClient: client,
+		sessions:  []*rpcSession{{session: session}},
+	}
+
+	runCanceled := func(t *testing.T) {
+		t.Helper()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		session.setAfterWrite(cancel)
+
+		request := remoting.NewRequest("2.0.2")
+		request.TwoWay = true
+		rsp := remoting.NewPendingResponse(request.ID)
+		remoting.AddPendingResponse(rsp)
+		t.Cleanup(func() {
+			remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		})
+
+		err := client.RequestContext(ctx, request, 2*time.Second, rsp)
+		require.ErrorIs(t, err, context.Canceled)
+		require.Nil(t, remoting.GetPendingResponse(remoting.SequenceType(request.ID)),
+			"pending response must be removed after cancellation")
+		require.Equal(t, 0, session.closes(), "cancellation must not close the shared session")
+
+		require.NotPanics(t, func() {
+			remoting.NewResponse(request.ID, "2.0.2").Handle()
+		})
+	}
+
+	runCanceled(t)
+	runCanceled(t)
+}
+
+func TestRequestContextCancelAndLateHandleRace(t *testing.T) {
+	session := &cancelAfterWriteSession{}
+	client := NewClient(Options{RequestTimeout: 2 * time.Second})
+	client.gettyClient = &gettyRPCClient{
+		rpcClient: client,
+		sessions:  []*rpcSession{{session: session}},
+	}
+
+	for range 8 {
+		ctx, cancel := context.WithCancel(context.Background())
+		session.setAfterWrite(cancel)
+
+		request := remoting.NewRequest("2.0.2")
+		request.TwoWay = true
+		rsp := remoting.NewPendingResponse(request.ID)
+		remoting.AddPendingResponse(rsp)
+		t.Cleanup(func() {
+			remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		})
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+		errCh := make(chan error, 1)
+		go func() {
+			defer wg.Done()
+			errCh <- client.RequestContext(ctx, request, 2*time.Second, rsp)
+		}()
+		go func() {
+			defer wg.Done()
+			remoting.NewResponse(request.ID, "2.0.2").Handle()
+		}()
+
+		waitDone := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(waitDone)
+		}()
+		select {
+		case <-waitDone:
+		case <-time.After(2 * time.Second):
+			cancel()
+			t.Fatal("cancel and late Handle did not finish")
+		}
+		cancel()
+
+		select {
+		case err := <-errCh:
+			if err != nil {
+				require.ErrorIs(t, err, context.Canceled)
+			}
+		default:
+			t.Fatal("RequestContext returned no error value")
+		}
+		require.Nil(t, remoting.GetPendingResponse(remoting.SequenceType(request.ID)))
+		require.Equal(t, 0, session.closes())
+	}
+}
