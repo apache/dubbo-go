@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -84,6 +83,10 @@ type serviceDiscoveryRegistry struct {
 	definitionPublishPending []*common.URL
 	definitionPublishMu      sync.Mutex
 	renewAppMetadataTimer    *time.Timer
+	// serviceLifecycleMu serializes service registration and unregistration
+	// lifecycles (RegisterService and unregisterService) to ensure atomic
+	// transitions and prevent metadata and backend instance desynchronization.
+	serviceLifecycleMu sync.Mutex
 	// destroyed is set by Destroy. SubscribeURL re-checks it under lock right
 	// before installing a listener, so a subscribe whose initial GetInstances /
 	// metadata phase outlives Destroy is discarded instead of being installed
@@ -147,6 +150,9 @@ func renewsAppMetadata() bool {
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
+	s.serviceLifecycleMu.Lock()
+	defer s.serviceLifecycleMu.Unlock()
+
 	registryId := s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey)
 	metaInfo := metadata.GetMetadataInfo(registryId)
 	if metaInfo == nil {
@@ -247,35 +253,33 @@ func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 }
 
 func (s *serviceDiscoveryRegistry) unregisterService(targetURL *common.URL) error {
+	s.serviceLifecycleMu.Lock()
+	defer s.serviceLifecycleMu.Unlock()
+
 	s.lock.Lock()
 	origin := append([]registry.ServiceInstance(nil), s.instances...)
 	s.lock.Unlock()
 
 	var errs []error
-	unregistered := make(map[registry.ServiceInstance]struct{}, len(origin))
+	var keep []registry.ServiceInstance
+	keepInstanceURLs := make(map[registry.ServiceInstance]*common.URL)
 
 	for _, v := range origin {
 		if err := s.serviceDiscovery.Unregister(v); err != nil {
+			// fail to unregister
+			keep = append(keep, v)
 			errs = append(errs, err)
-		} else {
-			unregistered[v] = struct{}{}
+			s.lock.RLock()
+			if sourceURL, ok := s.instanceURLs[v]; ok {
+				keepInstanceURLs[v] = sourceURL
+			}
+			s.lock.RUnlock()
 		}
 	}
 
 	s.lock.Lock()
-	newInstances := make([]registry.ServiceInstance, 0, len(s.instances))
-	var keep []registry.ServiceInstance
-	for _, inst := range s.instances {
-		if _, ok := unregistered[inst]; ok {
-			delete(s.instanceURLs, inst)
-		} else {
-			newInstances = append(newInstances, inst)
-			if slices.Contains(origin, inst) {
-				keep = append(keep, inst)
-			}
-		}
-	}
-	s.instances = newInstances
+	s.instances = keep
+	s.instanceURLs = keepInstanceURLs
 	s.lock.Unlock()
 
 	if err := s.syncExportedMetadataAfterUnregister(targetURL, origin, keep); err != nil {
@@ -841,6 +845,9 @@ func (s *serviceDiscoveryRegistry) doGarbageCollect() {
 }
 
 func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
+	s.serviceLifecycleMu.Lock()
+	defer s.serviceLifecycleMu.Unlock()
+
 	if !shouldRegister(url) {
 		return nil
 	}
