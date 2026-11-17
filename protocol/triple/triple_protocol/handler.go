@@ -350,6 +350,12 @@ func (h *Handler) replaceVariants(next *Handler) {
 
 // ServeHTTP implements [http.Handler].
 func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
+	// Preflight has no actual group/version values, even when a default
+	// variant exists. Resolve its procedure policy before selecting a variant.
+	if request.Method == http.MethodOptions && request.Header.Get(corsRequestMethod) != "" {
+		h.serveHTTP(responseWriter, request, nil)
+		return
+	}
 	identifier := getIdentifier(request.Header.Get(tripleServiceGroup), request.Header.Get(tripleServiceVersion))
 	h.mu.RLock()
 	selected := h.variants[identifier]
