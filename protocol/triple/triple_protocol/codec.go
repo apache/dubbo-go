@@ -691,8 +691,22 @@ func (s *tripleServerCodecSession) unmarshalEmpty(message any) error {
 	return s.Unmarshal(nil, message)
 }
 
+// Legacy clients label their Protobuf wrapper with its inner serialization.
+// These wire aliases must follow the wrapper path in both directions.
+func (s *tripleServerCodecSession) usesMessageWire() bool {
+	if s.runtimeCodecs == nil {
+		return false
+	}
+	switch s.delegate.Name() {
+	case codecNameProto, codecNameHessian2, codecNameMsgPack:
+		return false
+	default:
+		return true
+	}
+}
+
 func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
-	if s.runtimeCodecs != nil && s.delegate.Name() != "proto" {
+	if s.usesMessageWire() {
 		if _, ok := s.messageCodecs[canonicalMessageName(s.delegate.Name())]; !ok {
 			return fmt.Errorf("message serialization %q disabled", s.delegate.Name())
 		}
@@ -728,7 +742,7 @@ func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 }
 
 func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
-	if s.messageMode.Load() || (s.runtimeCodecs != nil && s.delegate.Name() != "proto") {
+	if s.messageMode.Load() || s.usesMessageWire() {
 		return s.delegate.Marshal(message)
 	}
 	if _, isProto := message.(proto.Message); isProto {
@@ -751,7 +765,7 @@ func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
 // TripleResponseWrapper into the caller-provided buffer instead of allocating
 // a fresh slice.
 func (s *tripleServerCodecSession) MarshalAppend(dst []byte, message any) ([]byte, error) {
-	if s.messageMode.Load() || (s.runtimeCodecs != nil && s.delegate.Name() != "proto") {
+	if s.messageMode.Load() || s.usesMessageWire() {
 		if appender, ok := s.delegate.(marshalAppender); ok {
 			return appender.MarshalAppend(dst, message)
 		}
