@@ -24,6 +24,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/serialization"
@@ -136,6 +137,11 @@ type serializationBinding struct {
 }
 
 func (tp *TripleProtocol) PrepareCodec(url *common.URL, side string) error {
+	if _, legacyService := url.GetAttribute(constant.RpcServiceKey); side == "consumer" && legacyService && !usesNewTripleClient(url) {
+		if err := validateLegacySerialization(url); err != nil {
+			return err
+		}
+	}
 	if raw, ok := url.GetAttribute("triple.serialization." + side); ok {
 		if _, ok := raw.(*serializationBinding); ok {
 			return nil
@@ -222,6 +228,37 @@ func (tp *TripleProtocol) ReleaseCodec(url *common.URL, side string) error {
 	if raw, ok := url.GetAttribute("triple.serialization.resources." + side); ok {
 		if resources, ok := raw.(*serialization.Resources); ok {
 			return resources.Close()
+		}
+	}
+	return nil
+}
+
+// usesNewTripleClient preserves legacy generated stubs while routing public
+// Connection calls to the implementation that consumes serialization bindings.
+func usesNewTripleClient(url *common.URL) bool {
+	if _, ok := url.GetAttribute(constant.ClientInfoKey); ok {
+		return true
+	}
+	if raw, ok := url.GetAttribute(constant.ClientConnectionKey); ok && raw == true {
+		return true
+	}
+	return url.GetParam(constant.IDLMode, "") == constant.NONIDL || isGenericCall(url.GetParam(constant.GenericKey, ""))
+}
+
+func validateLegacySerialization(url *common.URL) error {
+	names := []string{url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)}
+	if accepted, explicit := extension.AcceptedSerializations(url); explicit {
+		names = append(names, accepted...)
+	}
+	for _, name := range names {
+		reg, ok := extension.LookupSerialization("triple", name)
+		if !ok {
+			continue
+		} // Preserve codecs installed directly in the legacy registry.
+		switch reg.Name {
+		case "proto", "json", "hessian2", "msgpack":
+		default:
+			return fmt.Errorf("triple serialization %q is not supported by legacy generated clients; use the public Connection API or regenerate the client", name)
 		}
 	}
 	return nil

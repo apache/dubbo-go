@@ -140,18 +140,7 @@ func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
 	var invoker base.Invoker
 	var err error
 
-	IDLMode := url.GetParam(constant.IDLMode, "")
-	// for now, we do not need to use this info
-	_, ok := url.GetAttribute(constant.ClientInfoKey)
-	// Check if this is a generic call
-	generic := url.GetParam(constant.GenericKey, "")
-	isGenericCall := isGenericCall(generic)
-
-	// Use NewTripleInvoker for:
-	// 1. New protoc-gen-go-triple stub code (has ClientInfoKey)
-	// 2. Non-IDL mode (IDLMode == NONIDL)
-	// 3. Generic call (generic=true/gson/protobuf-json/bean, or the legacy protobuf routing marker)
-	if ok || IDLMode == constant.NONIDL || isGenericCall {
+	if usesNewTripleClient(url) {
 		// new triple invoker supporting $invoke for generic calls
 		invoker, err = NewTripleInvoker(url)
 	} else {

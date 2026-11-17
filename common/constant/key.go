@@ -179,6 +179,7 @@ const (
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
+	ClientConnectionKey                = "client-connection" // local public Connection API routing marker
 	TLSConfigKey                       = "tls-config"
 	ProviderConfigKey                  = "provider-config"
 	ProtocolConfigKey                  = "protocol-config"

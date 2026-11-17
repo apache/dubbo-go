@@ -173,6 +173,10 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithAttribute(constant.RoutersConfigKey, refOpts.Routers),
 	)
 
+	if srv == nil {
+		cfgURL.SetAttribute(constant.ClientConnectionKey, true)
+	}
+
 	// for new triple IDL mode
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
