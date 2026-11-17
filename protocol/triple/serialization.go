@@ -290,8 +290,8 @@ func usesNewTripleClient(url *common.URL) bool {
 
 func validateLegacySerialization(url *common.URL) error {
 	names := []string{url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)}
-	if accepted, explicit := extension.AcceptedSerializations(url); explicit {
-		names = append(names, accepted...)
+	if _, explicit := extension.AcceptedSerializations(url); explicit {
+		return fmt.Errorf("accepted serializations are not supported by legacy generated clients; use the public Connection API or regenerate the client")
 	}
 	for _, name := range names {
 		reg, ok := extension.LookupSerialization("triple", name)
