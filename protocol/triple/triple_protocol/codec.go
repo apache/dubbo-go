@@ -693,7 +693,7 @@ func (s *tripleServerCodecSession) unmarshalEmpty(message any) error {
 
 func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 	if s.runtimeCodecs != nil && s.delegate.Name() != "proto" {
-		if _, ok := s.messageCodecs[s.delegate.Name()]; !ok {
+		if _, ok := s.messageCodecs[canonicalMessageName(s.delegate.Name())]; !ok {
 			return fmt.Errorf("message serialization %q disabled", s.delegate.Name())
 		}
 		return s.delegate.Unmarshal(data, message)
@@ -703,7 +703,7 @@ func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 		// invalid or empty response value instead of a Protobuf message.
 		s.messageMode.Store(true)
 		if s.messageCodecs != nil {
-			if _, ok := s.messageCodecs[s.delegate.Name()]; !ok {
+			if _, ok := s.messageCodecs[canonicalMessageName(s.delegate.Name())]; !ok {
 				return fmt.Errorf("message serialization %q disabled", s.delegate.Name())
 			}
 		}

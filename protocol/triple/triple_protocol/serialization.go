@@ -78,3 +78,12 @@ type SerializationArguments struct {
 	Values    []any
 	TypeNames []string
 }
+
+// canonicalMessageName maps supported HTTP aliases to their registration name.
+// Other parameters and custom names retain their existing negotiation rules.
+func canonicalMessageName(name string) string {
+	if name == codecNameJSONCharsetUTF8 {
+		return codecNameJSON
+	}
+	return name
+}
