@@ -188,6 +188,9 @@ func (c *Client) CallServerStream(ctx context.Context, request *Request, method 
 		return nil, err
 	}
 	if err := conn.CloseRequest(); err != nil {
+		// The caller never receives this stream, so no later Close or Receive
+		// can release its codec lease. Preserve the original request error.
+		_ = conn.CloseResponse()
 		return nil, err
 	}
 	return &ServerStreamForClient{conn: conn}, nil
