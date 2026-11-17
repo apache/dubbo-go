@@ -181,23 +181,23 @@ type recordLogger struct {
 	errors []string
 }
 
-func (l *recordLogger) Info(args ...interface{})  {}
-func (l *recordLogger) Warn(args ...interface{})  {}
-func (l *recordLogger) Error(args ...interface{}) {}
-func (l *recordLogger) Debug(args ...interface{}) {}
-func (l *recordLogger) Fatal(args ...interface{}) {}
+func (l *recordLogger) Info(args ...any)  {}
+func (l *recordLogger) Warn(args ...any)  {}
+func (l *recordLogger) Error(args ...any) {}
+func (l *recordLogger) Debug(args ...any) {}
+func (l *recordLogger) Fatal(args ...any) {}
 
-func (l *recordLogger) Infof(string, ...interface{})  {}
-func (l *recordLogger) Warnf(string, ...interface{})  {}
-func (l *recordLogger) Fatalf(string, ...interface{}) {}
+func (l *recordLogger) Infof(string, ...any)  {}
+func (l *recordLogger) Warnf(string, ...any)  {}
+func (l *recordLogger) Fatalf(string, ...any) {}
 
-func (l *recordLogger) Errorf(format string, args ...interface{}) {
+func (l *recordLogger) Errorf(format string, args ...any) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.errors = append(l.errors, fmt.Sprintf(format, args...))
 }
 
-func (l *recordLogger) Debugf(format string, args ...interface{}) {
+func (l *recordLogger) Debugf(format string, args ...any) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.debugs = append(l.debugs, fmt.Sprintf(format, args...))
