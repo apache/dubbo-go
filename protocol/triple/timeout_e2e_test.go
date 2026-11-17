@@ -132,10 +132,7 @@ func requireRemainingNear(t *testing.T, obs *timeoutObservation, want time.Durat
 	// the remaining time must be in the same order as the expected timeout, and
 	// the gRPC timeout header must have been set on the production request.
 	require.NotEmpty(t, obs.grpcTimeout, "production request must carry a grpc-timeout header")
-	lo := want / 2
-	if lo < 20*time.Millisecond {
-		lo = 20 * time.Millisecond
-	}
+	lo := max(want/2, 20*time.Millisecond)
 	require.Greater(t, obs.remaining, lo, "handler remaining %s is too far from %s (grpc-timeout=%q)", obs.remaining, want, obs.grpcTimeout)
 }
 
