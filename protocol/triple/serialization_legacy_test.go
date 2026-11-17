@@ -54,3 +54,23 @@ func TestLegacyClientRejectsConfiguredPluginsBeforeConstruction(t *testing.T) {
 		require.NoError(t, (&TripleProtocol{}).ReleaseCodec(url, "consumer"))
 	}
 }
+
+func TestLegacyClientRejectsExplicitReceivePolicies(t *testing.T) {
+	for _, accepted := range []string{"json", "hessian2", "proto,json,hessian2", "", "custom-unregistered"} {
+		t.Run("accepted="+accepted, func(t *testing.T) {
+			url := common.NewURLWithOptions(common.WithProtocol("tri"), common.WithParamsValue("serialization", "hessian2"), common.WithParamsValue("accepted-serializations", accepted), common.WithAttribute(constant.RpcServiceKey, &struct{}{}))
+			require.ErrorContains(t, (&TripleProtocol{}).PrepareCodec(url, "consumer"), "accepted serializations are not supported")
+			_, err := NewDubbo3Invoker(url)
+			require.ErrorContains(t, err, "accepted serializations are not supported")
+			_, created := url.GetAttribute("triple.serialization.consumer")
+			require.False(t, created)
+			// Current Connection clients can enforce these policies and must not be
+			// rejected by the legacy entry-point guard.
+			url.SetAttribute(constant.ClientConnectionKey, true)
+			if accepted == "hessian2" || accepted == "proto,json,hessian2" {
+				require.NoError(t, (&TripleProtocol{}).PrepareCodec(url, "consumer"))
+				require.NoError(t, (&TripleProtocol{}).ReleaseCodec(url, "consumer"))
+			}
+		})
+	}
+}
