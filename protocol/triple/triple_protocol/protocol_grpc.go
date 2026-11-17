@@ -330,10 +330,11 @@ func (g *grpcClient) NewConn(
 		},
 		unmarshaler: grpcUnmarshaler{
 			envelopeReader: envelopeReader{
-				reader:       call,
-				codec:        g.Codec,
-				bufferPool:   g.BufferPool,
-				readMaxBytes: g.ReadMaxBytes,
+				validateEmpty: g.ValidateEmptyMessages,
+				reader:        call,
+				codec:         g.Codec,
+				bufferPool:    g.BufferPool,
+				readMaxBytes:  g.ReadMaxBytes,
 			},
 		},
 		responseHeader:  make(http.Header),

@@ -43,7 +43,7 @@ func ConfiguredSerializationOptions(selected Codec, inner, messages map[string]C
 		}
 		selected = &protoWrapperCodec{innerCodec: selected, runtimeCodecs: allowed}
 	}
-	return []ClientOption{WithCodec(selected)}, []HandlerOption{&serializationHandlerOption{inner: inner, messages: messages}}
+	return []ClientOption{WithCodec(selected), &validateEmptyMessagesOption{}}, []HandlerOption{&serializationHandlerOption{inner: inner, messages: messages}}
 }
 
 type serializationHandlerOption struct{ inner, messages map[string]Codec }
@@ -87,3 +87,7 @@ func canonicalMessageName(name string) string {
 	}
 	return name
 }
+
+type validateEmptyMessagesOption struct{}
+
+func (*validateEmptyMessagesOption) applyToClient(c *clientConfig) { c.ValidateEmptyMessages = true }

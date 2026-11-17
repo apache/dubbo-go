@@ -64,17 +64,18 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 				config.CompressionPools,
 				config.CompressionNames,
 			),
-			Codec:            config.Codec,
-			Protobuf:         config.protobuf(),
-			CompressMinBytes: config.CompressMinBytes,
-			HTTPClient:       httpClient,
-			URL:              config.URL,
-			BufferPool:       config.BufferPool,
-			ReadMaxBytes:     config.ReadMaxBytes,
-			SendMaxBytes:     config.SendMaxBytes,
-			GetURLMaxBytes:   config.GetURLMaxBytes,
-			UnaryFastPath:    config.UnaryFastPath,
-			WriteBuffering:   config.WriteBuffering,
+			Codec:                 config.Codec,
+			ValidateEmptyMessages: config.ValidateEmptyMessages,
+			Protobuf:              config.protobuf(),
+			CompressMinBytes:      config.CompressMinBytes,
+			HTTPClient:            httpClient,
+			URL:                   config.URL,
+			BufferPool:            config.BufferPool,
+			ReadMaxBytes:          config.ReadMaxBytes,
+			SendMaxBytes:          config.SendMaxBytes,
+			GetURLMaxBytes:        config.GetURLMaxBytes,
+			UnaryFastPath:         config.UnaryFastPath,
+			WriteBuffering:        config.WriteBuffering,
 		},
 	)
 	if protocolErr != nil {
@@ -234,6 +235,7 @@ func (c *Client) newConn(ctx context.Context, streamType StreamType, method stri
 }
 
 type clientConfig struct {
+	ValidateEmptyMessages  bool
 	CodecResources         *serialization.Resources
 	URL                    *url.URL
 	Protocol               protocol
