@@ -212,6 +212,13 @@ remote parameter class names without requiring Hessian POJO interfaces.
 
 ## Compatibility
 
+Public `Connection` calls and current generated Triple clients use the configured
+serialization binding. Legacy generated IDL clients retain their built-in
+serialization paths. Selecting a custom serialization or a custom accepted format
+on a legacy client returns an initialization error; use the public `Connection`
+API or regenerate that client to use plugins.
+
+
 The existing low-level Triple `Codec`, `WithCodec` and `WrapperCodec` APIs remain
 available. Existing Protobuf, ProtoJSON, Hessian2 and MsgPack formats retain their
 wire behavior. Registering a Go plugin does not establish cross-language
