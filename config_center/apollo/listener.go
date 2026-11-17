@@ -51,8 +51,6 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 }
 
 // OnNewestChange process each listener by all changes
-// Snapshot listeners under RLock, then release it before callbacks to avoid blocking map updates.
-
 func (a *apolloListener) OnNewestChange(changeEvent *storage.FullChangeEvent) {
 	b, err := yaml.Marshal(changeEvent.Changes)
 	if err != nil {
@@ -61,6 +59,7 @@ func (a *apolloListener) OnNewestChange(changeEvent *storage.FullChangeEvent) {
 	}
 	content := string(b)
 
+	// Snapshot listeners under RLock, then release it before callbacks to avoid blocking map updates.
 	a.mu.RLock()
 	listeners := make([]config_center.ConfigurationListener, 0, len(a.listeners))
 	for listener := range a.listeners {
