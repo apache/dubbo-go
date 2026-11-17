@@ -78,7 +78,7 @@ func (c *serializationClientConn) CloseResponse() error {
 }
 
 // WithSerializationOwner associates a handler with a binding for retirement,
-// without adding per-call lease tracking when the binding owns no closers.
+// including in-flight calls even when its codecs do not implement io.Closer.
 func WithSerializationOwner(resources *serialization.Resources) HandlerOption {
 	return &serializationOwnerOption{resources: resources}
 }
@@ -87,4 +87,5 @@ type serializationOwnerOption struct{ resources *serialization.Resources }
 
 func (o *serializationOwnerOption) applyToHandler(c *handlerConfig) {
 	c.SerializationOwner = o.resources
+	c.CodecResources = o.resources
 }
