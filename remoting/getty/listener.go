@@ -273,9 +273,16 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg any) {
 	attachments[constant.RemoteAddr] = session.RemoteAddr()
 
 	reqCancel := h.bindRequestContext(session, invoc)
-	defer reqCancel()
+	var cancelOnce sync.Once
+	cancel := func() { cancelOnce.Do(reqCancel) }
+	defer cancel()
 
 	result := h.server.requestHandler(invoc)
+	// Release the request context as soon as the handler returns, before
+	// two-way response encoding and WritePkg. A blocked reply must not
+	// keep handler-derived goroutines alive. reply() only receives the
+	// session and response, so it does not need this context.
+	cancel()
 	if !req.TwoWay {
 		return
 	}

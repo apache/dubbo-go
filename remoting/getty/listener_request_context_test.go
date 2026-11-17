@@ -371,3 +371,66 @@ func TestServerOnOpenAfterCancelAllStartsLive(t *testing.T) {
 	deliverOneway(t, h, next, nil)
 	require.NoError(t, errInHandler)
 }
+
+// blockingWriteSession holds WritePkg until unblock is closed, so a
+// two-way reply can be stalled after the handler returns.
+type blockingWriteSession struct {
+	contextTestSession
+	started chan struct{}
+	unblock chan struct{}
+}
+
+func (s *blockingWriteSession) WritePkg(pkg any, _ time.Duration) (int, int, error) {
+	select {
+	case s.started <- struct{}{}:
+	default:
+	}
+	<-s.unblock
+	return 0, 0, nil
+}
+
+func deliverTwoWay(t *testing.T, h *RpcServerHandler, session dubboGetty.Session) {
+	t.Helper()
+	inv := invocation.NewRPCInvocation("Echo", nil, map[string]any{})
+	req := remoting.NewRequest("2.0.2")
+	req.TwoWay = true
+	req.Data = inv
+	h.OnMessage(session, &remoting.DecodeResult{IsRequest: true, Result: req})
+}
+
+// TestTwoWayHandlerReturnCancelsBeforeReply checks that a two-way request
+// context is canceled as soon as the business handler returns, even if
+// reply WritePkg is still blocked.
+func TestTwoWayHandlerReturnCancelsBeforeReply(t *testing.T) {
+	startedWrite := make(chan struct{}, 1)
+	unblock := make(chan struct{})
+	session := &blockingWriteSession{started: startedWrite, unblock: unblock}
+	var ctx context.Context
+	h := newContextTestHandler(func(inv *invocation.RPCInvocation) result.RPCResult {
+		ctx = inv.Context()
+		return result.RPCResult{}
+	})
+	require.NoError(t, h.OnOpen(session))
+	t.Cleanup(func() {
+		select {
+		case <-unblock:
+		default:
+			close(unblock)
+		}
+		h.OnClose(session)
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		deliverTwoWay(t, h, session)
+	}()
+
+	waitSignal(t, startedWrite, "reply did not start WritePkg")
+	require.NotNil(t, ctx)
+	require.ErrorIs(t, waitCtx(ctx, testWait), context.Canceled,
+		"request context must be canceled after the handler returns, before reply completes")
+	close(unblock)
+	waitSignal(t, done, "OnMessage did not finish after WritePkg was unblocked")
+	require.Equal(t, 0, session.closes())
+}
