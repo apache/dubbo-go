@@ -96,6 +96,12 @@ func (response *Response) IsHeartbeat() bool {
 func (response *Response) Handle() {
 	pendingResponse := RemovePendingResponse(SequenceType(response.ID))
 	if pendingResponse == nil {
+		if takeCancelledPending(SequenceType(response.ID)) {
+			// Cancellation already dropped the waiter. A late server
+			// response is expected, not an unknown-ID protocol error.
+			logger.Debugf("[Remoting] dropped response for canceled request ID=%d", response.ID)
+			return
+		}
 		logger.Errorf("[Remoting] failed to get pending response context for response package %s", *response)
 		return
 	}
@@ -205,4 +211,62 @@ func GetPendingResponse(seq SequenceType) *PendingResponse {
 		return presp.(*PendingResponse)
 	}
 	return nil
+}
+
+// cancelledPendingTTL is how long a canceled request ID is remembered so
+// a late Handle can be distinguished from an unknown ID. It only has to
+// outlast a typically late server response; expired entries are treated
+// as unknown again to limit reuse of the same sequence ID.
+const cancelledPendingTTL = 2 * time.Minute
+
+var (
+	cancelledPendingMu        sync.Mutex
+	cancelledPending          = map[SequenceType]time.Time{}
+	cancelledPendingLastPurge time.Time
+)
+
+func markPendingCancelled(seq SequenceType) {
+	now := time.Now()
+	cancelledPendingMu.Lock()
+	defer cancelledPendingMu.Unlock()
+	purgeCancelledPendingLocked(now)
+	cancelledPending[seq] = now.Add(cancelledPendingTTL)
+}
+
+func takeCancelledPending(seq SequenceType) bool {
+	now := time.Now()
+	cancelledPendingMu.Lock()
+	defer cancelledPendingMu.Unlock()
+	exp, ok := cancelledPending[seq]
+	if ok {
+		delete(cancelledPending, seq)
+	}
+	purgeCancelledPendingLocked(now)
+	return ok && !now.After(exp)
+}
+
+func purgeCancelledPendingLocked(now time.Time) {
+	if len(cancelledPending) == 0 {
+		return
+	}
+	if len(cancelledPending) < 1024 && !cancelledPendingLastPurge.IsZero() && now.Sub(cancelledPendingLastPurge) < cancelledPendingTTL/2 {
+		return
+	}
+	cancelledPendingLastPurge = now
+	for id, exp := range cancelledPending {
+		if !exp.After(now) {
+			delete(cancelledPending, id)
+		}
+	}
+}
+
+// RemoveCancelledPendingResponse marks a still-registered pending
+// response as canceled and then removes it. A later Handle for this ID
+// logs at Debug instead of Error. If the pending entry is already gone,
+// this is a no-op and does not hide a true unknown-ID miss.
+func RemoveCancelledPendingResponse(seq SequenceType) *PendingResponse {
+	if GetPendingResponse(seq) != nil {
+		markPendingCancelled(seq)
+	}
+	return RemovePendingResponse(seq)
 }

@@ -220,6 +220,16 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 }
 
 // RequestContext sends a request and stops waiting when ctx is canceled.
+//
+// If ctx is already canceled on entry, this function returns immediately
+// without removing a pending response the caller may already have
+// registered. Callers that register first must check ctx themselves or
+// clean up that entry. ExchangeClient does the check before
+// AddPendingResponse, so a canceled ctx on the production path does not
+// leak. Mid-flight cancellation after a successful send is cleaned up
+// here: the pending waiter is marked canceled and removed so a late
+// response is logged at Debug rather than Error, and the shared session
+// is left open for reuse.
 func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
 	if ctx == nil {
 		ctx = context.Background()
@@ -271,7 +281,7 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 		// cancellation is not a transport failure; a later request may
 		// reuse this connection. The read-timeout branch still closes
 		// the session because that path can no longer trust it.
-		remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		remoting.RemoveCancelledPendingResponse(remoting.SequenceType(request.ID))
 		return perrors.WithStack(ctx.Err())
 	}
 
