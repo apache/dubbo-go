@@ -19,6 +19,7 @@ package triple_protocol
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -95,4 +96,67 @@ func TestGroupedRouterPreservesCORSPreflightPolicy(t *testing.T) {
 	require.Nil(t, router.serializationOwner)
 	require.Nil(t, router.codecResources)
 	require.Empty(t, router.implementations)
+}
+
+func TestDefaultVariantPreflightUsesProcedurePolicy(t *testing.T) {
+	for _, defaultPolicy := range []bool{false, true} {
+		t.Run(fmt.Sprint(defaultPolicy), func(t *testing.T) {
+			server := NewServer("", nil)
+			unary := func(context.Context, *Request) (*Response, error) { return NewResponse(&emptypb.Empty{}), nil }
+			require.NoError(t, server.RegisterUnaryHandler("/codec.DefaultCORS/Call", func() any { return &emptypb.Empty{} }, unary, WithGroup("group-a"), WithVersion("v1"), WithCORS(&CorsConfig{AllowOrigins: []string{"https://a.example"}, AllowMethods: []string{"POST"}})))
+			preflight := func(origin, method string, want int) {
+				t.Helper()
+				req := httptest.NewRequest(http.MethodOptions, "/codec.DefaultCORS/Call", nil)
+				req.Header.Set(corsOrigin, origin)
+				req.Header.Set(corsRequestMethod, method)
+				rec := httptest.NewRecorder()
+				server.mux.ServeHTTP(rec, req)
+				require.Equal(t, want, rec.Code)
+				if want == http.StatusNoContent {
+					require.Equal(t, origin, rec.Header().Get(corsAllowOrigin))
+				}
+			}
+			preflight("https://a.example", "POST", http.StatusNoContent)
+			options := []HandlerOption{}
+			if defaultPolicy {
+				options = append(options, WithCORS(&CorsConfig{AllowOrigins: []string{"https://b.example"}, AllowMethods: []string{"POST", "DELETE"}}))
+			}
+			require.NoError(t, server.RegisterUnaryHandler("/codec.DefaultCORS/Call", func() any { return &emptypb.Empty{} }, unary, options...))
+			preflight("https://a.example", "POST", http.StatusNoContent)
+			preflight("https://b.example", "POST", http.StatusForbidden)
+			preflight("https://a.example", "DELETE", http.StatusForbidden)
+			// Ordinary requests retain the default variant's own policy, and OPTIONS
+			// without Access-Control-Request-Method remains normal method negotiation.
+			req := httptest.NewRequest(http.MethodPost, "/codec.DefaultCORS/Call", strings.NewReader("{}"))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set(corsOrigin, "https://b.example")
+			rec := httptest.NewRecorder()
+			server.mux.ServeHTTP(rec, req)
+			require.Equal(t, http.StatusOK, rec.Code)
+			if defaultPolicy {
+				require.Equal(t, "https://b.example", rec.Header().Get(corsAllowOrigin))
+			} else {
+				require.Empty(t, rec.Header().Get(corsAllowOrigin))
+			}
+			plain := httptest.NewRequest(http.MethodOptions, "/codec.DefaultCORS/Call", nil)
+			plain.Header.Set(corsOrigin, "https://b.example")
+			normal := httptest.NewRecorder()
+			server.mux.ServeHTTP(normal, plain)
+			require.Equal(t, http.StatusMethodNotAllowed, normal.Code)
+		})
+	}
+}
+
+func TestDefaultVariantCannotEnableProcedurePreflight(t *testing.T) {
+	server := NewServer("", nil)
+	unary := func(context.Context, *Request) (*Response, error) { return NewResponse(&emptypb.Empty{}), nil }
+	require.NoError(t, server.RegisterUnaryHandler("/codec.NoProcedureCORS/Call", func() any { return &emptypb.Empty{} }, unary, WithGroup("group-a")))
+	require.NoError(t, server.RegisterUnaryHandler("/codec.NoProcedureCORS/Call", func() any { return &emptypb.Empty{} }, unary, WithCORS(&CorsConfig{AllowOrigins: []string{"https://b.example"}})))
+	req := httptest.NewRequest(http.MethodOptions, "/codec.NoProcedureCORS/Call", nil)
+	req.Header.Set(corsOrigin, "https://b.example")
+	req.Header.Set(corsRequestMethod, "POST")
+	rec := httptest.NewRecorder()
+	server.mux.ServeHTTP(rec, req)
+	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
+	require.Empty(t, rec.Header().Get(corsAllowOrigin), "a later variant must not enable a disabled procedure preflight policy")
 }
