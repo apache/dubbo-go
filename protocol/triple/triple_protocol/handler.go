@@ -329,7 +329,11 @@ func (h *Handler) processImplementation(identifier string, implementation Stream
 func newHandlerRouter(next *Handler) *Handler {
 	config := newHandlerConfig(next.spec.Procedure, nil)
 	protocols := config.newProtocolHandlers(next.spec.StreamType)
-	router := &Handler{spec: next.spec, variants: make(map[string]*Handler), protocolHandlers: protocols, allowMethod: sortedAllowMethodValue(protocols), acceptPost: sortedAcceptPostValue(protocols)}
+	// Preflights carry header names, not service group/version values. Keep
+	// the procedure's original CORS policy as independent routing metadata,
+	// matching the historical first-registration policy without retaining the
+	// originating handler or its plugin instances.
+	router := &Handler{spec: next.spec, variants: make(map[string]*Handler), protocolHandlers: protocols, allowMethod: sortedAllowMethodValue(protocols), acceptPost: sortedAcceptPostValue(protocols), cors: buildCorsPolicy(next.cors, next.protocolHandlers)}
 	router.replaceVariants(next)
 	return router
 }
