@@ -35,6 +35,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	invct "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -313,7 +314,7 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		if pkg.Err != nil {
 			rpcResult.Err = pkg.Err
 		} else if pkg.Body.(*impl.ResponsePayload).Exception != nil {
-			rpcResult.Err = pkg.Body.(*impl.ResponsePayload).Exception
+			rpcResult.Err = classifyResponseException(response.Status, pkg.Body.(*impl.ResponsePayload).Exception)
 			response.Error = rpcResult.Err
 		}
 		rpcResult.Attrs = pkg.Body.(*impl.ResponsePayload).Attachments
@@ -321,4 +322,32 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	}
 
 	return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+}
+
+// classifyResponseException declares the failure kind carried by a decoded
+// Dubbo response, keeping the decoded exception as the cause so its message,
+// errors.Is/As and the proxy's root-cause unwrapping are unchanged.
+//
+// The mapping follows the Dubbo response status semantics:
+//   - OK with an exception payload (RESPONSE_WITH_EXCEPTION) is thrown by the
+//     provider application: business.
+//   - CLIENT_TIMEOUT / SERVER_TIMEOUT: timeout.
+//   - SERVICE_NOT_FOUND: service unavailable.
+//   - BAD_REQUEST / BAD_RESPONSE: the peer failed to (de)serialize: codec.
+//   - SERVICE_ERROR, SERVER_ERROR, CLIENT_ERROR and unknown statuses stay
+//     unclassified, because Java providers also report framework failures such
+//     as a missing exporter as SERVICE_ERROR.
+func classifyResponseException(status uint8, exception error) error {
+	switch status {
+	case impl.Response_OK:
+		return rpcerror.WithKind(exception, rpcerror.KindBusiness)
+	case impl.Response_CLIENT_TIMEOUT, impl.Response_SERVER_TIMEOUT:
+		return rpcerror.WithKind(exception, rpcerror.KindTimeout)
+	case impl.Response_SERVICE_NOT_FOUND:
+		return rpcerror.WithKind(exception, rpcerror.KindServiceUnavailable)
+	case impl.Response_BAD_REQUEST, impl.Response_BAD_RESPONSE:
+		return rpcerror.WithKind(exception, rpcerror.KindCodec)
+	default:
+		return exception
+	}
 }

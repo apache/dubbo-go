@@ -44,6 +44,7 @@ const (
 	TagMethod             = "method"
 	TagGroup              = "group"
 	TagVersion            = "version"
+	TagProtocol           = "protocol"
 	TagErrorCode          = "error"
 )
 const (

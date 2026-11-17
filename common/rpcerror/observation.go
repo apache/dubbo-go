@@ -31,6 +31,7 @@ type Observation struct {
 	invocation  any
 	session     any
 	origin      Origin
+	kind        Kind
 	frozen      bool
 	async       bool
 	returned    bool
@@ -135,4 +136,42 @@ func (o *Observation) Freeze() Origin {
 		return o.origin
 	}
 	return Unknown
+}
+
+// RecordKind records a failure category confirmed by the synchronous invoker
+// that owns this observation's context, without changing the error returned to
+// the caller. Use it where wrapping is unsafe, e.g. a provider application's
+// error that protocols re-encode by its concrete type. The first recorded kind
+// wins and a frozen observation ignores late evidence. A kind declared on the
+// error itself (see WithKind) still takes precedence during classification.
+func (o *Observation) RecordKind(kind Kind) {
+	if o == nil || !kind.valid() {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if !o.frozen && o.kind == KindUnknown {
+		o.kind = kind
+	}
+}
+
+// RecordKind records kind on the observation carried by ctx, if any.
+func RecordKind(ctx context.Context, kind Kind) {
+	ObservationFromContext(ctx).RecordKind(kind)
+}
+
+// RecordKindFor is RecordKind for consumer-side code such as filters: it
+// records only on an observation bound to this exact, not yet claimed
+// invocation, so a context inherited from an enclosing request (for example a
+// provider handler issuing a downstream call) is never relabeled.
+func RecordKindFor(ctx context.Context, invocation any, kind Kind) {
+	o := ObservationFromContext(ctx)
+	if o == nil || !kind.valid() || !validInvocationIdentity(invocation) {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if !o.frozen && o.invocation != nil && o.invocation == invocation && o.kind == KindUnknown {
+		o.kind = kind
+	}
 }

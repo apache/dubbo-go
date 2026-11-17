@@ -203,7 +203,7 @@ func TestRecorderLazyResultsAndExpiry(t *testing.T) {
 func TestRecorderUsesCompleteIdentity(t *testing.T) {
 	c, r := newRecordingCollector(t)
 	first := recordingEvent(t, c, common.CONSUMER)
-	for _, label := range []string{"", constant.TagApplicationName, constant.TagApplicationVersion, constant.TagHostname, constant.TagIp, constant.TagInterface, constant.TagMethod, constant.TagGroup, constant.TagVersion} {
+	for _, label := range []string{"", constant.TagApplicationName, constant.TagApplicationVersion, constant.TagHostname, constant.TagIp, constant.TagInterface, constant.TagMethod, constant.TagGroup, constant.TagVersion, constant.TagProtocol} {
 		e := *first
 		e.labels = maps.Clone(first.labels)
 		if label != "" {
@@ -228,11 +228,11 @@ func assertCompleteIdentityMetrics(t *testing.T, r *prom.Registry) {
 		if f.GetName() != "dubbo_consumer_requests_total" {
 			continue
 		}
-		if len(f.Metric) != 9 {
+		if len(f.Metric) != 10 {
 			t.Fatalf("collapsed identities: %d", len(f.Metric))
 		}
 		for _, m := range f.Metric {
-			if m.GetCounter().GetValue() != 1 || len(m.Label) != 8 {
+			if m.GetCounter().GetValue() != 1 || len(m.Label) != 9 {
 				t.Fatal("identity or labels changed")
 			}
 		}

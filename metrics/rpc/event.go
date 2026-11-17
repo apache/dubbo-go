@@ -39,6 +39,7 @@ type metricsEvent struct {
 	err       error
 	hasResult bool
 	origin    rpcerror.Origin
+	kind      rpcerror.Kind
 }
 
 // Type returns the type of the event, it is used for metrics bus to dispatch the event to rpc collector
@@ -71,7 +72,7 @@ func NewCompletionEvent(before metrics.MetricsEvent, duration time.Duration, c r
 	if !c.Known {
 		name = ObservationExpired
 	}
-	return &metricsEvent{collector: start.collector, name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin}
+	return &metricsEvent{collector: start.collector, name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin, kind: c.Kind}
 }
 
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {

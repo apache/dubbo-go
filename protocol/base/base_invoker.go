@@ -30,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
@@ -40,10 +41,13 @@ const (
 var (
 	// emptyURL is a global placeholder to prevent nil pointer dereferences during invoker destruction.
 	// It is returned by GetURL() when the invoker is destroyed, ensuring that concurrent readers receive a safe, initialized object.
-	emptyURL            = common.NewURLWithOptions(common.WithProtocol(protocolDestroyed))
-	ErrClientClosed     = errors.New("remoting client has closed")
+	emptyURL = common.NewURLWithOptions(common.WithProtocol(protocolDestroyed))
+	// ErrClientClosed and ErrDestroyedInvoker mean the selected invoker cannot
+	// serve the call. They carry rpcerror.KindServiceUnavailable for metrics
+	// while keeping their identity for == and errors.Is comparisons.
+	ErrClientClosed     = rpcerror.NewKindError(rpcerror.KindServiceUnavailable, "remoting client has closed")
 	ErrNoReply          = errors.New("request need @response")
-	ErrDestroyedInvoker = errors.New("request Destroyed invoker")
+	ErrDestroyedInvoker = rpcerror.NewKindError(rpcerror.KindServiceUnavailable, "request Destroyed invoker")
 )
 
 // Invoker the service invocation interface for the consumer

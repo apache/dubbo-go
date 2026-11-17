@@ -57,8 +57,23 @@ func TestBuildLabels(t *testing.T) {
 	assert.Equal(t, "TestMethod", labels[constant.TagMethod])
 	assert.Equal(t, "test-group", labels[constant.TagGroup])
 	assert.Equal(t, "2.0.0", labels[constant.TagVersion])
+	assert.Equal(t, "dubbo", labels[constant.TagProtocol])
 	assert.NotEmpty(t, labels[constant.TagHostname])
 	assert.NotEmpty(t, labels[constant.TagIp])
+	assert.Len(t, labels, 9, "the label contract must not grow silently")
+}
+
+func TestMetricProtocol(t *testing.T) {
+	tri := common.NewURLWithOptions(common.WithProtocol("tri"))
+	assert.Equal(t, "tri", metricProtocol(tri))
+
+	for _, registry := range []string{constant.RegistryProtocol, constant.ServiceRegistryProtocol} {
+		wrapped := common.NewURLWithOptions(common.WithProtocol(registry))
+		wrapped.SubURL = common.NewURLWithOptions(common.WithProtocol("dubbo"))
+		assert.Equal(t, "dubbo", metricProtocol(wrapped), registry)
+	}
+	bare := common.NewURLWithOptions(common.WithProtocol(constant.RegistryProtocol))
+	assert.Equal(t, constant.RegistryProtocol, metricProtocol(bare))
 }
 
 func TestGetRole(t *testing.T) {
