@@ -33,6 +33,7 @@ import (
 	msgpack "github.com/ugorji/go/codec"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/protowire"
 
 	"google.golang.org/protobuf/proto"
 
@@ -343,20 +344,29 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 		return nil
 	}
 
-	// Legacy gRPC-wire non-IDL responses used a one-argument request wrapper.
-	// Field 3 uniquely identifies that historical layout. Select by schema, never
-	// by a failed payload decode, then apply the same response allowlist.
+	// A single-value legacy request wrapper and a response wrapper carry the
+	// same payload in field 2. Field 3 is also shared (argTypes/type), so it
+	// cannot identify either layout. Decode both as responses, but reject
+	// repeated payloads before protobuf's singular-field decoding drops values.
 	if c.runtimeCodecs != nil {
-		var legacy interoperability.TripleRequestWrapper
-		if err := proto.Unmarshal(binary, &legacy); err == nil && len(legacy.Args) > 0 {
-			if len(legacy.Args) != 1 {
-				return fmt.Errorf("wrapper codec: legacy response has %d values", len(legacy.Args))
+		values := 0
+		for rest := binary; len(rest) > 0; {
+			number, kind, tagSize := protowire.ConsumeTag(rest)
+			if tagSize < 0 {
+				return fmt.Errorf("wrapper codec: invalid response wrapper")
 			}
-			inner, err := resolveRuntimeInner(c.runtimeCodecs, legacy.SerializeType)
-			if err != nil {
-				return err
+			rest = rest[tagSize:]
+			valueSize := protowire.ConsumeFieldValue(number, kind, rest)
+			if valueSize < 0 {
+				return fmt.Errorf("wrapper codec: invalid response wrapper")
 			}
-			return inner.Unmarshal(legacy.Args[0], message)
+			if number == 2 && kind == protowire.BytesType {
+				values++
+				if values > 1 {
+					return fmt.Errorf("wrapper codec: response contains multiple values")
+				}
+			}
+			rest = rest[valueSize:]
 		}
 	}
 	// Response format: TripleResponseWrapper with single data field
