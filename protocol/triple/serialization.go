@@ -127,14 +127,15 @@ func SerializationOptions(url *common.URL, side string) (client []tri.ClientOpti
 }
 
 type serializationBinding struct {
-	mu        sync.Mutex
-	users     int
-	retired   bool
-	resources *serialization.Resources
-	source    *common.URL // immutable local construction settings, before discovery merges
-	client    []tri.ClientOption
-	handler   []tri.HandlerOption
-	isIDL     bool
+	mu              sync.Mutex
+	users           int
+	retired         bool
+	providerClaimed bool
+	resources       *serialization.Resources
+	source          *common.URL // immutable local construction settings, before discovery merges
+	client          []tri.ClientOption
+	handler         []tri.HandlerOption
+	isIDL           bool
 }
 
 func (tp *TripleProtocol) PrepareCodec(url *common.URL, side string) error {
@@ -156,6 +157,36 @@ func (tp *TripleProtocol) PrepareCodec(url *common.URL, side string) error {
 	resources, _ := url.GetAttribute("triple.serialization.resources." + side)
 	owner, _ := resources.(*serialization.Resources)
 	url.SetAttribute("triple.serialization."+side, &serializationBinding{client: c, handler: h, isIDL: idl, resources: owner, source: source})
+	return nil
+}
+
+// prepareProviderExport consumes a prepared binding once. URL clones retain
+// attribute pointers, but each exporter must own a distinct resource generation.
+func (tp *TripleProtocol) prepareProviderExport(url *common.URL) error {
+	if err := tp.PrepareCodec(url, "provider"); err != nil {
+		return err
+	}
+	raw, _ := url.GetAttribute("triple.serialization.provider")
+	binding := raw.(*serializationBinding)
+	binding.mu.Lock()
+	if !binding.providerClaimed && !binding.retired {
+		binding.providerClaimed = true
+		binding.mu.Unlock()
+		return nil
+	}
+	binding.mu.Unlock()
+
+	fresh := url.Clone()
+	fresh.DeleteAttribute("triple.serialization.provider")
+	fresh.DeleteAttribute("triple.serialization.resources.provider")
+	if err := tp.PrepareCodec(fresh, "provider"); err != nil {
+		return err
+	}
+	raw, _ = fresh.GetAttribute("triple.serialization.provider")
+	next := raw.(*serializationBinding)
+	next.providerClaimed = true
+	url.SetAttribute("triple.serialization.provider", next)
+	url.SetAttribute("triple.serialization.resources.provider", next.resources)
 	return nil
 }
 
@@ -211,6 +242,17 @@ func acquireClientSerialization(url *common.URL) ([]tri.ClientOption, bool, *ser
 }
 
 func (tp *TripleProtocol) ReleaseCodec(url *common.URL, side string) error {
+	if side == "provider" {
+		if raw, ok := url.GetAttribute("triple.serialization.provider"); ok {
+			if binding, ok := raw.(*serializationBinding); ok {
+				binding.mu.Lock()
+				binding.retired = true
+				resources := binding.resources
+				binding.mu.Unlock()
+				return resources.Close()
+			}
+		}
+	}
 	if side == "consumer" {
 		if raw, ok := url.GetAttribute("triple.serialization.consumer"); ok {
 			if binding, ok := raw.(*serializationBinding); ok {

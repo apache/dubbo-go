@@ -95,8 +95,8 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		info = infoRaw.(*common.ServiceInfo)
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
-	// Legacy exports construct their binding inside openServer. Publish a
-	// retirement hook up front, but wait until initialization captures its owner.
+	// Exports may construct their binding during initialization. Publish a
+	// retirement hook up front, but wait until it captures this export's owner.
 	ready := make(chan struct{})
 	var owner *serialization.Resources
 	location := url.Location
@@ -113,19 +113,24 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		}
 		return owner.Close()
 	}
+	previous, hadPrevious := tp.ExporterMap().Load(serviceKey)
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[Triple] export service: %s", url.String())
 	err := func() error {
-		defer func() {
-			if raw, ok := url.GetAttribute("triple.serialization.resources.provider"); ok {
-				owner, _ = raw.(*serialization.Resources)
-			}
-			close(ready)
-		}()
+		defer close(ready)
+		if err := tp.prepareProviderExport(url); err != nil {
+			return err
+		}
+		if raw, ok := url.GetAttribute("triple.serialization.resources.provider"); ok {
+			owner, _ = raw.(*serialization.Resources)
+		}
 		return tp.openServer(invoker, info)
 	}()
 	if err != nil {
 		logger.Errorf("[Triple] export service failed, %s, err=%v", url.String(), err)
+		if hadPrevious {
+			tp.ExporterMap().CompareAndSwap(serviceKey, exporter, previous)
+		}
 		exporter.UnExport()
 		panic(err)
 	}
