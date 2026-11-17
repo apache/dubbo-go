@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 const (
@@ -94,9 +95,36 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		info = infoRaw.(*common.ServiceInfo)
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
+	// Legacy exports construct their binding inside openServer. Publish a
+	// retirement hook up front, but wait until initialization captures its owner.
+	ready := make(chan struct{})
+	var owner *serialization.Resources
+	location := url.Location
+	exporter.retire = func() error {
+		<-ready
+		if owner == nil {
+			return nil
+		}
+		tp.serverLock.Lock()
+		server := tp.serverMap[location]
+		tp.serverLock.Unlock()
+		if server != nil {
+			return server.retireCodec(owner)
+		}
+		return owner.Close()
+	}
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[Triple] export service: %s", url.String())
-	if err := tp.openServer(invoker, info); err != nil {
+	err := func() error {
+		defer func() {
+			if raw, ok := url.GetAttribute("triple.serialization.resources.provider"); ok {
+				owner, _ = raw.(*serialization.Resources)
+			}
+			close(ready)
+		}()
+		return tp.openServer(invoker, info)
+	}()
+	if err != nil {
 		logger.Errorf("[Triple] export service failed, %s, err=%v", url.String(), err)
 		exporter.UnExport()
 		panic(err)

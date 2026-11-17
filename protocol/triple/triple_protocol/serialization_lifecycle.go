@@ -36,6 +36,7 @@ type serializationResourcesOption struct{ resources *serialization.Resources }
 func (o *serializationResourcesOption) applyToClient(c *clientConfig) { c.CodecResources = o.resources }
 func (o *serializationResourcesOption) applyToHandler(c *handlerConfig) {
 	c.CodecResources = o.resources
+	c.SerializationOwner = o.resources
 }
 
 type serializationClientConn struct {
@@ -74,4 +75,16 @@ func (c *serializationClientConn) CloseResponse() error {
 	err := c.StreamingClientConn.CloseResponse()
 	c.release()
 	return err
+}
+
+// WithSerializationOwner associates a handler with a binding for retirement,
+// without adding per-call lease tracking when the binding owns no closers.
+func WithSerializationOwner(resources *serialization.Resources) HandlerOption {
+	return &serializationOwnerOption{resources: resources}
+}
+
+type serializationOwnerOption struct{ resources *serialization.Resources }
+
+func (o *serializationOwnerOption) applyToHandler(c *handlerConfig) {
+	c.SerializationOwner = o.resources
 }

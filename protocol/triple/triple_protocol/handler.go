@@ -41,10 +41,11 @@ const (
 type Handler struct {
 	// Each group/version has an immutable handler view. Updating a route must
 	// publish its codec policy, resources and business implementation together.
-	mu             sync.RWMutex
-	variants       map[string]*Handler
-	codecResources *serialization.Resources
-	spec           Spec
+	mu                 sync.RWMutex
+	variants           map[string]*Handler
+	codecResources     *serialization.Resources
+	serializationOwner *serialization.Resources
+	spec               Spec
 	// Key is group/version
 	implementations  map[string]StreamingHandlerFunc
 	protocolHandlers []protocolHandler
@@ -65,13 +66,14 @@ func NewUnaryHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeUnary)
 
 	hdl := &Handler{
-		codecResources:   config.CodecResources,
-		spec:             config.newSpec(StreamTypeUnary),
-		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
-		protocolHandlers: protocolHandlers,
-		allowMethod:      sortedAllowMethodValue(protocolHandlers),
-		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
+		codecResources:     config.CodecResources,
+		serializationOwner: config.SerializationOwner,
+		spec:               config.newSpec(StreamTypeUnary),
+		implementations:    make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers:   protocolHandlers,
+		allowMethod:        sortedAllowMethodValue(protocolHandlers),
+		acceptPost:         sortedAcceptPostValue(protocolHandlers),
+		cors:               buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	return hdl
@@ -152,13 +154,14 @@ func NewClientStreamHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeClient)
 
 	hdl := &Handler{
-		codecResources:   config.CodecResources,
-		spec:             config.newSpec(StreamTypeClient),
-		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
-		protocolHandlers: protocolHandlers,
-		allowMethod:      sortedAllowMethodValue(protocolHandlers),
-		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
+		codecResources:     config.CodecResources,
+		serializationOwner: config.SerializationOwner,
+		spec:               config.newSpec(StreamTypeClient),
+		implementations:    make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers:   protocolHandlers,
+		allowMethod:        sortedAllowMethodValue(protocolHandlers),
+		acceptPost:         sortedAcceptPostValue(protocolHandlers),
+		cors:               buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -212,13 +215,14 @@ func NewServerStreamHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeServer)
 
 	hdl := &Handler{
-		codecResources:   config.CodecResources,
-		spec:             config.newSpec(StreamTypeServer),
-		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
-		protocolHandlers: protocolHandlers,
-		allowMethod:      sortedAllowMethodValue(protocolHandlers),
-		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
+		codecResources:     config.CodecResources,
+		serializationOwner: config.SerializationOwner,
+		spec:               config.newSpec(StreamTypeServer),
+		implementations:    make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers:   protocolHandlers,
+		allowMethod:        sortedAllowMethodValue(protocolHandlers),
+		acceptPost:         sortedAcceptPostValue(protocolHandlers),
+		cors:               buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -274,13 +278,14 @@ func NewBidiStreamHandler(
 	protocolHandlers := config.newProtocolHandlers(StreamTypeBidi)
 
 	hdl := &Handler{
-		codecResources:   config.CodecResources,
-		spec:             config.newSpec(StreamTypeBidi),
-		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
-		protocolHandlers: protocolHandlers,
-		allowMethod:      sortedAllowMethodValue(protocolHandlers),
-		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
+		codecResources:     config.CodecResources,
+		serializationOwner: config.SerializationOwner,
+		spec:               config.newSpec(StreamTypeBidi),
+		implementations:    make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers:   protocolHandlers,
+		allowMethod:        sortedAllowMethodValue(protocolHandlers),
+		acceptPost:         sortedAcceptPostValue(protocolHandlers),
+		cors:               buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -317,6 +322,16 @@ func (h *Handler) processImplementation(identifier string, implementation Stream
 		h.variants = make(map[string]*Handler, defaultImplementationsSize)
 	}
 	h.variants[identifier] = h
+}
+
+// newHandlerRouter holds no service implementation or plugin binding itself.
+// Retiring its variants must allow the service's complete context to be freed.
+func newHandlerRouter(next *Handler) *Handler {
+	config := newHandlerConfig(next.spec.Procedure, nil)
+	protocols := config.newProtocolHandlers(next.spec.StreamType)
+	router := &Handler{spec: next.spec, variants: make(map[string]*Handler), protocolHandlers: protocols, allowMethod: sortedAllowMethodValue(protocols), acceptPost: sortedAcceptPostValue(protocols)}
+	router.replaceVariants(next)
+	return router
 }
 
 // replaceVariants publishes newly constructed contexts without mutating views
@@ -440,6 +455,7 @@ func (h *Handler) serveHTTP(responseWriter http.ResponseWriter, request *http.Re
 }
 
 type handlerConfig struct {
+	SerializationOwner          *serialization.Resources
 	CodecResources              *serialization.Resources
 	CompressionPools            map[string]*compressionPool
 	CompressionNames            []string

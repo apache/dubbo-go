@@ -117,6 +117,7 @@ func SerializationOptions(url *common.URL, side string) (client []tri.ClientOpti
 		}
 	}
 	client, handler = tri.ConfiguredSerializationOptions(selected, inner, messages, reg.Mode == serialization.WrappedObjectMode, side == "consumer" && explicit)
+	handler = append(handler, tri.WithSerializationOwner(resources))
 	if resources.HasClosers() {
 		client = append(client, tri.WithSerializationResources(resources))
 		handler = append(handler, tri.WithSerializationResources(resources))

@@ -46,6 +46,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 // netListen and netListenPacket create the pre-bound sockets in
@@ -75,8 +76,9 @@ func (s *Server) registerHandler(procedure string, next *Handler) error {
 	if current, ok := s.handlers[procedure]; ok {
 		current.replaceVariants(next)
 	} else {
-		s.handlers[procedure] = next
-		s.mux.Handle(procedure, next)
+		router := newHandlerRouter(next)
+		s.handlers[procedure] = router
+		s.mux.Handle(procedure, router)
 	}
 	return nil
 }
@@ -419,5 +421,24 @@ func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 func (s *Server) RegisterOpenAPIService(interfaceName string, info *common.ServiceInfo, openapiGroup string, dubboGroup string, dubboVersion string) {
 	if s.openapiIntegration != nil {
 		s.openapiIntegration.RegisterService(interfaceName, info, openapiGroup, dubboGroup, dubboVersion)
+	}
+}
+
+// RemoveSerializationOwner retires only variants belonging to this export.
+// Requests that captured a variant retain their immutable context until done.
+func (s *Server) RemoveSerializationOwner(owner *serialization.Resources) {
+	if owner == nil {
+		return
+	}
+	s.handlersMu.Lock()
+	defer s.handlersMu.Unlock()
+	for _, router := range s.handlers {
+		router.mu.Lock()
+		for id, selected := range router.variants {
+			if selected.serializationOwner == owner {
+				delete(router.variants, id)
+			}
+		}
+		router.mu.Unlock()
 	}
 }

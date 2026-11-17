@@ -62,6 +62,7 @@ const defaultServerCompressMinBytes = 512
 // provide functionality.
 type Server struct {
 	codecResources      []*serialization.Resources
+	codecServices       map[*serialization.Resources]string
 	triServer           *tri.Server
 	cfg                 *global.TripleConfig
 	mu                  sync.RWMutex
@@ -250,7 +251,13 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 	if raw, ok := url.GetAttribute("triple.serialization.resources.provider"); ok {
 		if resources, ok := raw.(*serialization.Resources); ok {
 			s.mu.Lock()
-			s.codecResources = append(s.codecResources, resources)
+			if s.codecServices == nil {
+				s.codecServices = make(map[*serialization.Resources]string)
+			}
+			if _, exists := s.codecServices[resources]; !exists {
+				s.codecResources = append(s.codecResources, resources)
+			}
+			s.codecServices[resources] = url.Interface()
 			s.mu.Unlock()
 		}
 	}
@@ -996,8 +1003,36 @@ func (s *Server) closeCodecs() {
 	s.mu.Lock()
 	resources := s.codecResources
 	s.codecResources = nil
+	s.codecServices = nil
 	s.mu.Unlock()
 	for _, owner := range resources {
 		_ = owner.Close()
 	}
+}
+
+func (s *Server) retireCodec(owner *serialization.Resources) error {
+	s.triServer.RemoveSerializationOwner(owner)
+	s.mu.Lock()
+	interfaceName := s.codecServices[owner]
+	delete(s.codecServices, owner)
+	kept := s.codecResources[:0]
+	for _, existing := range s.codecResources {
+		if existing != owner {
+			kept = append(kept, existing)
+		}
+	}
+	clear(s.codecResources[len(kept):])
+	s.codecResources = kept
+	remaining := false
+	for _, name := range s.codecServices {
+		if name == interfaceName {
+			remaining = true
+			break
+		}
+	}
+	if !remaining && interfaceName != "" {
+		delete(s.services, interfaceName)
+	}
+	s.mu.Unlock()
+	return owner.Close()
 }
