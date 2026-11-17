@@ -1233,6 +1233,15 @@ func getDefaultHandlerImplementation(handler *tri.Handler) (tri.StreamingHandler
 	if handler == nil {
 		return nil, false
 	}
+	// Registered routes hold immutable service contexts in their variants.
+	variantsField := reflect.ValueOf(handler).Elem().FieldByName("variants")
+	if value, ok := extractUnexportedValue(variantsField); ok {
+		if variants, ok := value.Interface().(map[string]*tri.Handler); ok {
+			if selected := variants[tripleServerDefaultImplementationKey]; selected != nil {
+				handler = selected
+			}
+		}
+	}
 	implField := reflect.ValueOf(handler).Elem().FieldByName("implementations")
 	implValue, ok := extractUnexportedValue(implField)
 	if !ok {
