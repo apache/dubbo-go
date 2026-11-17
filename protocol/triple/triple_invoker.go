@@ -237,9 +237,16 @@ func parseInvocation(ctx context.Context, url *common.URL, invocation base.Invoc
 }
 
 // parseAttachments injects pre-defined URL attachments into invocation.
+// A call-level timeout already present on the invocation is not overwritten
+// by method/service URL configuration.
 func parseAttachments(ctx context.Context, url *common.URL, invocation base.Invocation) {
 	for _, key := range triAttachmentKeys {
 		if val := url.GetParam(key, ""); len(val) > 0 {
+			if key == constant.TimeoutKey {
+				if _, exists := invocation.GetAttachment(key); exists {
+					continue
+				}
+			}
 			invocation.SetAttachment(key, val)
 		}
 	}
