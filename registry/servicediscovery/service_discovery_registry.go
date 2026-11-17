@@ -83,6 +83,10 @@ type serviceDiscoveryRegistry struct {
 	definitionPublishPending []*common.URL
 	definitionPublishMu      sync.Mutex
 	renewAppMetadataTimer    *time.Timer
+	// serviceLifecycleMu serializes service registration and unregistration
+	// lifecycles (RegisterService and unregisterService) to ensure atomic
+	// transitions and prevent metadata and backend instance desynchronization.
+	serviceLifecycleMu sync.Mutex
 	// destroyed is set by Destroy. SubscribeURL re-checks it under lock right
 	// before installing a listener, so a subscribe whose initial GetInstances /
 	// metadata phase outlives Destroy is discarded instead of being installed
@@ -146,6 +150,9 @@ func renewsAppMetadata() bool {
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
+	s.serviceLifecycleMu.Lock()
+	defer s.serviceLifecycleMu.Unlock()
+
 	registryId := s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey)
 	metaInfo := metadata.GetMetadataInfo(registryId)
 	if metaInfo == nil {
@@ -246,12 +253,15 @@ func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 }
 
 func (s *serviceDiscoveryRegistry) unregisterService(targetURL *common.URL) error {
+	s.serviceLifecycleMu.Lock()
+	defer s.serviceLifecycleMu.Unlock()
+
 	s.lock.Lock()
-	keep := s.instances[:0]
-	origin := s.instances[:]
+	origin := append([]registry.ServiceInstance(nil), s.instances...)
 	s.lock.Unlock()
 
 	var errs []error
+	var keep []registry.ServiceInstance
 	keepInstanceURLs := make(map[registry.ServiceInstance]*common.URL)
 
 	for _, v := range origin {
@@ -271,6 +281,7 @@ func (s *serviceDiscoveryRegistry) unregisterService(targetURL *common.URL) erro
 	s.instances = keep
 	s.instanceURLs = keepInstanceURLs
 	s.lock.Unlock()
+
 	if err := s.syncExportedMetadataAfterUnregister(targetURL, origin, keep); err != nil {
 		errs = append(errs, err)
 	}
@@ -834,6 +845,9 @@ func (s *serviceDiscoveryRegistry) doGarbageCollect() {
 }
 
 func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
+	s.serviceLifecycleMu.Lock()
+	defer s.serviceLifecycleMu.Unlock()
+
 	if !shouldRegister(url) {
 		return nil
 	}

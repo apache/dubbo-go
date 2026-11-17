@@ -45,7 +45,6 @@ endif
 # each test should be fixed and removed from this list over time.
 RACE_SKIP_TESTS := TestListener \
 TestDubboProtocol_Refer \
-TestServiceDiscoveryRegistryUnRegister_Concurrent \
 TestCfgAPI_Export \
 TestCfgAPI_Call \
 TestTCPPackageHandle

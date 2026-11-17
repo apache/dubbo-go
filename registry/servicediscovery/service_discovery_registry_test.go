@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"sync"
 	"testing"
@@ -758,6 +759,8 @@ type mockServiceDiscovery struct {
 	listenerAddCount int
 
 	// for Unregister tests
+	instMu            sync.Mutex
+	instances         map[string]registry.ServiceInstance
 	unregisterCalled  bool
 	unregisterIDs     []string
 	unregisterErrByID map[string]error
@@ -768,18 +771,34 @@ type mockServiceDiscovery struct {
 func (m *mockServiceDiscovery) String() string { return "mock" }
 func (m *mockServiceDiscovery) Destroy() error { return nil }
 func (m *mockServiceDiscovery) Register(inst registry.ServiceInstance) error {
+	m.instMu.Lock()
+	defer m.instMu.Unlock()
 	m.registerCalled = true
 	m.capturedInstance = inst
+	if inst != nil {
+		if m.instances == nil {
+			m.instances = make(map[string]registry.ServiceInstance)
+		}
+		m.instances[inst.GetID()] = inst
+	}
 	return nil
 }
 func (m *mockServiceDiscovery) Update(inst registry.ServiceInstance) error {
+	m.instMu.Lock()
+	defer m.instMu.Unlock()
 	m.updateCalled = true
 	if inst != nil {
 		m.updatedIDs = append(m.updatedIDs, inst.GetID())
+		if m.instances == nil {
+			m.instances = make(map[string]registry.ServiceInstance)
+		}
+		m.instances[inst.GetID()] = inst
 	}
 	return nil
 }
 func (m *mockServiceDiscovery) Unregister(inst registry.ServiceInstance) error {
+	m.instMu.Lock()
+	defer m.instMu.Unlock()
 	m.unregisterCalled = true
 	if inst != nil {
 		m.unregisterIDs = append(m.unregisterIDs, inst.GetID())
@@ -788,8 +807,31 @@ func (m *mockServiceDiscovery) Unregister(inst registry.ServiceInstance) error {
 				return err
 			}
 		}
+		if m.instances != nil {
+			delete(m.instances, inst.GetID())
+		}
 	}
 	return nil
+}
+
+func (m *mockServiceDiscovery) getRegisteredInstances() map[string]registry.ServiceInstance {
+	m.instMu.Lock()
+	defer m.instMu.Unlock()
+	cp := make(map[string]registry.ServiceInstance, len(m.instances))
+	maps.Copy(cp, m.instances)
+	return cp
+}
+
+func (m *mockServiceDiscovery) isRegisterCalled() bool {
+	m.instMu.Lock()
+	defer m.instMu.Unlock()
+	return m.registerCalled
+}
+
+func (m *mockServiceDiscovery) isUnregisterCalled() bool {
+	m.instMu.Lock()
+	defer m.instMu.Unlock()
+	return m.unregisterCalled
 }
 func (m *mockServiceDiscovery) GetDefaultPageSize() int     { return 10 }
 func (m *mockServiceDiscovery) GetServices() *gxset.HashSet { return gxset.NewSet("mock-service") }
@@ -1466,38 +1508,45 @@ func TestServiceDiscoveryRegistryUnRegister_NoInstances(t *testing.T) {
 	assert.Empty(t, mockSD.unregisterIDs)
 }
 
-// TestServiceDiscoveryRegistryUnRegister_Concurrent verifies UnRegisterService under concurrent access.
+// TestServiceDiscoveryRegistryUnRegister_Concurrent verifies UnRegisterService and RegisterService
+// under concurrent access.
 func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
 
-	registryURL, _ := common.NewURL(testRegistryURL,
-		common.WithParamsValue(constant.RegistryKey, "mock"))
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
 	require.NoError(t, err)
 
 	sdReg, ok := reg.(*serviceDiscoveryRegistry)
-	assert.True(t, ok)
+	require.True(t, ok)
 
-	// prepare initial instances
+	// prepare initial registered services
 	for i := range 5 {
-		inst := &registry.DefaultServiceInstance{
-			ID:          fmt.Sprintf("init-%d", i),
-			ServiceName: testApp,
-			Host:        "127.0.0.1",
-			Port:        20000 + i,
-			Enable:      true,
-			Healthy:     true,
-		}
-		sdReg.instances = append(sdReg.instances, inst)
+		providerURL, err := common.NewURL(fmt.Sprintf("dubbo://127.0.0.1:%d/org.apache.dubbo.test.TestService%d", 20000+i, i),
+			common.WithParamsValue(constant.ApplicationKey, testApp),
+			common.WithInterface(fmt.Sprintf("org.apache.dubbo.test.TestService%d", i)),
+			common.WithMethods([]string{"MethodA"}),
+			common.WithParamsValue(constant.SideKey, constant.SideProvider),
+		)
+		require.NoError(t, err)
+		require.NoError(t, reg.Register(providerURL))
 	}
+	require.NoError(t, sdReg.RegisterService())
 
 	mockSD.unregisterErrByID = map[string]error{
-		"init-2": errors.New("mock unregister failed"),
+		"127.0.0.1:20002": errors.New("mock unregister failed"),
 	}
 
 	var wg sync.WaitGroup
 	panicCh := make(chan any, 2)
+	errCh := make(chan error, 10)
+	var unregErr error
+	var unregMu sync.Mutex
 
 	// goroutine 1: unregister
 	wg.Go(func() {
@@ -1506,10 +1555,13 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 				panicCh <- r
 			}
 		}()
-		_ = sdReg.UnRegisterService()
+		err := sdReg.UnRegisterService()
+		unregMu.Lock()
+		unregErr = err
+		unregMu.Unlock()
 	})
 
-	// goroutine 2: simulate concurrent register / instance append
+	// goroutine 2: simulate concurrent register
 	wg.Go(func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -1518,40 +1570,184 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 		}()
 
 		for i := range 3 {
-			inst := &registry.DefaultServiceInstance{
-				ID:          fmt.Sprintf("concurrent-%d", i),
-				ServiceName: testApp,
-				Host:        "127.0.0.1",
-				Port:        21000 + i,
-				Enable:      true,
-				Healthy:     true,
+			concurrentURL, err := common.NewURL(fmt.Sprintf("dubbo://127.0.0.1:%d/org.apache.dubbo.test.ConcurrentService%d", 21000+i, i),
+				common.WithParamsValue(constant.ApplicationKey, testApp),
+				common.WithInterface(fmt.Sprintf("org.apache.dubbo.test.ConcurrentService%d", i)),
+				common.WithMethods([]string{"MethodC"}),
+				common.WithParamsValue(constant.SideKey, constant.SideProvider),
+			)
+			if err != nil {
+				errCh <- err
+				return
 			}
-			// intentionally no lock: simulating real race
-			sdReg.instances = append(sdReg.instances, inst)
-			time.Sleep(10 * time.Millisecond)
+			if err := reg.Register(concurrentURL); err != nil {
+				errCh <- err
+			}
+			if err := sdReg.RegisterService(); err != nil {
+				errCh <- err
+			}
+			time.Sleep(5 * time.Millisecond)
 		}
 	})
 
 	wg.Wait()
 	close(panicCh)
+	close(errCh)
 
 	// assert no panic happened
 	for p := range panicCh {
 		t.Fatalf("panic occurred during concurrent unregister: %v", p)
 	}
 
-	// at least the failed instance should remain
-	foundFailed := false
-	for _, inst := range sdReg.instances {
-		if inst.GetID() == "init-2" {
-			foundFailed = true
-			break
-		}
+	for err := range errCh {
+		require.NoError(t, err)
 	}
-	assert.True(t, foundFailed, "failed instance should be kept after UnRegisterService")
+
+	unregMu.Lock()
+	require.Error(t, unregErr)
+	assert.Contains(t, unregErr.Error(), "mock unregister failed")
+	unregMu.Unlock()
 
 	// unregister should be called
-	assert.True(t, mockSD.unregisterCalled)
+	assert.True(t, mockSD.isUnregisterCalled())
+
+	sdReg.lock.RLock()
+	var remainingIDs []string
+	for _, inst := range sdReg.instances {
+		remainingIDs = append(remainingIDs, inst.GetID())
+	}
+	sdReg.lock.RUnlock()
+
+	// failed instance must be kept after UnRegisterService
+	assert.Contains(t, remainingIDs, "127.0.0.1:20002", "failed instance should be kept after UnRegisterService")
+
+	metaInfo := metadata.GetMetadataInfo(regID)
+	require.NotNil(t, metaInfo)
+	if len(remainingIDs) > 0 {
+		assert.NotEqual(t, "0", metaInfo.Revision)
+		assert.NotEmpty(t, metaInfo.Revision)
+	} else {
+		assert.Equal(t, "0", metaInfo.Revision)
+	}
+}
+
+// TestServiceDiscoveryRegistry_ConcurrentRegisterAndUnregisterSameAddress verifies that concurrent
+// RegisterService and UnRegisterService with the same IP:Port are properly serialized by
+// serviceLifecycleMu without write/write races on MetadataInfo.Revision or backend state desync.
+func TestServiceDiscoveryRegistry_ConcurrentRegisterAndUnregisterSameAddress(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+
+	oldURL, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.test.OldService",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface("org.apache.dubbo.test.OldService"),
+		common.WithMethods([]string{"MethodOld"}),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+	require.NoError(t, reg.Register(oldURL))
+	require.NoError(t, sdReg.RegisterService())
+
+	var wg sync.WaitGroup
+	panicCh := make(chan any, 2)
+	errCh := make(chan error, 4)
+
+	// goroutine 1: unregister old service
+	wg.Go(func() {
+		defer func() {
+			if r := recover(); r != nil {
+				panicCh <- r
+			}
+		}()
+		if err := sdReg.UnRegisterService(); err != nil {
+			errCh <- err
+		}
+	})
+
+	// goroutine 2: re-register new service at the same address (127.0.0.1:20880)
+	wg.Go(func() {
+		defer func() {
+			if r := recover(); r != nil {
+				panicCh <- r
+			}
+		}()
+		newURL, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.test.NewService",
+			common.WithParamsValue(constant.ApplicationKey, testApp),
+			common.WithInterface("org.apache.dubbo.test.NewService"),
+			common.WithMethods([]string{"MethodNew"}),
+			common.WithParamsValue(constant.SideKey, constant.SideProvider),
+		)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		if err := reg.Register(newURL); err != nil {
+			errCh <- err
+			return
+		}
+		if err := sdReg.RegisterService(); err != nil {
+			errCh <- err
+			return
+		}
+	})
+
+	wg.Wait()
+	close(panicCh)
+	close(errCh)
+
+	for p := range panicCh {
+		t.Fatalf("panic occurred during concurrent register/unregister: %v", p)
+	}
+
+	for err := range errCh {
+		require.NoError(t, err)
+	}
+
+	assert.True(t, mockSD.isUnregisterCalled())
+	assert.True(t, mockSD.isRegisterCalled())
+
+	sdReg.lock.RLock()
+	instances := append([]registry.ServiceInstance(nil), sdReg.instances...)
+	sdReg.lock.RUnlock()
+
+	metaInfoSameAddr := metadata.GetMetadataInfo(regID)
+	require.NotNil(t, metaInfoSameAddr)
+
+	exportedURLs := metaInfoSameAddr.GetExportedServiceURLs()
+	backendInstances := mockSD.getRegisteredInstances()
+
+	if len(instances) > 0 {
+		// Case A: UnRegisterService executed first, then RegisterService re-registered NewService
+		assert.Len(t, instances, 1)
+		assert.Equal(t, "127.0.0.1:20880", instances[0].GetID())
+		assert.Len(t, exportedURLs, 1)
+		assert.NotEqual(t, "0", metaInfoSameAddr.Revision)
+		assert.NotEmpty(t, metaInfoSameAddr.Revision)
+
+		// Backend must also contain exactly this 1 instance with ID 127.0.0.1:20880
+		// Proves that unregistering the old instance did NOT delete the new instance at the same address from backend!
+		assert.Len(t, backendInstances, 1)
+		assert.Contains(t, backendInstances, "127.0.0.1:20880")
+	} else {
+		// Case B: RegisterService executed first, then UnRegisterService unregistered all services
+		assert.Empty(t, instances)
+		assert.Empty(t, exportedURLs)
+		assert.Equal(t, "0", metaInfoSameAddr.Revision)
+
+		// Backend must also be empty
+		assert.Empty(t, backendInstances)
+	}
 }
 
 // TestServiceDiscoveryRegistrySubscribeURLDoesNotHoldLockOnExternalCall
