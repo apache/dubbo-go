@@ -81,8 +81,9 @@ func init() {
 
 type TripleProtocol struct {
 	base.BaseProtocol
-	serverLock sync.Mutex
-	serverMap  map[string]*Server
+	publicationMu sync.Mutex // coordinates handler publication and exporter bookkeeping
+	serverLock    sync.Mutex
+	serverMap     map[string]*Server
 }
 
 // Export TRIPLE service for remote invocation
@@ -95,6 +96,7 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		info = infoRaw.(*common.ServiceInfo)
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
+	exporter.publicationMu = &tp.publicationMu
 	// Exports may construct their binding during initialization. Publish a
 	// retirement hook up front, but wait until it captures this export's owner.
 	ready := make(chan struct{})
@@ -113,8 +115,6 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		}
 		return owner.Close()
 	}
-	previous, hadPrevious := tp.ExporterMap().Load(serviceKey)
-	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[Triple] export service: %s", url.String())
 	err := func() error {
 		defer close(ready)
@@ -124,13 +124,22 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		if raw, ok := url.GetAttribute("triple.serialization.resources.provider"); ok {
 			owner, _ = raw.(*serialization.Resources)
 		}
-		return tp.openServer(invoker, info)
+		// Factories run outside the publication lock. Publish the handler and
+		// its exporter in the same critical section, in completion order.
+		tp.publicationMu.Lock()
+		defer tp.publicationMu.Unlock()
+		previous, hadPrevious := tp.ExporterMap().Load(serviceKey)
+		tp.SetExporterMap(serviceKey, exporter)
+		if err := tp.openServer(invoker, info); err != nil {
+			if hadPrevious {
+				tp.ExporterMap().CompareAndSwap(serviceKey, exporter, previous)
+			}
+			return err
+		}
+		return nil
 	}()
 	if err != nil {
 		logger.Errorf("[Triple] export service failed, %s, err=%v", url.String(), err)
-		if hadPrevious {
-			tp.ExporterMap().CompareAndSwap(serviceKey, exporter, previous)
-		}
 		exporter.UnExport()
 		panic(err)
 	}
