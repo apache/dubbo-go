@@ -339,7 +339,7 @@ func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Co
 		timeoutVal := ctx.Value(TimeoutKey{})
 		if timeoutVal != nil {
 			if s, exist := timeoutVal.(string); exist && s != "" {
-				if newTimeout, parsed := parseTimeout(s); parsed {
+				if newTimeout, ok := parseTimeout(s); ok {
 					ctx, cancel = context.WithDeadline(ctx, time.Now().Add(newTimeout))
 					applyFlag = true
 					return ctx, applyFlag, cancel
