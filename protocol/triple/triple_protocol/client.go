@@ -332,10 +332,10 @@ func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Co
 	var cancel context.CancelFunc
 	var applyFlag bool
 
-	_, ok := ctx.Deadline()
+	_, hasDeadline := ctx.Deadline()
 
 	// Todo(finalt) Temporarily solve the problem that the timeout time is not valid
-	if !ok {
+	if !hasDeadline {
 		timeoutVal := ctx.Value(TimeoutKey{})
 		if timeoutVal != nil {
 			if s, exist := timeoutVal.(string); exist && s != "" {
@@ -348,7 +348,7 @@ func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Co
 		}
 	}
 
-	if !ok && timeout != 0 {
+	if !hasDeadline && timeout != 0 {
 		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(timeout))
 		applyFlag = true
 	}
