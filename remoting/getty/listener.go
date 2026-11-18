@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -52,6 +53,8 @@ var (
 type rpcSession struct {
 	session getty.Session
 	reqNum  int32
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 func (s *rpcSession) AddReqNum(num int32) {
@@ -201,8 +204,9 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	}
 
 	logger.Infof("[Remoting][Getty] got session=%s", session.Stat())
+	ctx, cancel := context.WithCancel(context.Background())
 	h.rwlock.Lock()
-	h.sessionMap[session] = &rpcSession{session: session}
+	h.sessionMap[session] = &rpcSession{session: session, ctx: ctx, cancel: cancel}
 	h.rwlock.Unlock()
 	return nil
 }
@@ -210,17 +214,13 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 // OnError the getty server session has errored, so remove the session from the getty server session list
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
 	logger.Infof("[Remoting][Getty] session got error, will be closed, session=%s err=%v", session.Stat(), err)
-	h.rwlock.Lock()
-	delete(h.sessionMap, session)
-	h.rwlock.Unlock()
+	h.releaseSession(session)
 }
 
 // OnClose close the session, remove it from the getty server list
 func (h *RpcServerHandler) OnClose(session getty.Session) {
 	logger.Infof("[Remoting][Getty] session is closing, session=%s", session.Stat())
-	h.rwlock.Lock()
-	delete(h.sessionMap, session)
-	h.rwlock.Unlock()
+	h.releaseSession(session)
 }
 
 // OnMessage get request from getty client, update the session reqNum and reply response to client
@@ -272,7 +272,17 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg any) {
 	attachments[constant.LocalAddr] = session.LocalAddr()
 	attachments[constant.RemoteAddr] = session.RemoteAddr()
 
+	reqCancel := h.bindRequestContext(session, invoc)
+	var cancelOnce sync.Once
+	cancel := func() { cancelOnce.Do(reqCancel) }
+	defer cancel()
+
 	result := h.server.requestHandler(invoc)
+	// Release the request context as soon as the handler returns, before
+	// two-way response encoding and WritePkg. A blocked reply must not
+	// keep handler-derived goroutines alive. reply() only receives the
+	// session and response, so it does not need this context.
+	cancel()
 	if !req.TwoWay {
 		return
 	}
@@ -300,9 +310,7 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 	h.rwlock.RUnlock()
 
 	if flag {
-		h.rwlock.Lock()
-		delete(h.sessionMap, session)
-		h.rwlock.Unlock()
+		h.releaseSession(session)
 		session.Close()
 	}
 
@@ -310,9 +318,7 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 		if err != nil {
 			logger.Warnf("[Remoting][Getty] failed to send heartbeat, err=%v", err)
 			if h.timeoutTimes >= 3 {
-				h.rwlock.Lock()
-				delete(h.sessionMap, session)
-				h.rwlock.Unlock()
+				h.releaseSession(session)
 				session.Close()
 				return
 			}
@@ -362,4 +368,85 @@ func heartbeat(session getty.Session, timeout time.Duration, callBack func(err e
 	}()
 
 	return perrors.WithStack(err)
+}
+
+// releaseSession cancels the session-scoped context and drops the session
+// from the map. It is safe to call more than once.
+func (h *RpcServerHandler) releaseSession(session getty.Session) {
+	h.rwlock.Lock()
+	rs := h.sessionMap[session]
+	delete(h.sessionMap, session)
+	h.rwlock.Unlock()
+	if rs != nil && rs.cancel != nil {
+		rs.cancel()
+	}
+}
+
+// cancelAll cancels every session context, used when the server stops.
+func (h *RpcServerHandler) cancelAll() {
+	h.rwlock.Lock()
+	cancels := make([]context.CancelFunc, 0, len(h.sessionMap))
+	for session, rs := range h.sessionMap {
+		if rs != nil && rs.cancel != nil {
+			cancels = append(cancels, rs.cancel)
+		}
+		delete(h.sessionMap, session)
+	}
+	h.rwlock.Unlock()
+	for _, cancel := range cancels {
+		cancel()
+	}
+}
+
+// bindRequestContext derives a per-request context from the session
+// lifecycle, optionally bound by a valid timeout attachment, and stores it
+// on the invocation. The caller must cancel the returned function when the
+// request handler returns. Canceling one request does not close the session.
+//
+// If the session is already gone from the map (OnClose, OnError, or
+// cancelAll during Stop), the parent is an already-canceled context.
+// The server task pool can run a queued OnMessage after that: addTask
+// only checks IsClosed when the task starts, and Stop cancelAll runs
+// before tcpServer.Close. A Background parent would leave the business
+// context live for the rest of the invoke.
+func (h *RpcServerHandler) bindRequestContext(session getty.Session, invoc *invocation.RPCInvocation) context.CancelFunc {
+	h.rwlock.RLock()
+	var parent context.Context
+	if rs := h.sessionMap[session]; rs != nil {
+		parent = rs.ctx
+	}
+	h.rwlock.RUnlock()
+	if parent == nil {
+		canceled, cancel := context.WithCancel(context.Background())
+		cancel()
+		parent = canceled
+	}
+
+	var ctx context.Context
+	var cancel context.CancelFunc
+	if timeout, ok := timeoutFromAttachment(invoc); ok {
+		ctx, cancel = context.WithTimeout(parent, timeout)
+	} else {
+		ctx, cancel = context.WithCancel(parent)
+	}
+	invoc.SetContext(ctx)
+	return cancel
+}
+
+// timeoutFromAttachment parses a Dubbo timeout attachment. Values accepted
+// by time.ParseDuration or a millisecond integer are used only when positive.
+// Invalid, missing, zero, and negative values add no request deadline.
+func timeoutFromAttachment(invoc *invocation.RPCInvocation) (time.Duration, bool) {
+	raw, ok := invoc.GetAttachment(constant.TimeoutKey)
+	if !ok || raw == "" {
+		return 0, false
+	}
+	timeout, err := time.ParseDuration(raw)
+	if err != nil {
+		timeout, err = time.ParseDuration(raw + "ms")
+	}
+	if err != nil || timeout <= 0 {
+		return 0, false
+	}
+	return timeout, true
 }
