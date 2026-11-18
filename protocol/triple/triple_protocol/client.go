@@ -334,18 +334,35 @@ func parseRequestURL(rawURL string) (*url.URL, *Error) {
 	return nil, NewError(CodeUnavailable, err)
 }
 
+// parseTimeout accepts a legal Go duration or a unitless numeric millisecond
+// value, matching DubboInvoker.getTimeout. time.ParseDuration already accepts
+// "0"; the millisecond fallback requires a positive duration so this path
+// does not invent a new zero or negative policy.
+func parseTimeout(s string) (time.Duration, bool) {
+	if s == "" {
+		return 0, false
+	}
+	if d, err := time.ParseDuration(s); err == nil {
+		return d, true
+	}
+	if d, err := time.ParseDuration(s + "ms"); err == nil && d > 0 {
+		return d, true
+	}
+	return 0, false
+}
+
 func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Context, bool, context.CancelFunc) {
 	var cancel context.CancelFunc
 	var applyFlag bool
 
-	_, ok := ctx.Deadline()
+	_, hasDeadline := ctx.Deadline()
 
 	// Todo(finalt) Temporarily solve the problem that the timeout time is not valid
-	if !ok {
+	if !hasDeadline {
 		timeoutVal := ctx.Value(TimeoutKey{})
 		if timeoutVal != nil {
 			if s, exist := timeoutVal.(string); exist && s != "" {
-				if newTimeout, err := time.ParseDuration(s); err == nil {
+				if newTimeout, ok := parseTimeout(s); ok {
 					ctx, cancel = context.WithDeadline(ctx, time.Now().Add(newTimeout))
 					applyFlag = true
 					return ctx, applyFlag, cancel
@@ -354,7 +371,7 @@ func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Co
 		}
 	}
 
-	if !ok && timeout != 0 {
+	if !hasDeadline && timeout != 0 {
 		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(timeout))
 		applyFlag = true
 	}

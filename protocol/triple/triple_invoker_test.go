@@ -173,6 +173,46 @@ func Test_parseAttachments(t *testing.T) {
 				assert.False(t, ok)
 			},
 		},
+		{
+			desc: "call-level timeout is not overwritten by URL timeout",
+			ctx: func() context.Context {
+				return context.Background()
+			},
+			url: common.NewURLWithOptions(
+				common.WithParamsValue(constant.TimeoutKey, "5000"),
+				common.WithToken("token"),
+			),
+			invo: func() base.Invocation {
+				return invocation.NewRPCInvocationWithOptions(
+					invocation.WithAttachment(constant.TimeoutKey, "100"),
+				)
+			},
+			expect: func(t *testing.T, inv base.Invocation) {
+				timeout, ok := inv.GetAttachment(constant.TimeoutKey)
+				assert.True(t, ok)
+				assert.Equal(t, "100", timeout)
+				token, ok := inv.GetAttachment(constant.TokenKey)
+				assert.True(t, ok)
+				assert.Equal(t, "token", token)
+			},
+		},
+		{
+			desc: "URL timeout is used when the invocation has no timeout",
+			ctx: func() context.Context {
+				return context.Background()
+			},
+			url: common.NewURLWithOptions(
+				common.WithParamsValue(constant.TimeoutKey, "5000"),
+			),
+			invo: func() base.Invocation {
+				return invocation.NewRPCInvocationWithOptions()
+			},
+			expect: func(t *testing.T, inv base.Invocation) {
+				timeout, ok := inv.GetAttachment(constant.TimeoutKey)
+				assert.True(t, ok)
+				assert.Equal(t, "5000", timeout)
+			},
+		},
 	}
 
 	for _, test := range tests {
