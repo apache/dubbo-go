@@ -273,6 +273,14 @@ func (dp *DubboProtocol) ReleaseCodec(url *common.URL, _ string) error {
 func compatibleEndpointCodec(listener, url *common.URL) error {
 	oldConfig, _ := listener.GetAttribute(extension.SerializationConfigAttribute)
 	newConfig, _ := url.GetAttribute(extension.SerializationConfigAttribute)
+	// Legacy exports omit the snapshot; high-level exports create an empty map
+	// when no codec configuration is active. Both use the default codec scope.
+	if configs, ok := oldConfig.(map[string]any); ok && len(configs) == 0 {
+		oldConfig = nil
+	}
+	if configs, ok := newConfig.(map[string]any); ok && len(configs) == 0 {
+		newConfig = nil
+	}
 	if fmt.Sprintf("%p", oldConfig) != fmt.Sprintf("%p", newConfig) {
 		return fmt.Errorf("dubbo endpoint %s has a different codec configuration scope; use a separate endpoint", url.Location)
 	}
