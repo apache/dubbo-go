@@ -18,6 +18,8 @@
 package apollo
 
 import (
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -69,4 +71,46 @@ func TestApolloListener(t *testing.T) {
 	if !l.IsEmpty() {
 		t.Fatalf("listener should be empty after remove")
 	}
+}
+
+type concurrentListener struct {
+	//an atomic counter to prevent data races during concurrent callbacks.
+	calls atomic.Int64
+}
+
+func (l *concurrentListener) Process(e *config_center.ConfigChangeEvent) {
+	l.calls.Add(1)
+}
+
+func TestApolloListenerConcurrentAccess(t *testing.T) {
+	l := newApolloListener()
+	rec := &concurrentListener{}
+
+	var wg sync.WaitGroup
+
+	for range 100 {
+		wg.Add(3)
+
+		go func() {
+			defer wg.Done()
+			l.AddListener(rec)
+		}()
+
+		go func() {
+			defer wg.Done()
+			l.RemoveListener(rec)
+		}()
+
+		go func() {
+			defer wg.Done()
+			change := &storage.FullChangeEvent{
+				Changes: map[string]any{"k": "v"},
+			}
+			change.Namespace = "application"
+
+			l.OnNewestChange(change)
+		}()
+	}
+
+	wg.Wait()
 }

@@ -43,6 +43,8 @@ endif
 # Tests with known issues (data races or test design defects) tracked in the
 # race-detector issue. Skipped via -skip so the whole-repo race run can pass;
 # each test should be fixed and removed from this list over time.
+# TestListener is skipped: an Agollo client started by earlier tests keeps polling
+# and races inside Agollo v4.4.0 (getAppConfig vs SyncAndUpdate); also reproducible on develop.
 RACE_SKIP_TESTS := TestListener \
 TestDubboProtocol_Refer \
 TestCfgAPI_Export \
