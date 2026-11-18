@@ -325,3 +325,11 @@ func WithMaxServerSendMsgSize(size string) ServerOption {
 func WithMaxServerRecvMsgSize(size string) ServerOption {
 	panic("use triple.WithMaxServerRecvMsgSize()")
 }
+
+// WithCodec selects the Dubbo remoting codec factory for this endpoint.
+func WithCodec(name string) Option { return &codecOption{name: name} }
+
+type codecOption struct{ name string }
+
+func (o *codecOption) applyToClient(c *ClientOptions) { c.ProtocolClient.Codec = o.name }
+func (o *codecOption) applyToServer(c *ServerOptions) { c.Protocol.Codec = o.name }

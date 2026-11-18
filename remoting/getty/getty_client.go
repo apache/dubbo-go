@@ -157,6 +157,8 @@ type Client struct {
 	gettyClient    *gettyRPCClient
 	gettyClientMux sync.RWMutex
 	codec          remoting.Codec
+	codecMu        sync.Mutex
+	releaseCodec   func() error
 }
 
 // NewClient create client
@@ -181,6 +183,8 @@ func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 
 // Connect init client and try to connection.
 func (c *Client) Connect(url *common.URL) error {
+	c.codecMu.Lock()
+	defer c.codecMu.Unlock()
 	if c.closed.Load() {
 		return errClientClosed
 	}
@@ -188,11 +192,19 @@ func (c *Client) Connect(url *common.URL) error {
 	c.conf = *clientConf
 	c.sslEnabled = c.conf.SSLEnabled
 	// codec
-	c.codec = remoting.GetCodec(url.Protocol)
+	if c.releaseCodec == nil {
+		selectedCodec, release, codecErr := remoting.AcquireCodec(url)
+		if codecErr != nil {
+			return codecErr
+		}
+		c.codec, c.releaseCodec = selectedCodec, release
+	}
 	c.addr = url.Location
 	_, _, err := c.selectSession(c.addr)
 	if err != nil {
 		logger.Errorf("[Remoting][Getty] try to connect server %v failed, err=%v", url.Location, err)
+		_ = c.releaseCodec()
+		c.releaseCodec = nil
 	}
 	return err
 }
@@ -211,6 +223,12 @@ func (c *Client) Close() {
 		if client != nil {
 			client.close()
 		}
+		c.codecMu.Lock()
+		if c.releaseCodec != nil {
+			_ = c.releaseCodec()
+			c.releaseCodec = nil
+		}
+		c.codecMu.Unlock()
 	})
 }
 
