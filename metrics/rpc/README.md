@@ -164,6 +164,9 @@ Known limits:
   provider, a configured `service.filter` such as `sentinel-provider` runs
   outside it, so the provider does not count those rejections, and a Dubbo
   consumer sees them as business (status `OK` plus an exception payload).
+- Failures raised by the cluster before a provider invoker is selected, such
+  as "no provider available", happen outside the per-invoker filter chain, so
+  consumer metrics do not count them. Java counts them as service_unavailable.
 
 ### RED model (#3337)
 
@@ -172,6 +175,7 @@ Known limits:
 | Rate | `dubbo_{side}_requests_total` (Counter) | Use `rate()`; `dubbo_{side}_qps_total` is a local sliding-window gauge |
 | Errors | `dubbo_{side}_requests_failed_total` and the category counters above | Categories sum to `requests_failed_total` |
 | Duration | `dubbo_{side}_rt_milliseconds_{sum,last,min,max,avg}`, `dubbo_{side}_rt_milliseconds_p{50,90,95,99}`, `dubbo_{side}_rt_{avg,min,max}_milliseconds_aggregate` | Quantiles are per-instance sliding-window gauges |
+| Duration (opt-in) | `dubbo_{side}_rt_milliseconds_histogram_seconds_{bucket,sum,count}` (Histogram, seconds) | Enable with `metrics.WithHistogramEnabled()` or `metrics.histogram.enabled`; aggregatable across instances |
 | In flight | `dubbo_{side}_requests_processing_total` (Gauge) | |
 
 Each `*_aggregate` gauge is the same value computed over the local sliding
@@ -199,7 +203,11 @@ sum by (interface) (rate(dubbo_consumer_requests_limit_total[5m]))
 sum by (interface) (rate(dubbo_consumer_requests_failed_service_unavailable_total[5m]))
   / sum by (interface) (rate(dubbo_consumer_requests_total[5m]))
 
-# P99 latency: quantiles cannot be averaged across instances; take the worst
+# P99 latency across instances, with histograms enabled (seconds)
+histogram_quantile(0.99, sum by (le, interface, method) (rate(dubbo_provider_rt_milliseconds_histogram_seconds_bucket[5m])))
+
+# P99 latency without histograms: the p99 gauges cannot be averaged across
+# instances; take the worst
 max by (interface, method) (dubbo_provider_rt_milliseconds_p99)
 
 # Mean latency across instances
@@ -232,10 +240,19 @@ sum by (interface) (rate(dubbo_provider_requests_business_failed_total[5m]))
   - Sentinel default-fallback rejections counted by the consumer go to limit.
 
   `requests_failed_total` is unchanged.
-- **No renames.** No metric is renamed or removed. Java Dubbo names the success
-  window metric `requests_succeed_aggregate`; dubbo-go keeps
-  `requests_succeed_total_aggregate` for compatibility. Real Prometheus
-  histograms (`rt_milliseconds_histogram_*`) are not exported yet.
+- **No renames.** No metric is renamed or removed. A few names still differ
+  from the [Dubbo standard metrics](https://cn.dubbo.apache.org/zh-cn/overview/reference/metrics/standard_metrics/),
+  and dubbo-go keeps its own names for compatibility:
+
+  | Java Dubbo | dubbo-go |
+  | --- | --- |
+  | `requests_succeed_aggregate` | `requests_succeed_total_aggregate` |
+  | `dubbo_consumer_requests_timeout_failed_aggregate` | `dubbo_consumer_requests_timeout_total_aggregate` |
+  | `requests_processing` | `requests_processing_total` (Java exports both) |
+
+  The opt-in latency histograms use the standard
+  `rt_milliseconds_histogram_seconds` name and carry the same labels, including
+  `protocol`.
 
 ## Callback expiry is not a business failure
 
