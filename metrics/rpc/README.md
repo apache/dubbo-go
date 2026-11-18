@@ -128,7 +128,7 @@ Provider and consumer share one taxonomy. It mirrors Java Dubbo's
 | Category | Metric suffix | Java code | Sources in dubbo-go |
 | --- | --- | --- | --- |
 | timeout | `requests_timeout_total` | `TIMEOUT_EXCEPTION`, `TIMEOUT_TERMINATE` | Triple `DeadlineExceeded`; expired `context` deadline; Getty client read timeout; Dubbo `CLIENT_TIMEOUT`/`SERVER_TIMEOUT` status |
-| limit | `requests_limit_total` | `LIMIT_EXCEEDED_EXCEPTION` | Triple `ResourceExhausted`; Sentinel default fallback |
+| limit | `requests_limit_total` | `LIMIT_EXCEEDED_EXCEPTION` | Triple `ResourceExhausted`; Sentinel default fallback (consumer side, see known limits) |
 | service_unavailable | `requests_failed_service_unavailable_total` | `FORBIDDEN_EXCEPTION`, `NO_INVOKER_AVAILABLE_AFTER_FILTER`, `METHOD_NOT_FOUND` | Triple `Unavailable`/`PermissionDenied`; destroyed invoker; closed remoting client; provider service or method not found; Dubbo `SERVICE_NOT_FOUND` status |
 | business | `requests_business_failed_total` | `BIZ_EXCEPTION` | Triple `BizError`; error returned by the provider service implementation; Dubbo exception payload with status `OK` |
 | network | `requests_failed_network_total` | `NETWORK_EXCEPTION` | Confirmed transport failure (`net.OpError` at Getty write / Triple HTTP Do); no Getty session; closed Getty client |
@@ -158,7 +158,12 @@ Known limits:
   payload. The wire cannot tell them apart from application exceptions, so the
   consumer counts them as business. The provider counts them precisely.
 - A failure is only visible to metrics if the metrics filter wraps the filter
-  that produced it, e.g. Sentinel must run inside the metrics filter.
+  that produced it. The framework places the metrics filter with the default
+  filters: on the consumer, configured reference filters such as
+  `sentinel-consumer` run inside it, so their rejections count as limit. On the
+  provider, a configured `service.filter` such as `sentinel-provider` runs
+  outside it, so the provider does not count those rejections, and a Dubbo
+  consumer sees them as business (status `OK` plus an exception payload).
 
 ### RED model (#3337)
 
@@ -189,8 +194,8 @@ sum by (interface) (rate(dubbo_provider_requests_failed_total[5m]))
 # Timeout / limit / service-unavailable rate
 sum by (interface) (rate(dubbo_consumer_requests_timeout_total[5m]))
   / sum by (interface) (rate(dubbo_consumer_requests_total[5m]))
-sum by (interface) (rate(dubbo_provider_requests_limit_total[5m]))
-  / sum by (interface) (rate(dubbo_provider_requests_total[5m]))
+sum by (interface) (rate(dubbo_consumer_requests_limit_total[5m]))
+  / sum by (interface) (rate(dubbo_consumer_requests_total[5m]))
 sum by (interface) (rate(dubbo_consumer_requests_failed_service_unavailable_total[5m]))
   / sum by (interface) (rate(dubbo_consumer_requests_total[5m]))
 
@@ -201,8 +206,11 @@ max by (interface, method) (dubbo_provider_rt_milliseconds_p99)
 sum by (interface) (rate(dubbo_provider_rt_milliseconds_sum[5m]))
   / sum by (interface) (rate(dubbo_provider_requests_total[5m]))
 
-# Failures by category (only categories that occurred have series)
-sum by (__name__) (rate({__name__=~"dubbo_provider_requests_(timeout|limit|business_failed|unknown_failed|failed_(service_unavailable|network|codec))_total"}[5m]))
+# Failures by category. rate() drops the metric name, so query each category
+# counter separately: timeout, limit, failed_service_unavailable,
+# business_failed, failed_network, failed_codec, unknown_failed.
+# Only categories that occurred have series.
+sum by (interface) (rate(dubbo_provider_requests_business_failed_total[5m]))
 ```
 
 ### Compatibility (#3337)
@@ -221,7 +229,7 @@ sum by (__name__) (rate({__name__=~"dubbo_provider_requests_(timeout|limit|busin
     service_unavailable.
   - Missing Getty sessions and closed Getty clients go to network.
   - Dubbo `BAD_REQUEST`/`BAD_RESPONSE` go to codec.
-  - Sentinel default-fallback rejections go to limit.
+  - Sentinel default-fallback rejections counted by the consumer go to limit.
 
   `requests_failed_total` is unchanged.
 - **No renames.** No metric is renamed or removed. Java Dubbo names the success
