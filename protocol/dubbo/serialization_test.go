@@ -274,3 +274,42 @@ func TestCodecConfiguredFrameBoundariesAndCorrelation(t *testing.T) {
 	require.Equal(t, size+16, n)
 	require.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(1<<20), "declared length must not reserve its body")
 }
+
+func TestCodecEndpointEmptyConfigurationScopes(t *testing.T) {
+	var nilConfig map[string]any
+	configs := []struct {
+		name    string
+		value   func() any
+		present bool
+	}{
+		{name: "absent"},
+		{name: "nil", value: func() any { return nil }, present: true},
+		{name: "nil-map", value: func() any { return nilConfig }, present: true},
+		{name: "empty-map", value: func() any { return map[string]any{} }, present: true},
+	}
+	for _, listenerConfig := range configs {
+		for _, serviceConfig := range configs {
+			t.Run(listenerConfig.name+"/"+serviceConfig.name, func(t *testing.T) {
+				listener := streamURL("hessian2")
+				service := streamURL("hessian2")
+				if listenerConfig.present {
+					listener.SetAttribute(extension.SerializationConfigAttribute, listenerConfig.value())
+				}
+				if serviceConfig.present {
+					service.SetAttribute(extension.SerializationConfigAttribute, serviceConfig.value())
+				}
+				require.NoError(t, compatibleEndpointCodec(listener, service))
+			})
+		}
+	}
+	t.Run("nonempty-scopes-remain-isolated", func(t *testing.T) {
+		listener := streamURL("hessian2")
+		service := streamURL("hessian2")
+		listener.SetAttribute(extension.SerializationConfigAttribute, map[string]any{"prefix": "same"})
+		service.SetAttribute(extension.SerializationConfigAttribute, map[string]any{"prefix": "same"})
+		require.ErrorContains(t, compatibleEndpointCodec(listener, service), "configuration scope")
+		service.DeleteAttribute(extension.SerializationConfigAttribute)
+		require.ErrorContains(t, compatibleEndpointCodec(listener, service), "configuration scope")
+		require.ErrorContains(t, compatibleEndpointCodec(service, listener), "configuration scope")
+	})
+}

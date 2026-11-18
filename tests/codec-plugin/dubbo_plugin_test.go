@@ -43,6 +43,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/token"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
@@ -193,4 +194,48 @@ func (c countedRemoting) Close() error {
 		return closer.Close()
 	}
 	return nil
+}
+
+func TestDubboMetadataAndBusinessShareEndpoint(t *testing.T) {
+	t.Cleanup(func() { extension.GetProtocol("dubbo").Destroy() })
+	port := freePort(t)
+	group := "codec-metadata-" + strconv.Itoa(port)
+	if err := metadata.NewOptions(metadata.WithAppName(group), metadata.WithPort(port), metadata.WithMetadataProtocol("dubbo")).Init(); err != nil {
+		t.Fatal(err)
+	}
+	metadataURL, err := metadata.GetMetadataService().GetMetadataServiceURL()
+	if err != nil || metadataURL == nil || metadataURL.Port != strconv.Itoa(port) {
+		t.Fatalf("metadata service URL=%v error=%v", metadataURL, err)
+	}
+	ready(t, port)
+
+	srv, err := server.NewServer(server.WithServerProtocol(protocol.WithDubbo(), protocol.WithPort(port)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = srv.RegisterService(&Echo{}, server.WithGroup(group), server.WithNotRegister()); err != nil {
+		t.Fatal(err)
+	}
+	export(t, srv)
+
+	cli, err := client.NewClient(client.WithClientURL("dubbo://127.0.0.1:"+strconv.Itoa(port)), client.WithClientProtocolDubbo())
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := cli.Dial("codec.plugin.Echo", client.WithGroup(group), client.WithRetries(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var reply string
+	if err = conn.CallUnary(context.Background(), []any{"world"}, &reply, "Greet"); err != nil || reply != "hello world" {
+		t.Fatalf("business RPC reply=%q error=%v", reply, err)
+	}
+	metaConn, err := cli.Dial(metadataURL.Interface(), client.WithGroup(group), client.WithVersion(metadataURL.Version()), client.WithRetries(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var version string
+	if err = metaConn.CallUnary(context.Background(), nil, &version, "Version"); err != nil || version != metadataURL.Version() {
+		t.Fatalf("metadata RPC version=%q error=%v", version, err)
+	}
 }
