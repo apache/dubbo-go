@@ -50,6 +50,7 @@ func TestCloneConfig(t *testing.T) {
 
 	t.Run("ConsumerConfig", func(t *testing.T) {
 		c := DefaultConsumerConfig()
+		c.AcceptedSerializations = []string{"hessian2"}
 		InitCheckCompleteInequality(t, c)
 		clone := c.Clone()
 		CheckCompleteInequality(t, c, clone)
@@ -152,6 +153,7 @@ func TestCloneConfig(t *testing.T) {
 
 	t.Run("ReferenceConfig", func(t *testing.T) {
 		c := DefaultReferenceConfig()
+		c.AcceptedSerializations = []string{"hessian2"}
 		InitCheckCompleteInequality(t, c)
 		clone := c.Clone()
 		CheckCompleteInequality(t, c, clone)
@@ -166,6 +168,7 @@ func TestCloneConfig(t *testing.T) {
 
 	t.Run("ServiceConfig", func(t *testing.T) {
 		c := DefaultServiceConfig()
+		c.AcceptedSerializations = []string{"hessian2"}
 		InitCheckCompleteInequality(t, c)
 		clone := c.Clone()
 		CheckCompleteInequality(t, c, clone)

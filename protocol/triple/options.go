@@ -510,3 +510,8 @@ func OpenAPISettings(settings map[string]string) OpenAPIOption {
 		maps.Copy(o.Settings, settings)
 	}
 }
+
+// WithWireProtocol chooses "grpc" (default) or "triple" for unary clients.
+func WithWireProtocol(name string) Option {
+	return func(opts *Options) { opts.Triple.WireProtocol = name }
+}

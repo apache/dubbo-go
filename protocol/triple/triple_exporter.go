@@ -34,21 +34,45 @@ import (
 // TripleExporter wraps BaseExporter
 type TripleExporter struct {
 	*base.BaseExporter
+	once          sync.Once
+	retire        func() error
+	url           *common.URL
+	key           string
+	exporterMap   *sync.Map
+	publicationMu *sync.Mutex
 }
 
 func NewTripleExporter(key string, invoker base.Invoker, exporterMap *sync.Map) *TripleExporter {
 	return &TripleExporter{
 		BaseExporter: base.NewBaseExporter(key, invoker, exporterMap),
+		url:          invoker.GetURL().Clone(), key: key, exporterMap: exporterMap,
 	}
 }
 
 // UnExport and unregister Triple service from registry and memory.
 func (te *TripleExporter) UnExport() {
-	interfaceName := te.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
-	// todo: move UnRegister logic to a better place
-	err := common.ServiceMap.UnRegister(interfaceName, TRIPLE, te.GetInvoker().GetURL().ServiceKey())
-	if err != nil {
-		logger.Errorf("[Triple][Exporter] unexport failed, err=%v", err)
-	}
-	te.BaseExporter.UnExport()
+	te.once.Do(func() {
+		if te.retire != nil {
+			if err := te.retire(); err != nil {
+				logger.Warnf("[Triple][Exporter] close serialization resources: %v", err)
+			}
+		}
+		// Draining above must not hold the publication lock: an active call
+		// may need to export another service before it can finish.
+		func() {
+			if te.publicationMu != nil {
+				te.publicationMu.Lock()
+				defer te.publicationMu.Unlock()
+			}
+			// An old export must not unregister or remove a newer replacement.
+			if current, ok := te.exporterMap.Load(te.key); ok && current == te {
+				interfaceName := te.url.GetParam(constant.InterfaceKey, "")
+				if err := common.ServiceMap.UnRegister(interfaceName, TRIPLE, te.url.ServiceKey()); err != nil {
+					logger.Errorf("[Triple][Exporter] unexport failed, err=%v", err)
+				}
+			}
+			te.exporterMap.CompareAndDelete(te.key, te)
+		}()
+		te.GetInvoker().Destroy()
+	})
 }

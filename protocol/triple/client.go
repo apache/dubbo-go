@@ -47,6 +47,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -58,6 +59,8 @@ const (
 // clientManager owns the service-level Triple clients used by unary, streaming,
 // and health-check calls for a Reference.
 type clientManager struct {
+	resources    *serialization.Resources
+	releaseCodec func() error
 	isIDL        bool
 	triClient    *tri.Client
 	healthClient *tri.Client
@@ -102,32 +105,28 @@ func (cm *clientManager) callBidiStream(ctx context.Context, method string) (any
 }
 
 func (cm *clientManager) close() error {
-	// There is no need to release resources right now.
-	// But we leave this function here for future use.
-	return nil
+	if cm.releaseCodec != nil {
+		return cm.releaseCodec()
+	}
+	return cm.resources.Close()
 }
 
 // newClientManager resolves URL and global Triple settings, then builds the
 // service and health clients that share one HTTP transport.
 func newClientManager(url *common.URL) (*clientManager, error) {
-	var cliOpts []tri.ClientOption
-	var isIDL bool
-
-	// Resolve codec options before constructing the transport-backed client.
-	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
-	switch serialization {
-	case constant.ProtobufSerialization:
-		isIDL = true
-	case constant.JSONSerialization:
-		isIDL = true
-		cliOpts = append(cliOpts, tri.WithProtoJSON())
-	case constant.Hessian2Serialization:
-		cliOpts = append(cliOpts, tri.WithHessian2())
-	case constant.MsgpackSerialization:
-		cliOpts = append(cliOpts, tri.WithMsgPack())
-	default:
-		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
+	initialized := false
+	codecOpts, isIDL, resources, release, codecErr := acquireClientSerialization(url)
+	if codecErr != nil {
+		return nil, codecErr
 	}
+	defer func() {
+		if !initialized {
+			_ = release()
+		}
+	}()
+	var cliOpts []tri.ClientOption
+
+	cliOpts = append(cliOpts, codecOpts...)
 
 	// Apply the call timeout configured on the reference URL.
 	timeout := url.GetParamDuration(constant.TimeoutKey, "")
@@ -173,6 +172,15 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		tripleConf = tripleConfRaw.(*global.TripleConfig)
 	}
 
+	if tripleConf != nil {
+		switch tripleConf.WireProtocol {
+		case "", "grpc":
+		case "triple":
+			cliOpts = append(cliOpts, tri.WithTriple())
+		default:
+			return nil, fmt.Errorf("unsupported triple wire protocol %q", tripleConf.WireProtocol)
+		}
+	}
 	// Resolve keepalive and size-limit options before choosing the transport.
 	clientKeepAliveOpts, keepAliveInterval, keepAliveTimeout, keepAliveErr := resolveClientKeepAliveOptions(url, tripleConf)
 	if keepAliveErr != nil {
@@ -312,7 +320,10 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	healthClient := tri.NewClient(httpClient, healthURL, tri.WithTimeout(timeout))
 
+	initialized = true
 	return &clientManager{
+		resources:    resources,
+		releaseCodec: release,
 		isIDL:        isIDL,
 		triClient:    triClient,
 		healthClient: healthClient,

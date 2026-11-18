@@ -20,13 +20,15 @@ package global
 const DefaultConsumerRequestTimeout = "3s"
 
 type ConsumerConfig struct {
-	Filter          string   `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	RegistryIDs     []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
-	Protocol        string   `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
-	RequestTimeout  string   `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
-	ProxyFactory    string   `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	Check           bool     `yaml:"check" json:"check,omitempty" property:"check"`
-	AdaptiveService bool     `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
+	Serialization          string   `yaml:"serialization" json:"serialization,omitempty" property:"serialization"`
+	AcceptedSerializations []string `yaml:"accepted-serializations" json:"accepted-serializations,omitempty" property:"accepted-serializations"`
+	Filter                 string   `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	RegistryIDs            []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
+	Protocol               string   `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+	RequestTimeout         string   `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
+	ProxyFactory           string   `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
+	Check                  bool     `yaml:"check" json:"check,omitempty" property:"check"`
+	AdaptiveService        bool     `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 	// there is no need to configure References, it will be replaced by instance.NewClient
 	References                     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	TracingKey                     string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
@@ -58,6 +60,7 @@ func (c *ConsumerConfig) Clone() *ConsumerConfig {
 	}
 
 	return &ConsumerConfig{
+		Serialization: c.Serialization, AcceptedSerializations: cloneAcceptedSerializations(c.AcceptedSerializations),
 		Filter:                         c.Filter,
 		RegistryIDs:                    newRegistryIDs,
 		Protocol:                       c.Protocol,

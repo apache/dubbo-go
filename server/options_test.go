@@ -1269,3 +1269,23 @@ func TestWithProtocolIDs(t *testing.T) {
 	opt(opts)
 	assert.Equal(t, protocolIDs, opts.Service.ProtocolIDs)
 }
+
+func TestCodecServiceReceivePolicyInheritance(t *testing.T) {
+	server, err := NewServer(WithServerAcceptedSerializations("hessian2"))
+	require.NoError(t, err)
+	inherited, err := server.genSvcOpts(&CodecActionService{}, nil, WithInterface("codec.Inherited"))
+	require.NoError(t, err)
+	require.Equal(t, []string{"hessian2"}, inherited.Service.AcceptedSerializations)
+	empty, err := server.genSvcOpts(&CodecActionService{}, nil, WithInterface("codec.Empty"), WithAcceptedSerializations())
+	require.NoError(t, err)
+	require.NotNil(t, empty.Service.AcceptedSerializations)
+	require.Empty(t, empty.Service.AcceptedSerializations)
+	require.Empty(t, empty.getUrlMap().Get("accepted-serializations"))
+	_, present := empty.getUrlMap()["accepted-serializations"]
+	require.True(t, present)
+	inherited.Service.AcceptedSerializations[0] = "changed"
+	require.Equal(t, []string{"hessian2"}, server.cfg.Provider.AcceptedSerializations)
+	next, err := server.genSvcOpts(&CodecActionService{}, nil, WithInterface("codec.Next"))
+	require.NoError(t, err)
+	require.Equal(t, []string{"hessian2"}, next.Service.AcceptedSerializations)
+}

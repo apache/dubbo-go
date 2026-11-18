@@ -37,8 +37,10 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 func TestClientManager_HTTP2AndHTTP3(t *testing.T) {
@@ -303,36 +305,36 @@ func Test_newClientManager_Serialization(t *testing.T) {
 		desc          string
 		serialization string
 		expectIDL     bool
-		expectPanic   bool
+		expectError   bool
 	}{
 		{
 			desc:          "protobuf serialization",
 			serialization: constant.ProtobufSerialization,
 			expectIDL:     true,
-			expectPanic:   false,
+			expectError:   false,
 		},
 		{
 			desc:          "json serialization",
 			serialization: constant.JSONSerialization,
 			expectIDL:     true,
-			expectPanic:   false,
+			expectError:   false,
 		},
 		{
 			desc:          "hessian2 serialization",
 			serialization: constant.Hessian2Serialization,
 			expectIDL:     false,
-			expectPanic:   false,
+			expectError:   false,
 		},
 		{
 			desc:          "msgpack serialization",
 			serialization: constant.MsgpackSerialization,
 			expectIDL:     false,
-			expectPanic:   false,
+			expectError:   false,
 		},
 		{
 			desc:          "unsupported serialization",
 			serialization: "unsupported",
-			expectPanic:   true,
+			expectError:   true,
 		},
 	}
 
@@ -345,10 +347,10 @@ func Test_newClientManager_Serialization(t *testing.T) {
 				common.WithParamsValue(constant.SerializationKey, test.serialization),
 			)
 
-			if test.expectPanic {
-				assert.Panics(t, func() {
-					_, _ = newClientManager(url)
-				})
+			if test.expectError {
+				cm, err := newClientManager(url)
+				require.ErrorContains(t, err, "unsupported serialization")
+				assert.Nil(t, cm)
 			} else {
 				cm, err := newClientManager(url)
 				require.NoError(t, err)
@@ -671,4 +673,36 @@ func Test_newClientManager_InterfaceName(t *testing.T) {
 	cm, err := newClientManager(url)
 	require.NoError(t, err)
 	assert.NotNil(t, cm)
+}
+
+func TestCodecClientInitializationRollback(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		mode     serialization.Mode
+		accepted string
+		wire     string
+	}{
+		{"codec-invalid-wire", serialization.WrappedObjectMode, "codec-invalid-wire", "invalid"},
+		{"codec-disabled-response", serialization.MessageMode, "", "grpc"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := &codecEpochProbe{name: test.name}
+			wireName := "proto"
+			if test.mode == serialization.MessageMode {
+				wireName = test.name
+			}
+			extension.MustRegisterSerialization(serialization.Registration{Protocol: "triple", Name: test.name, Mode: test.mode, WireName: wireName, New: func(serialization.Options) (serialization.Codec, error) { return c, nil }})
+			url := common.NewURLWithOptions(common.WithProtocol("tri"), common.WithLocation("127.0.0.1:1"), common.WithParamsValue("serialization", test.name), common.WithParamsValue("accepted-serializations", test.accepted), common.WithAttribute(constant.TripleConfigKey, &global.TripleConfig{WireProtocol: test.wire}))
+			if test.mode == serialization.MessageMode {
+				_, _, _, err := SerializationOptions(url, "consumer")
+				require.ErrorContains(t, err, "disabled")
+			} else {
+				require.NoError(t, (&TripleProtocol{}).PrepareCodec(url, "consumer"))
+				_, err := newClientManager(url)
+				require.ErrorContains(t, err, "unsupported triple wire")
+				require.NoError(t, (&TripleProtocol{}).ReleaseCodec(url, "consumer"))
+			}
+			require.EqualValues(t, 1, c.closes.Load())
+		})
+	}
 }

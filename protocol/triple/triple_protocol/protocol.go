@@ -76,6 +76,8 @@ type protocolHandlerParams struct {
 	Spec                        Spec
 	Codecs                      readOnlyCodecs
 	FallbackCodecName           string
+	InnerCodecs                 map[string]Codec
+	MessageCodecs               map[string]Codec
 	CompressionPools            readOnlyCompressionPools
 	CompressMinBytes            int
 	BufferPool                  *bufferPool
@@ -117,18 +119,19 @@ type protocolHandler interface {
 // Protocol implementations should take care to use the supplied Spec rather
 // than constructing their own, since new fields may have been added.
 type protocolClientParams struct {
-	CompressionName  string
-	CompressionPools readOnlyCompressionPools
-	Codec            Codec
-	CompressMinBytes int
-	HTTPClient       HTTPClient
-	URL              *url.URL
-	BufferPool       *bufferPool
-	ReadMaxBytes     int
-	SendMaxBytes     int
-	EnableGet        bool
-	GetURLMaxBytes   int
-	GetUseFallback   bool
+	ValidateEmptyMessages bool
+	CompressionName       string
+	CompressionPools      readOnlyCompressionPools
+	Codec                 Codec
+	CompressMinBytes      int
+	HTTPClient            HTTPClient
+	URL                   *url.URL
+	BufferPool            *bufferPool
+	ReadMaxBytes          int
+	SendMaxBytes          int
+	EnableGet             bool
+	GetURLMaxBytes        int
+	GetUseFallback        bool
 	// UnaryFastPath enables the unary fast path (unaryFastPathCall) for unary
 	// calls. It is on by default; disable it to fall back to the duplex path.
 	UnaryFastPath bool

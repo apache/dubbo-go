@@ -28,6 +28,10 @@ import (
 	"time"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/serialization"
+)
+
 type TimeoutKey struct{}
 
 // Client is a reusable, concurrency-safe client for a service.
@@ -60,17 +64,18 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 				config.CompressionPools,
 				config.CompressionNames,
 			),
-			Codec:            config.Codec,
-			Protobuf:         config.protobuf(),
-			CompressMinBytes: config.CompressMinBytes,
-			HTTPClient:       httpClient,
-			URL:              config.URL,
-			BufferPool:       config.BufferPool,
-			ReadMaxBytes:     config.ReadMaxBytes,
-			SendMaxBytes:     config.SendMaxBytes,
-			GetURLMaxBytes:   config.GetURLMaxBytes,
-			UnaryFastPath:    config.UnaryFastPath,
-			WriteBuffering:   config.WriteBuffering,
+			Codec:                 config.Codec,
+			ValidateEmptyMessages: config.ValidateEmptyMessages,
+			Protobuf:              config.protobuf(),
+			CompressMinBytes:      config.CompressMinBytes,
+			HTTPClient:            httpClient,
+			URL:                   config.URL,
+			BufferPool:            config.BufferPool,
+			ReadMaxBytes:          config.ReadMaxBytes,
+			SendMaxBytes:          config.SendMaxBytes,
+			GetURLMaxBytes:        config.GetURLMaxBytes,
+			UnaryFastPath:         config.UnaryFastPath,
+			WriteBuffering:        config.WriteBuffering,
 		},
 	)
 	if protocolErr != nil {
@@ -135,6 +140,13 @@ func (c *Client) CallUnary(ctx context.Context, request *Request, method string,
 	if c.err != nil {
 		return c.err
 	}
+	if resources := c.config.CodecResources; resources != nil {
+		if !resources.Begin() {
+			return errorf(CodeUnavailable, "serialization runtime closed")
+		}
+		defer resources.End()
+	}
+
 	ctx, flag, cancel := applyDefaultTimeout(ctx, c.config.Timeout)
 	if flag {
 		defer cancel()
@@ -177,6 +189,9 @@ func (c *Client) CallServerStream(ctx context.Context, request *Request, method 
 		return nil, err
 	}
 	if err := conn.CloseRequest(); err != nil {
+		// The caller never receives this stream, so no later Close or Receive
+		// can release its codec lease. Preserve the original request error.
+		_ = conn.CloseResponse()
 		return nil, err
 	}
 	return &ServerStreamForClient{conn: conn}, nil
@@ -210,10 +225,18 @@ func (c *Client) newConn(ctx context.Context, streamType StreamType, method stri
 	if interceptor := c.config.Interceptor; interceptor != nil {
 		newConn = interceptor.WrapStreamingClient(newConn)
 	}
+	if resources := c.config.CodecResources; resources != nil {
+		if !resources.Begin() {
+			return nil, errorf(CodeUnavailable, "serialization runtime closed")
+		}
+		return &serializationClientConn{StreamingClientConn: newConn(ctx, methodLevelSpec), resources: resources}, nil
+	}
 	return newConn(ctx, methodLevelSpec), nil
 }
 
 type clientConfig struct {
+	ValidateEmptyMessages  bool
+	CodecResources         *serialization.Resources
 	URL                    *url.URL
 	Protocol               protocol
 	Procedure              string

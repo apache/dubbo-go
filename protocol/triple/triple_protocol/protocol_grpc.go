@@ -193,6 +193,11 @@ func (g *grpcHandler) NewConn(
 	codecName := grpcCodecFromContentType(getHeaderCanonical(request.Header, headerContentType))
 	codec := g.Codecs.Get(codecName) // handler.go guarantees this is not nil
 	backupCodec := g.Codecs.Get(g.FallbackCodecName)
+	if g.InnerCodecs != nil {
+		codec = &tripleServerCodecSession{delegate: codec, runtimeCodecs: g.InnerCodecs, messageCodecs: g.MessageCodecs}
+		backupCodec = nil
+	}
+
 	protocolName := ProtocolGRPC
 	conn := wrapHandlerConnWithCodedErrors(&grpcHandlerConn{
 		spec: g.Spec,
@@ -325,10 +330,11 @@ func (g *grpcClient) NewConn(
 		},
 		unmarshaler: grpcUnmarshaler{
 			envelopeReader: envelopeReader{
-				reader:       call,
-				codec:        g.Codec,
-				bufferPool:   g.BufferPool,
-				readMaxBytes: g.ReadMaxBytes,
+				validateEmpty: g.ValidateEmptyMessages,
+				reader:        call,
+				codec:         g.Codec,
+				bufferPool:    g.BufferPool,
+				readMaxBytes:  g.ReadMaxBytes,
 			},
 		},
 		responseHeader:  make(http.Header),

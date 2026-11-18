@@ -34,6 +34,7 @@ type ServiceConfig struct {
 	Methods                     []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Warmup                      string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
 	Retries                     string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	AcceptedSerializations      []string          `yaml:"accepted-serializations" json:"accepted-serializations,omitempty" property:"accepted-serializations"`
 	Serialization               string            `yaml:"serialization" json:"serialization" property:"serialization"`
 	Params                      map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	Token                       string            `yaml:"token" json:"token,omitempty" property:"token"`
@@ -110,6 +111,7 @@ func (c *ServiceConfig) Clone() *ServiceConfig {
 		Methods:                     newMethods,
 		Warmup:                      c.Warmup,
 		Retries:                     c.Retries,
+		AcceptedSerializations:      cloneAcceptedSerializations(c.AcceptedSerializations),
 		Serialization:               c.Serialization,
 		Params:                      newParams,
 		Token:                       c.Token,

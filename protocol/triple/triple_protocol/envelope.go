@@ -165,6 +165,7 @@ func (w *envelopeWriter) write(env *envelope) *Error {
 }
 
 type envelopeReader struct {
+	validateEmpty   bool
 	reader          io.Reader
 	codec           Codec
 	backupCodec     Codec // backupCodec is the fallback codec when primary codec fails
@@ -185,8 +186,17 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 	case err == nil &&
 		(env.Flags == 0 || env.Flags == flagEnvelopeCompressed) &&
 		env.Data.Len() == 0:
-		// This is a standard message (because none of the top 7 bits are set) and
-		// there's no data, so the zero value of the message is correct.
+		// Configured clients must let their selected codec validate empty
+		// messages too. Legacy readers retain their historical shortcut.
+		var decodeErr error
+		if r.validateEmpty {
+			decodeErr = r.codec.Unmarshal(nil, message)
+		} else if codec, ok := r.codec.(interface{ unmarshalEmpty(any) error }); ok {
+			decodeErr = codec.unmarshalEmpty(message)
+		}
+		if decodeErr != nil {
+			return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, rpcerror.Mark(decodeErr, rpcerror.Codec))
+		}
 		return nil
 	case err != nil && errors.Is(err, io.EOF):
 		// The stream has ended. Propagate the EOF to the caller.

@@ -60,6 +60,7 @@ type ServerOptions struct {
 	TLS                  *global.TLSConfig
 	extensionOptions     []extension.Option
 	extensionConfigs     map[string]any
+	codecConfigs         map[string]any
 	extensionFilterNames []string
 }
 
@@ -100,11 +101,12 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 		return err
 	}
 
-	filterNames, err := extension.Initialize(srvOpts.extensionConfigs, srvOpts.extensionOptions, extension.ServerScope)
+	extensionResult, err := extension.InitializeWithResult(srvOpts.extensionConfigs, srvOpts.extensionOptions, extension.ServerScope)
 	if err != nil {
 		return err
 	}
-	srvOpts.extensionFilterNames = append([]string(nil), filterNames...)
+	srvOpts.codecConfigs = extensionResult.CodecConfigs
+	srvOpts.extensionFilterNames = append([]string(nil), extensionResult.FilterNames...)
 
 	// enable adaptive service verbose
 	if providerConf.AdaptiveServiceVerbose {
@@ -711,6 +713,10 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	svc := svcOpts.Service
 
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
+	// Inherited receive lists belong to this service, not to provider defaults.
+	if svc.AcceptedSerializations != nil {
+		svc.AcceptedSerializations = append([]string{}, svc.AcceptedSerializations...)
+	}
 
 	svcOpts.exported = new(atomic.Bool)
 
@@ -1269,4 +1275,13 @@ func SetProtocols(pros map[string]*global.ProtocolConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Protocols = pros
 	}
+}
+
+// WithAcceptedSerializations restricts the formats accepted by this binding.
+func WithAcceptedSerializations(names ...string) ServiceOption {
+	return func(opts *ServiceOptions) { opts.Service.AcceptedSerializations = append([]string{}, names...) }
+}
+
+func WithServerAcceptedSerializations(names ...string) ServerOption {
+	return func(opts *ServerOptions) { opts.Provider.AcceptedSerializations = append([]string{}, names...) }
 }

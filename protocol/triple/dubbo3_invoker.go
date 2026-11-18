@@ -67,6 +67,9 @@ type DubboInvoker struct {
 
 // NewDubbo3Invoker constructor
 func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
+	if err := validateLegacySerialization(url); err != nil {
+		return nil, err
+	}
 	var rt string
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
 		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {

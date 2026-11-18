@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 const (
@@ -80,8 +81,9 @@ func init() {
 
 type TripleProtocol struct {
 	base.BaseProtocol
-	serverLock sync.Mutex
-	serverMap  map[string]*Server
+	publicationMu sync.Mutex // coordinates handler publication and exporter bookkeeping
+	serverLock    sync.Mutex
+	serverMap     map[string]*Server
 }
 
 // Export TRIPLE service for remote invocation
@@ -94,9 +96,49 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		info = infoRaw.(*common.ServiceInfo)
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
-	tp.SetExporterMap(serviceKey, exporter)
+	exporter.publicationMu = &tp.publicationMu
+	// Exports may construct their binding during initialization. Publish a
+	// retirement hook up front, but wait until it captures this export's owner.
+	ready := make(chan struct{})
+	var owner *serialization.Resources
+	location := url.Location
+	exporter.retire = func() error {
+		<-ready
+		if owner == nil {
+			return nil
+		}
+		tp.serverLock.Lock()
+		server := tp.serverMap[location]
+		tp.serverLock.Unlock()
+		if server != nil {
+			return server.retireCodec(owner)
+		}
+		return owner.Close()
+	}
 	logger.Infof("[Triple] export service: %s", url.String())
-	if err := tp.openServer(invoker, info); err != nil {
+	err := func() error {
+		defer close(ready)
+		if err := tp.prepareProviderExport(url); err != nil {
+			return err
+		}
+		if raw, ok := url.GetAttribute("triple.serialization.resources.provider"); ok {
+			owner, _ = raw.(*serialization.Resources)
+		}
+		// Factories run outside the publication lock. Publish the handler and
+		// its exporter in the same critical section, in completion order.
+		tp.publicationMu.Lock()
+		defer tp.publicationMu.Unlock()
+		previous, hadPrevious := tp.ExporterMap().Load(serviceKey)
+		tp.SetExporterMap(serviceKey, exporter)
+		if err := tp.openServer(invoker, info); err != nil {
+			if hadPrevious {
+				tp.ExporterMap().CompareAndSwap(serviceKey, exporter, previous)
+			}
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
 		logger.Errorf("[Triple] export service failed, %s, err=%v", url.String(), err)
 		exporter.UnExport()
 		panic(err)
@@ -140,18 +182,7 @@ func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
 	var invoker base.Invoker
 	var err error
 
-	IDLMode := url.GetParam(constant.IDLMode, "")
-	// for now, we do not need to use this info
-	_, ok := url.GetAttribute(constant.ClientInfoKey)
-	// Check if this is a generic call
-	generic := url.GetParam(constant.GenericKey, "")
-	isGenericCall := isGenericCall(generic)
-
-	// Use NewTripleInvoker for:
-	// 1. New protoc-gen-go-triple stub code (has ClientInfoKey)
-	// 2. Non-IDL mode (IDLMode == NONIDL)
-	// 3. Generic call (generic=true/gson/protobuf-json/bean, or the legacy protobuf routing marker)
-	if ok || IDLMode == constant.NONIDL || isGenericCall {
+	if usesNewTripleClient(url) {
 		// new triple invoker supporting $invoke for generic calls
 		invoker, err = NewTripleInvoker(url)
 	} else {

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"sync/atomic"
 )
 
@@ -45,6 +46,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
+	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
 // netListen and netListenPacket create the pre-bound sockets in
@@ -58,6 +60,7 @@ type Server struct {
 	addr               string
 	mux                *methodRouteMux
 	handlers           map[string]*Handler
+	handlersMu         sync.Mutex
 	httpSrv            atomic.Pointer[http.Server]
 	http3Srv           atomic.Pointer[http3.Server]
 	stopCount          atomic.Uint32
@@ -65,124 +68,38 @@ type Server struct {
 	openapiIntegration *openapi.OpenAPIIntegration
 }
 
-func (s *Server) RegisterUnaryHandler(
-	procedure string,
-	reqInitFunc func() any,
-	unary func(context.Context, *Request) (*Response, error),
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewUnaryHandler(procedure, reqInitFunc, unary, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
+// registerHandler keeps the per-procedure HTTP router stable while replacing
+// each group/version's full immutable context. Registrations may race with RPCs.
+func (s *Server) registerHandler(procedure string, next *Handler) error {
+	s.handlersMu.Lock()
+	defer s.handlersMu.Unlock()
+	if current, ok := s.handlers[procedure]; ok {
+		current.replaceVariants(next)
 	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateUnaryHandlerFunc(procedure, reqInitFunc, unary, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+		router := newHandlerRouter(next)
+		s.handlers[procedure] = router
+		s.mux.Handle(procedure, router)
 	}
-
 	return nil
 }
 
-func (s *Server) RegisterClientStreamHandler(
-	procedure string,
-	stream func(context.Context, *ClientStream) (*Response, error),
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewClientStreamHandler(procedure, stream, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
-	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateClientStreamHandlerFunc(procedure, stream, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-	}
-
-	return nil
+func (s *Server) RegisterUnaryHandler(procedure string, reqInitFunc func() any, unary func(context.Context, *Request) (*Response, error), options ...HandlerOption) error {
+	return s.registerHandler(procedure, NewUnaryHandler(procedure, reqInitFunc, unary, options...))
 }
-
-func (s *Server) RegisterServerStreamHandler(
-	procedure string,
-	reqInitFunc func() any,
-	stream func(context.Context, *Request, *ServerStream) error,
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewServerStreamHandler(procedure, reqInitFunc, stream, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
-	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateServerStreamHandlerFunc(procedure, reqInitFunc, stream, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-	}
-
-	return nil
+func (s *Server) RegisterClientStreamHandler(procedure string, stream func(context.Context, *ClientStream) (*Response, error), options ...HandlerOption) error {
+	return s.registerHandler(procedure, NewClientStreamHandler(procedure, stream, options...))
 }
-
-func (s *Server) RegisterBidiStreamHandler(
-	procedure string,
-	stream func(context.Context, *BidiStream) error,
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewBidiStreamHandler(procedure, stream, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
-	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateBidiStreamHandlerFunc(procedure, stream, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-	}
-
-	return nil
+func (s *Server) RegisterServerStreamHandler(procedure string, reqInitFunc func() any, stream func(context.Context, *Request, *ServerStream) error, options ...HandlerOption) error {
+	return s.registerHandler(procedure, NewServerStreamHandler(procedure, reqInitFunc, stream, options...))
 }
-
-func (s *Server) RegisterCompatUnaryHandler(
-	procedure string,
-	method string,
-	srv any,
-	unary MethodHandler,
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewCompatUnaryHandler(procedure, method, srv, unary, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
-	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateCompatUnaryHandlerFunc(procedure, method, srv, unary, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-	}
-
-	return nil
+func (s *Server) RegisterBidiStreamHandler(procedure string, stream func(context.Context, *BidiStream) error, options ...HandlerOption) error {
+	return s.registerHandler(procedure, NewBidiStreamHandler(procedure, stream, options...))
 }
-
-func (s *Server) RegisterCompatStreamHandler(
-	procedure string,
-	srv any,
-	typ StreamType,
-	streamFunc func(srv any, stream grpc.ServerStream) error,
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewCompatStreamHandler(procedure, srv, typ, streamFunc, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
-	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateCompatStreamHandlerFunc(procedure, srv, streamFunc, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-	}
-
-	return nil
+func (s *Server) RegisterCompatUnaryHandler(procedure, method string, srv any, unary MethodHandler, options ...HandlerOption) error {
+	return s.registerHandler(procedure, NewCompatUnaryHandler(procedure, method, srv, unary, options...))
+}
+func (s *Server) RegisterCompatStreamHandler(procedure string, srv any, typ StreamType, streamFunc func(any, grpc.ServerStream) error, options ...HandlerOption) error {
+	return s.registerHandler(procedure, NewCompatStreamHandler(procedure, srv, typ, streamFunc, options...))
 }
 
 func (s *Server) SetFallbackHTTPHandler(h http.Handler) {
@@ -504,5 +421,24 @@ func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 func (s *Server) RegisterOpenAPIService(interfaceName string, info *common.ServiceInfo, openapiGroup string, dubboGroup string, dubboVersion string) {
 	if s.openapiIntegration != nil {
 		s.openapiIntegration.RegisterService(interfaceName, info, openapiGroup, dubboGroup, dubboVersion)
+	}
+}
+
+// RemoveSerializationOwner retires only variants belonging to this export.
+// Requests that captured a variant retain their immutable context until done.
+func (s *Server) RemoveSerializationOwner(owner *serialization.Resources) {
+	if owner == nil {
+		return
+	}
+	s.handlersMu.Lock()
+	defer s.handlersMu.Unlock()
+	for _, router := range s.handlers {
+		router.mu.Lock()
+		for id, selected := range router.variants {
+			if selected.serializationOwner == owner {
+				delete(router.variants, id)
+			}
+		}
+		router.mu.Unlock()
 	}
 }
