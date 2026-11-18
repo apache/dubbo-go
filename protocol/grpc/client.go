@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal/grpcserialization"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -59,6 +60,7 @@ type Client struct {
 
 // NewClient creates a new gRPC client.
 func NewClient(url *common.URL) (*Client, error) {
+	grpcserialization.Freeze()
 	clientConfInitOnce.Do(func() {
 		clientInit(url)
 	})

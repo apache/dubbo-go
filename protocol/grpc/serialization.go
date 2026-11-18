@@ -27,14 +27,13 @@ import (
 import (
 	"github.com/golang/protobuf/jsonpb"
 
-	"google.golang.org/grpc/encoding"
-
 	"google.golang.org/protobuf/proto"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/internal/grpcserialization"
 	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
@@ -75,6 +74,7 @@ var grpcSerializations = struct {
 // PrepareCodec uses grpc-go's process-wide subtype registry. Factories receive
 // no endpoint/side identity: one subtype must mean the same format process-wide.
 func (gp *GrpcProtocol) PrepareCodec(url *common.URL, side string) error {
+	grpcserialization.Freeze()
 	name := url.GetParam("serialization", "proto")
 	if name == "protobuf" {
 		name = "proto"
@@ -106,16 +106,17 @@ func (gp *GrpcProtocol) PrepareCodec(url *common.URL, side string) error {
 		}
 		return nil
 	}
-	if encoding.GetCodec(name) != nil || encoding.GetCodecV2(name) != nil {
+	adapter := grpcserialization.Lookup(name)
+	if adapter == nil {
 		return fmt.Errorf("grpc subtype %q is already registered outside the serialization SPI", name)
 	}
 	codec, err := extension.BuildSerialization(reg, serialization.Options{Protocol: "grpc", Config: config, Parameters: parameters})
 	if err != nil {
 		return err
 	}
-	// Codec has exactly grpc-go's v1 adapter contract. Do not force a server
-	// codec: health/reflection and other registered subtypes remain available.
-	encoding.RegisterCodec(codec)
+	// Bind the adapter reserved during descriptor registration. This does not
+	// mutate grpc-go's global registry while existing RPCs read it.
+	adapter.Bind(codec)
 	grpcSerializations.items[name] = installedSerialization{config: config, parameters: parameters, codec: codec}
 	return nil
 }
