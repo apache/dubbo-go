@@ -88,3 +88,20 @@ func TestHillClimbing_Remaining(t *testing.T) {
 	remaining = limiter.Remaining()
 	assert.Equal(t, uint64(0), remaining)
 }
+
+func TestHillClimbing_Snapshot(t *testing.T) {
+	limiter := NewHillClimbing().(*HillClimbing)
+	limiter.limitation.Store(100)
+	limiter.inflight.Store(30)
+
+	snapshot := limiter.Snapshot()
+	assert.Equal(t, uint64(100), snapshot.Limitation)
+	assert.Equal(t, uint64(30), snapshot.Inflight)
+	assert.Equal(t, uint64(70), snapshot.Remaining)
+
+	limiter.inflight.Store(120)
+	snapshot = limiter.Snapshot()
+	assert.Equal(t, uint64(100), snapshot.Limitation)
+	assert.Equal(t, uint64(120), snapshot.Inflight)
+	assert.Equal(t, uint64(0), snapshot.Remaining)
+}
