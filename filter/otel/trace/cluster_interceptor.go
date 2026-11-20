@@ -78,6 +78,10 @@ func (i *clusterInterceptor) Invoke(ctx context.Context, invoker base.Invoker, i
 		}
 		return invoker.Invoke(ctx, invocation)
 	}
+	// A nested registry cluster shares the logical span owned by this invocation.
+	if cluster.DiagnosticsFromContext(ctx, invocation) != nil {
+		return invoker.Invoke(ctx, invocation)
+	}
 	if ctx == nil {
 		ctx = context.Background()
 	}

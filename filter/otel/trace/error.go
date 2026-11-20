@@ -20,6 +20,9 @@ package trace
 import (
 	"context"
 	"errors"
+	"net/url"
+	"regexp"
+	"strings"
 )
 
 import (
@@ -68,8 +71,28 @@ func errorType(err error) string {
 	}
 }
 
+// Error URLs are exported as origin-only summaries. Dropping the entire path,
+// query and fragment also covers registry-specific or encoded credential keys.
+var errorURLPattern = regexp.MustCompile(`[a-zA-Z][a-zA-Z0-9+.-]*://[^\s]+`)
+
+func safeErrorMessage(message string) string {
+	return errorURLPattern.ReplaceAllStringFunc(message, func(raw string) string {
+		parsed, err := url.Parse(strings.TrimRight(raw, ".,;)}\"'"))
+		if err != nil || parsed.Host == "" {
+			return "[redacted URL]"
+		}
+		return parsed.Scheme + "://" + parsed.Host
+	})
+}
+
 func recordSpanError(span trace.Span, err error, category string) {
-	span.RecordError(err)
+	message := safeErrorMessage(err.Error())
+	recordedErr := err
+	if message != err.Error() {
+		// Only the exported copy changes; callers retain the original error chain.
+		recordedErr = errors.New(message)
+	}
+	span.RecordError(recordedErr)
 	span.SetAttributes(attribute.String("error.type", category))
-	span.SetStatus(codes.Error, err.Error())
+	span.SetStatus(codes.Error, message)
 }

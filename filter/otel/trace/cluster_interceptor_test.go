@@ -44,6 +44,7 @@ import (
 	cluster "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	clusterbase "dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failover"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/zoneaware"
 	directorybase "dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -451,6 +452,166 @@ func TestClusterLogicalNilContext(t *testing.T) {
 	}
 }
 
+func TestClusterLogicalMultiRegistryRetry(t *testing.T) {
+	tp, exporter := traceTestProvider(t)
+	previous := otel.GetTracerProvider()
+	otel.SetTracerProvider(tp)
+	t.Cleanup(func() { otel.SetTracerProvider(previous) })
+
+	url := traceTestURL(true)
+	url.SetParam(constant.RegistryKey+"."+constant.PreferredKey, "true")
+	calls := 0
+	first := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(url), call: func(context.Context, base.Invocation) result.Result {
+		calls++
+		return &result.RPCResult{Err: tri.NewError(tri.CodeUnavailable, errors.New("first attempt failed"))}
+	}}
+	secondURL := traceTestURL(true)
+	secondURL.Port = "20302"
+	second := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(secondURL), call: func(context.Context, base.Invocation) result.Result {
+		calls++
+		return &result.RPCResult{}
+	}}
+	failover, err := extension.GetCluster(constant.ClusterKeyFailover)
+	require.NoError(t, err)
+	inner := failover.Join(&traceTestDirectory{Directory: directorybase.NewDirectory(url), invokers: []base.Invoker{first, second}})
+	zoneaware, err := extension.GetCluster(constant.ClusterKeyZoneAware)
+	require.NoError(t, err)
+	outerURL := traceTestURL(true)
+	outerURL.SetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
+	outer := zoneaware.Join(&traceTestDirectory{Directory: directorybase.NewDirectory(outerURL), invokers: []base.Invoker{inner}})
+
+	res := outer.Invoke(context.Background(), invocation.NewRPCInvocation("Call", nil, nil))
+	require.NoError(t, res.Error())
+	require.Equal(t, 2, calls)
+	spans := exporter.GetSpans()
+	require.Len(t, spans, 1)
+	span := spans[0]
+	require.Equal(t, trace.SpanKindInternal, span.SpanKind)
+	require.Equal(t, "Call cluster", span.Name)
+	require.Equal(t, constant.ClusterKeyZoneAware, spanValue(span, "cluster.strategy").AsString())
+	require.Equal(t, codes.Ok, span.Status.Code)
+	require.EqualValues(t, 1, spanValue(span, "cluster.retry_count").AsInt64())
+	require.Len(t, spanEvents(span, "cluster.select"), 2)
+	require.Len(t, spanEvents(span, "cluster.retry"), 1)
+	require.Equal(t, "cluster.select", span.Events[0].Name)
+	require.Equal(t, "cluster.retry", span.Events[1].Name)
+	require.Equal(t, "cluster.select", span.Events[2].Name)
+}
+
+const traceCredentialURL = "nacos://trace-user:secret-pass@127.0.0.1:8848/registry?namespace=test&nacos.password=secret-pass&access_token=secret-token&client.secret=secret-value"
+
+func assertTraceCredentialsRedacted(t *testing.T, span tracetest.SpanStub, category string) {
+	t.Helper()
+	require.Equal(t, codes.Error, span.Status.Code)
+	require.Equal(t, category, spanValue(span, "error.type").AsString())
+	exceptions := spanEvents(span, "exception")
+	require.Len(t, exceptions, 1)
+	for _, message := range []string{span.Status.Description, eventString(exceptions[0], "exception.message")} {
+		require.Contains(t, message, "127.0.0.1:8848")
+		for _, credential := range []string{"trace-user", "secret-pass", "secret-token", "secret-value"} {
+			require.NotContains(t, message, credential)
+		}
+	}
+}
+
+func eventString(event sdktrace.Event, name string) string {
+	for _, attr := range event.Attributes {
+		if string(attr.Key) == name {
+			return attr.Value.AsString()
+		}
+	}
+	return ""
+}
+
+func TestClusterLogicalRegistryCredentials(t *testing.T) {
+	for _, force := range []bool{false, true} {
+		t.Run(fmt.Sprintf("force=%t", force), func(t *testing.T) {
+			tp, exporter := traceTestProvider(t)
+			previous := otel.GetTracerProvider()
+			otel.SetTracerProvider(tp)
+			t.Cleanup(func() { otel.SetTracerProvider(previous) })
+			registryURL, err := common.NewURL(traceCredentialURL)
+			require.NoError(t, err)
+			registryURL.SubURL = traceTestURL(true)
+			registryURL.SetParam(constant.LoadbalanceKey, "trace-test-first")
+			registry := base.NewBaseInvoker(registryURL)
+			registry.SetAvailable(false)
+			strategy, err := extension.GetCluster(constant.ClusterKeyZoneAware)
+			require.NoError(t, err)
+			invoker := strategy.Join(&traceTestDirectory{Directory: directorybase.NewDirectory(registryURL), invokers: []base.Invoker{registry}})
+			inv := invocation.NewRPCInvocation("Call", nil, nil)
+			if force {
+				inv.SetAttachment(constant.RegistryKey+"."+constant.RegistryZoneKey, "missing-zone")
+				inv.SetAttachment(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "true")
+			}
+			res := invoker.Invoke(context.Background(), inv)
+			require.Error(t, res.Error())
+			prefix := "no provider available in"
+			if force {
+				prefix = "no registry instance in zone or no available providers in the registry"
+			}
+			require.ErrorContains(t, res.Error(), prefix)
+			require.ErrorContains(t, res.Error(), "127.0.0.1:8848")
+			require.NotContains(t, res.Error().Error(), "trace-user")
+			require.NotContains(t, res.Error().Error(), "secret-pass")
+			require.NotContains(t, res.Error().Error(), "?")
+			require.Len(t, exporter.GetSpans(), 1)
+			assertTraceCredentialsRedacted(t, exporter.GetSpans()[0], "unknown")
+		})
+	}
+}
+
+func TestClusterLogicalErrorURLRedaction(t *testing.T) {
+	cause := errors.New("connection failed: " + traceCredentialURL)
+	protocolErr := tri.NewError(tri.CodeUnavailable, cause)
+	for _, test := range []struct {
+		name     string
+		err      error
+		category string
+	}{
+		{name: "plain error", err: cause, category: "unknown"},
+		{name: "protocol error", err: fmt.Errorf("wrapped: %w", protocolErr), category: "service_unavailable"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tp, exporter := traceTestProvider(t)
+			response := &result.RPCResult{Err: test.err}
+			invoker := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(traceTestURL(true)), call: func(context.Context, base.Invocation) result.Result {
+				return response
+			}}
+			got := (&clusterInterceptor{TracerProvider: tp}).Invoke(context.Background(), invoker, invocation.NewRPCInvocation("Call", nil, nil))
+			require.Same(t, response, got)
+			require.Same(t, test.err, got.Error())
+			require.ErrorIs(t, got.Error(), cause)
+			if test.category == "service_unavailable" {
+				var typed *tri.Error
+				require.ErrorAs(t, got.Error(), &typed)
+				require.Same(t, protocolErr, typed)
+			}
+			require.Len(t, exporter.GetSpans(), 1)
+			assertTraceCredentialsRedacted(t, exporter.GetSpans()[0], test.category)
+		})
+	}
+}
+
+func TestSafeErrorMessage(t *testing.T) {
+	for _, test := range []struct {
+		name, message, want string
+	}{
+		{"unchanged", "connection refused", "connection refused"},
+		{"credentials", "failed: " + traceCredentialURL, "failed: nacos://127.0.0.1:8848"},
+		{"encoded query", "http://trace-user:secret-pass@127.0.0.1:8848/?%74oken=secret-token&PaSsWoRd=secret-pass", "http://127.0.0.1:8848"},
+		{"quoted URL", `failed: "` + traceCredentialURL + `"`, `failed: "nacos://127.0.0.1:8848`},
+		{"apostrophe in userinfo", "nacos://trace'user:secret-pass@127.0.0.1:8848/?token=secret-token", "nacos://127.0.0.1:8848"},
+		{"multiple URLs", traceCredentialURL + " and " + traceCredentialURL, "nacos://127.0.0.1:8848 and nacos://127.0.0.1:8848"},
+		{"IPv6", "nacos://trace-user:secret-pass@[::1]:8848/?secret=secret-value", "nacos://[::1]:8848"},
+		{"malformed URL", "nacos://trace-user:secret-pass@127.0.0.1:bad/?token=secret-token", "[redacted URL]"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.want, safeErrorMessage(test.message))
+		})
+	}
+}
+
 type nestedIsolationCase struct {
 	name            string
 	newInvocation   bool
@@ -465,8 +626,8 @@ func TestClusterLogicalNestedIsolation(t *testing.T) {
 		{name: "new invocation", newInvocation: true},
 		{name: "new invocation no provider", newInvocation: true, noProvider: true},
 		{name: "disabled"},
-		{name: "unsampled", tracingEnabled: true, neverSample: true},
-		{name: "recording", tracingEnabled: true, expectChildSpan: true},
+		{name: "unsampled", newInvocation: true, tracingEnabled: true, neverSample: true},
+		{name: "recording", newInvocation: true, tracingEnabled: true, expectChildSpan: true},
 	} {
 		t.Run(test.name, func(t *testing.T) { runNestedIsolationCase(t, test) })
 	}
@@ -504,7 +665,7 @@ func runNestedIsolationCase(t *testing.T, test nestedIsolationCase) {
 		parentObserver := cluster.DiagnosticsFromContext(ctx, parentInv)
 		require.NotNil(t, parentObserver)
 		var res result.Result
-		if test.newInvocation {
+		if test.newInvocation && !test.tracingEnabled {
 			res = inner.Invoke(ctx, childInv)
 		} else {
 			res = (&clusterInterceptor{TracerProvider: innerTP}).Invoke(ctx, inner, childInv)
