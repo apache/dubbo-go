@@ -268,6 +268,7 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
+		response.Observation.RecordKind(response.Kind)
 	case <-ctx.Done():
 		return perrors.WithStack(ctx.Err())
 	}

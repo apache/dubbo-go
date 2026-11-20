@@ -132,7 +132,7 @@ Provider and consumer share one taxonomy. It mirrors Java Dubbo's
 | service_unavailable | `requests_failed_service_unavailable_total` | `FORBIDDEN_EXCEPTION`, `NO_INVOKER_AVAILABLE_AFTER_FILTER`, `METHOD_NOT_FOUND` | Triple `Unavailable`/`PermissionDenied`; destroyed invoker; closed remoting client; provider service or method not found; Dubbo `SERVICE_NOT_FOUND` status |
 | business | `requests_business_failed_total` | `BIZ_EXCEPTION` | Triple `BizError`; error returned by the provider service implementation; Dubbo exception payload with status `OK` |
 | network | `requests_failed_network_total` | `NETWORK_EXCEPTION` | Confirmed transport failure (`net.OpError` at Getty write / Triple HTTP Do); no Getty session; closed Getty client |
-| codec | `requests_failed_codec_total` | `SERIALIZATION_EXCEPTION` | Local serializer failure; Dubbo `BAD_REQUEST`/`BAD_RESPONSE` status |
+| codec | `requests_failed_codec_total` | `SERIALIZATION_EXCEPTION` | Local serializer failure; Dubbo `SERIALIZATION_ERROR`/`BAD_REQUEST`/`BAD_RESPONSE` status |
 | unknown | `requests_unknown_failed_total` | `UNKNOWN_EXCEPTION` | Everything else, e.g. a provider panic, Dubbo `SERVICE_ERROR`/`SERVER_ERROR`/`CLIENT_ERROR`, a canceled context |
 
 Producers declare categories in one of two ways. Neither changes the error
@@ -236,7 +236,7 @@ sum by (interface) (rate(dubbo_provider_requests_business_failed_total[5m]))
   - Destroyed invokers, closed clients and missing service/method go to
     service_unavailable.
   - Missing Getty sessions and closed Getty clients go to network.
-  - Dubbo `BAD_REQUEST`/`BAD_RESPONSE` go to codec.
+  - Dubbo `SERIALIZATION_ERROR`/`BAD_REQUEST`/`BAD_RESPONSE` go to codec.
   - Sentinel default-fallback rejections counted by the consumer go to limit.
 
   `requests_failed_total` is unchanged.

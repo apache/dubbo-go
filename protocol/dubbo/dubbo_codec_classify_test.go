@@ -37,28 +37,27 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-func TestClassifyResponseException(t *testing.T) {
-	cause := errors.New("boom")
+func TestResponseExceptionKind(t *testing.T) {
 	for status, want := range map[uint8]rpcerror.Kind{
-		impl.Response_OK:                rpcerror.KindBusiness,
-		impl.Response_CLIENT_TIMEOUT:    rpcerror.KindTimeout,
-		impl.Response_SERVER_TIMEOUT:    rpcerror.KindTimeout,
-		impl.Response_SERVICE_NOT_FOUND: rpcerror.KindServiceUnavailable,
-		impl.Response_BAD_REQUEST:       rpcerror.KindCodec,
-		impl.Response_BAD_RESPONSE:      rpcerror.KindCodec,
-		impl.Response_SERVICE_ERROR:     rpcerror.KindUnknown,
-		impl.Response_SERVER_ERROR:      rpcerror.KindUnknown,
-		impl.Response_CLIENT_ERROR:      rpcerror.KindUnknown,
-		0:                               rpcerror.KindUnknown,
+		impl.Response_OK:                  rpcerror.KindBusiness,
+		impl.Response_SERIALIZATION_ERROR: rpcerror.KindCodec,
+		impl.Response_CLIENT_TIMEOUT:      rpcerror.KindTimeout,
+		impl.Response_SERVER_TIMEOUT:      rpcerror.KindTimeout,
+		impl.Response_SERVICE_NOT_FOUND:   rpcerror.KindServiceUnavailable,
+		impl.Response_BAD_REQUEST:         rpcerror.KindCodec,
+		impl.Response_BAD_RESPONSE:        rpcerror.KindCodec,
+		impl.Response_SERVICE_ERROR:       rpcerror.KindUnknown,
+		impl.Response_SERVER_ERROR:        rpcerror.KindUnknown,
+		impl.Response_CLIENT_ERROR:        rpcerror.KindUnknown,
+		0:                                 rpcerror.KindUnknown,
 	} {
-		err := classifyResponseException(status, cause)
-		assert.Equal(t, want, rpcerror.KindOf(err), "status %d", status)
-		assert.Equal(t, cause.Error(), err.Error(), "status %d", status)
-		assert.ErrorIs(t, err, cause, "status %d", status)
+		assert.Equal(t, want, responseExceptionKind(status), "status %d", status)
 	}
 }
 
-func encodeDecodeResponse(t *testing.T, id int64, status uint8, err error) error {
+// encodeDecodeResponse round-trips a response through the Dubbo codec and
+// returns the decoded transport response.
+func encodeDecodeResponse(t *testing.T, id int64, status uint8, err error) *remoting.Response {
 	t.Helper()
 	response := remoting.NewResponse(id, "2.0.2")
 	response.SerialID = constant.SHessian2
@@ -74,34 +73,38 @@ func encodeDecodeResponse(t *testing.T, id int64, status uint8, err error) error
 	rpcResult, ok := rsp.Result.(*result.RPCResult)
 	require.True(t, ok)
 	require.Error(t, rpcResult.Err)
-	assert.Equal(t, rpcResult.Err, rsp.Error, "the pending response must see the classified error")
-	return rpcResult.Err
+	assert.Equal(t, rpcResult.Err, rsp.Error, "sync and async paths must see the same error")
+	assert.Equal(t, rpcerror.KindUnknown, rpcerror.KindOf(rsp.Error), "the decoded exception must not be wrapped")
+	return rsp
 }
 
 func TestDecodeResponseClassifiesStatus(t *testing.T) {
 	for status, want := range map[uint8]rpcerror.Kind{
-		impl.Response_SERVER_TIMEOUT:    rpcerror.KindTimeout,
-		impl.Response_SERVICE_NOT_FOUND: rpcerror.KindServiceUnavailable,
-		impl.Response_BAD_REQUEST:       rpcerror.KindCodec,
-		impl.Response_SERVER_ERROR:      rpcerror.KindUnknown,
+		impl.Response_SERIALIZATION_ERROR: rpcerror.KindCodec,
+		impl.Response_SERVER_TIMEOUT:      rpcerror.KindTimeout,
+		impl.Response_SERVICE_NOT_FOUND:   rpcerror.KindServiceUnavailable,
+		impl.Response_BAD_REQUEST:         rpcerror.KindCodec,
+		impl.Response_SERVER_ERROR:        rpcerror.KindUnknown,
 	} {
-		err := encodeDecodeResponse(t, int64(status), status, errors.New("boom"))
-		assert.Equal(t, want, rpcerror.KindOf(err), "status %d", status)
-		assert.Equal(t, "java exception:boom", err.Error())
+		rsp := encodeDecodeResponse(t, int64(status), status, errors.New("boom"))
+		assert.Equal(t, want, rsp.Kind, "status %d", status)
+		assert.Equal(t, "java exception:boom", rsp.Error.Error())
 	}
 }
 
-func TestDecodeResponseClassifiesBusinessException(t *testing.T) {
+// Async callbacks receive the decoded *remoting.Response directly, so the
+// provider exception must keep its concrete type there.
+func TestDecodeResponseKeepsBusinessExceptionType(t *testing.T) {
 	const id = 3337
 	remoting.AddPendingResponse(remoting.NewPendingResponse(id))
 	defer remoting.RemovePendingResponse(id)
 
 	thrown := &hessian.GenericException{ExceptionClass: "com.example.BizException", ExceptionMessage: "insufficient balance"}
-	err := encodeDecodeResponse(t, id, impl.Response_OK, thrown)
-	assert.Equal(t, rpcerror.KindBusiness, rpcerror.KindOf(err))
+	rsp := encodeDecodeResponse(t, id, impl.Response_OK, thrown)
+	assert.Equal(t, rpcerror.KindBusiness, rsp.Kind)
 
-	var decoded *hessian.GenericException
-	require.ErrorAs(t, err, &decoded, "the provider exception must stay reachable")
+	decoded, ok := rsp.Error.(*hessian.GenericException)
+	require.True(t, ok, "got %T, want *hessian.GenericException", rsp.Error)
 	assert.Equal(t, thrown.ExceptionClass, decoded.ExceptionClass)
 	assert.Equal(t, thrown.ExceptionMessage, decoded.ExceptionMessage)
 }

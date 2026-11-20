@@ -166,11 +166,16 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 
 	if retErr != nil {
-		// The service implementation returned this error: a business failure.
-		// It is recorded on the request observation instead of being wrapped,
-		// because protocols re-encode provider exceptions by concrete type.
-		rpcerror.RecordKind(ctx, rpcerror.KindBusiness)
-		result.SetError(retErr.(error))
+		err := retErr.(error)
+		// The service implementation returned this error: a business failure,
+		// unless the error already carries a category (e.g. an expired context
+		// deadline is a timeout). It is recorded on the request observation
+		// instead of being wrapped, because protocols re-encode provider
+		// exceptions by concrete type.
+		if rpcerror.KindOf(err) == rpcerror.KindUnknown {
+			rpcerror.RecordKind(ctx, rpcerror.KindBusiness)
+		}
+		result.SetError(err)
 		return result
 	}
 	if replyv.IsValid() && (replyv.Kind() != reflect.Pointer || replyv.Kind() == reflect.Pointer && replyv.Elem().IsValid()) {

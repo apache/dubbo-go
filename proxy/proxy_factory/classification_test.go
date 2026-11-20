@@ -43,6 +43,10 @@ func (s *ClassificationService) Fail(_ context.Context, _ string) (string, error
 	return "", errBizFixture
 }
 
+func (s *ClassificationService) Expire(_ context.Context, _ string) (string, error) {
+	return "", context.DeadlineExceeded
+}
+
 func (s *ClassificationService) Crash(_ context.Context, _ string) (string, error) {
 	panic("fixture panic")
 }
@@ -80,6 +84,13 @@ func TestProxyInvokerClassifiesProviderFailures(t *testing.T) {
 		kind, err := invokeObserved(t, invoker, "Fail")
 		require.Same(t, errBizFixture, err, "protocols re-encode the exact provider error")
 		assert.Equal(t, rpcerror.KindBusiness, kind)
+	})
+
+	t.Run("expired context deadline stays a timeout", func(t *testing.T) {
+		kind, err := invokeObserved(t, invoker, "Expire")
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.Equal(t, rpcerror.KindUnknown, kind, "business must not override the deadline")
+		assert.Equal(t, rpcerror.KindTimeout, rpcerror.KindOf(rpcerror.WithKind(err, kind)))
 	})
 
 	t.Run("panic is not counted as business", func(t *testing.T) {

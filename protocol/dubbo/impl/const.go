@@ -150,15 +150,16 @@ const (
 
 // ResponsePayload related consts
 const (
-	Response_OK                byte = 20
-	Response_CLIENT_TIMEOUT    byte = 30
-	Response_SERVER_TIMEOUT    byte = 31
-	Response_BAD_REQUEST       byte = 40
-	Response_BAD_RESPONSE      byte = 50
-	Response_SERVICE_NOT_FOUND byte = 60
-	Response_SERVICE_ERROR     byte = 70
-	Response_SERVER_ERROR      byte = 80
-	Response_CLIENT_ERROR      byte = 90
+	Response_OK                  byte = 20
+	Response_SERIALIZATION_ERROR byte = 25 // sent by Java providers, e.g. when a response exceeds the payload limit
+	Response_CLIENT_TIMEOUT      byte = 30
+	Response_SERVER_TIMEOUT      byte = 31
+	Response_BAD_REQUEST         byte = 40
+	Response_BAD_RESPONSE        byte = 50
+	Response_SERVICE_NOT_FOUND   byte = 60
+	Response_SERVICE_ERROR       byte = 70
+	Response_SERVER_ERROR        byte = 80
+	Response_CLIENT_ERROR        byte = 90
 
 	// According to "java dubbo" There are two cases of response:
 	// 		1. with attachments

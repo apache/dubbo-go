@@ -79,6 +79,10 @@ type Response struct {
 	Event    bool
 	Error    error
 	Result   any
+	// Kind is the failure category declared by the decoded response (e.g. by
+	// its protocol status). It is reported to metrics only, so Error keeps the
+	// decoded type seen by callers and async callbacks.
+	Kind rpcerror.Kind
 }
 
 // NewResponse create to a new Response.
@@ -104,13 +108,15 @@ func (response *Response) Handle() {
 
 	if pendingResponse.Callback == nil {
 		pendingResponse.Err = pendingResponse.response.Error
+		pendingResponse.Kind = response.Kind
 		close(pendingResponse.Done)
 	} else {
 		err := response.Error
 		if res, ok := response.Result.(result.Result); ok && err == nil {
 			err = res.Error()
 		}
-		pendingResponse.Observation.Complete(err)
+		// Completion.Err is monitoring-only; the callback gets the raw response.
+		pendingResponse.Observation.Complete(rpcerror.WithKind(err, response.Kind))
 		pendingResponse.Callback(pendingResponse.GetCallResponse())
 	}
 }
@@ -147,6 +153,10 @@ type PendingResponse struct {
 	Reply       any
 	Done        chan struct{}
 	Observation *rpcerror.Observation
+	// Kind is the received response's declared kind, set before Done closes.
+	// A synchronous requester records it on Observation only when it actually
+	// returns that response, so a racing timeout is not relabeled.
+	Kind rpcerror.Kind
 }
 
 // NewPendingResponse aims to create PendingResponse.
