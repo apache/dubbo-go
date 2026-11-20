@@ -407,10 +407,11 @@ func traceTestFailover(t *testing.T, dir *traceTestDirectory) base.Invoker {
 }
 
 func TestClusterDiagnosticsInvocationBinding(t *testing.T) {
+	var nilCtx context.Context
 	inv := invocation.NewRPCInvocation("Call", nil, nil)
 	observer := &logicalSpan{}
-	require.Nil(t, cluster.DiagnosticsFromContext(nil, inv))
-	ctx := cluster.WithDiagnostics(nil, inv, observer)
+	require.Nil(t, cluster.DiagnosticsFromContext(nilCtx, inv))
+	ctx := cluster.WithDiagnostics(nilCtx, inv, observer)
 	require.Same(t, observer, cluster.DiagnosticsFromContext(ctx, inv))
 	for _, other := range []any{nil, (*invocation.RPCInvocation)(nil),
 		invocation.NewRPCInvocation("Call", nil, nil), 1, map[string]any{"method": "Call"}} {
@@ -420,12 +421,13 @@ func TestClusterDiagnosticsInvocationBinding(t *testing.T) {
 	require.Nil(t, cluster.DiagnosticsFromContext(cleared, inv))
 	require.Same(t, observer, cluster.DiagnosticsFromContext(ctx, inv))
 	require.Same(t, cleared, cluster.WithDiagnostics(cleared, nil, nil))
-	require.Equal(t, context.Background(), cluster.WithDiagnostics(nil, nil, nil))
+	require.Equal(t, context.Background(), cluster.WithDiagnostics(nilCtx, nil, nil))
 	invalid := cluster.WithDiagnostics(ctx, "non-pointer", observer)
 	require.Nil(t, cluster.DiagnosticsFromContext(invalid, inv))
 }
 
 func TestClusterLogicalNilContext(t *testing.T) {
+	var nilCtx context.Context
 	for _, enabled := range []bool{false, true} {
 		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
 			tp, exporter := traceTestProvider(t)
@@ -437,7 +439,7 @@ func TestClusterLogicalNilContext(t *testing.T) {
 			require.NoError(t, err)
 			invoker := strategy.Join(dir)
 			require.NotPanics(t, func() {
-				require.Error(t, invoker.Invoke(nil, invocation.NewRPCInvocation("Call", nil, nil)).Error())
+				require.Error(t, invoker.Invoke(nilCtx, invocation.NewRPCInvocation("Call", nil, nil)).Error())
 			})
 			if enabled {
 				require.Len(t, exporter.GetSpans(), 1)
@@ -449,74 +451,102 @@ func TestClusterLogicalNilContext(t *testing.T) {
 	}
 }
 
+type nestedIsolationCase struct {
+	name            string
+	newInvocation   bool
+	noProvider      bool
+	tracingEnabled  bool
+	neverSample     bool
+	expectChildSpan bool
+}
+
 func TestClusterLogicalNestedIsolation(t *testing.T) {
-	for _, mode := range []string{"new invocation", "new invocation no provider", "disabled", "unsampled", "recording"} {
-		t.Run(mode, func(t *testing.T) {
-			tp, exporter := traceTestProvider(t)
-			innerTP := trace.TracerProvider(tp)
-			if mode == "unsampled" {
-				never := sdktrace.NewTracerProvider(sdktrace.WithSampler(sdktrace.NeverSample()), sdktrace.WithSyncer(exporter))
-				t.Cleanup(func() { require.NoError(t, never.Shutdown(context.Background())) })
-				innerTP = never
-			}
-			url := traceTestURL(mode == "unsampled" || mode == "recording")
-			first := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(url), call: func(context.Context, base.Invocation) result.Result {
-				return &result.RPCResult{Err: errors.New("nested failure")}
-			}}
-			secondURL := traceTestURL(false)
-			secondURL.Port = "20302"
-			second := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(secondURL), call: func(context.Context, base.Invocation) result.Result {
-				return &result.RPCResult{}
-			}}
-			dir := &traceTestDirectory{Directory: directorybase.NewDirectory(url), invokers: []base.Invoker{first, second}}
-			if mode == "new invocation no provider" {
-				dir.invokers = nil
-			}
-			inner := traceTestFailover(t, dir)
-			parentInv := invocation.NewRPCInvocation("Parent", nil, nil)
-			childInv := base.Invocation(parentInv)
-			if mode == "new invocation" || mode == "new invocation no provider" {
-				childInv = invocation.NewRPCInvocation("Child", nil, nil)
-			}
-			parent := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(traceTestURL(true)), call: func(ctx context.Context, _ base.Invocation) result.Result {
-				parentObserver := cluster.DiagnosticsFromContext(ctx, parentInv)
-				require.NotNil(t, parentObserver)
-				var res result.Result
-				if mode == "new invocation" || mode == "new invocation no provider" {
-					res = inner.Invoke(ctx, childInv)
-				} else {
-					res = (&clusterInterceptor{TracerProvider: innerTP}).Invoke(ctx, inner, childInv)
-				}
-				if mode == "new invocation no provider" {
-					require.Error(t, res.Error())
-				} else {
-					require.NoError(t, res.Error())
-				}
-				require.Same(t, parentObserver, cluster.DiagnosticsFromContext(ctx, parentInv))
-				return &result.RPCResult{}
-			}}
-			require.NoError(t, (&clusterInterceptor{TracerProvider: tp}).Invoke(context.Background(), parent, parentInv).Error())
-			spans := exporter.GetSpans()
-			if mode == "recording" {
-				require.Len(t, spans, 2)
-				require.Len(t, spanEvents(spans[0], "cluster.select"), 2)
-				require.Len(t, spanEvents(spans[0], "cluster.retry"), 1)
-				require.EqualValues(t, 1, spanValue(spans[0], "cluster.retry_count").AsInt64())
-			} else {
-				require.Len(t, spans, 1)
-			}
-			parentSpan := spans[len(spans)-1]
-			require.Equal(t, "Parent cluster", parentSpan.Name)
-			require.Empty(t, parentSpan.Events)
-			require.EqualValues(t, 0, spanValue(parentSpan, "cluster.retry_count").AsInt64())
-			require.Equal(t, codes.Ok, parentSpan.Status.Code)
-		})
+	for _, test := range []nestedIsolationCase{
+		{name: "new invocation", newInvocation: true},
+		{name: "new invocation no provider", newInvocation: true, noProvider: true},
+		{name: "disabled"},
+		{name: "unsampled", tracingEnabled: true, neverSample: true},
+		{name: "recording", tracingEnabled: true, expectChildSpan: true},
+	} {
+		t.Run(test.name, func(t *testing.T) { runNestedIsolationCase(t, test) })
 	}
 }
 
+func runNestedIsolationCase(t *testing.T, test nestedIsolationCase) {
+	t.Helper()
+	tp, exporter := traceTestProvider(t)
+	innerTP := trace.TracerProvider(tp)
+	if test.neverSample {
+		never := sdktrace.NewTracerProvider(sdktrace.WithSampler(sdktrace.NeverSample()), sdktrace.WithSyncer(exporter))
+		t.Cleanup(func() { require.NoError(t, never.Shutdown(context.Background())) })
+		innerTP = never
+	}
+	url := traceTestURL(test.tracingEnabled)
+	first := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(url), call: func(context.Context, base.Invocation) result.Result {
+		return &result.RPCResult{Err: errors.New("nested failure")}
+	}}
+	secondURL := traceTestURL(false)
+	secondURL.Port = "20302"
+	second := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(secondURL), call: func(context.Context, base.Invocation) result.Result {
+		return &result.RPCResult{}
+	}}
+	dir := &traceTestDirectory{Directory: directorybase.NewDirectory(url), invokers: []base.Invoker{first, second}}
+	if test.noProvider {
+		dir.invokers = nil
+	}
+	inner := traceTestFailover(t, dir)
+	parentInv := invocation.NewRPCInvocation("Parent", nil, nil)
+	childInv := base.Invocation(parentInv)
+	if test.newInvocation {
+		childInv = invocation.NewRPCInvocation("Child", nil, nil)
+	}
+	parent := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(traceTestURL(true)), call: func(ctx context.Context, _ base.Invocation) result.Result {
+		parentObserver := cluster.DiagnosticsFromContext(ctx, parentInv)
+		require.NotNil(t, parentObserver)
+		var res result.Result
+		if test.newInvocation {
+			res = inner.Invoke(ctx, childInv)
+		} else {
+			res = (&clusterInterceptor{TracerProvider: innerTP}).Invoke(ctx, inner, childInv)
+		}
+		if test.noProvider {
+			require.Error(t, res.Error())
+		} else {
+			require.NoError(t, res.Error())
+		}
+		require.Same(t, parentObserver, cluster.DiagnosticsFromContext(ctx, parentInv))
+		return &result.RPCResult{}
+	}}
+	require.NoError(t, (&clusterInterceptor{TracerProvider: tp}).Invoke(context.Background(), parent, parentInv).Error())
+	assertNestedIsolationSpans(t, exporter.GetSpans(), test.expectChildSpan)
+}
+
+func assertNestedIsolationSpans(t *testing.T, spans tracetest.SpanStubs, expectChildSpan bool) {
+	t.Helper()
+	if expectChildSpan {
+		require.Len(t, spans, 2)
+		require.Len(t, spanEvents(spans[0], "cluster.select"), 2)
+		require.Len(t, spanEvents(spans[0], "cluster.retry"), 1)
+		require.EqualValues(t, 1, spanValue(spans[0], "cluster.retry_count").AsInt64())
+	} else {
+		require.Len(t, spans, 1)
+	}
+	parentSpan := spans[len(spans)-1]
+	require.Equal(t, "Parent cluster", parentSpan.Name)
+	require.Empty(t, parentSpan.Events)
+	require.EqualValues(t, 0, spanValue(parentSpan, "cluster.retry_count").AsInt64())
+	require.Equal(t, codes.Ok, parentSpan.Status.Code)
+}
+
 func TestClusterLogicalRetryBoundaries(t *testing.T) {
-	for _, mode := range []string{"empty directory", "destroyed", "skipped selection"} {
-		t.Run(mode, func(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		destroyed bool
+	}{
+		{name: "empty directory"},
+		{name: "destroyed", destroyed: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			tp, exporter := traceTestProvider(t)
 			url := traceTestURL(true)
 			dir := &traceTestDirectory{Directory: directorybase.NewDirectory(url)}
@@ -524,68 +554,78 @@ func TestClusterLogicalRetryBoundaries(t *testing.T) {
 			calls := 0
 			first := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(url), call: func(context.Context, base.Invocation) result.Result {
 				calls++
-				switch mode {
-				case "empty directory":
-					dir.invokers = nil
-				case "destroyed":
+				if test.destroyed {
 					invoker.Destroy()
+				} else {
+					dir.invokers = nil
 				}
 				return &result.RPCResult{Err: errors.New("first attempt failed")}
 			}}
 			dir.invokers = []base.Invoker{first}
-			listCalls := 0
-			if mode == "skipped selection" {
-				unavailableURL := traceTestURL(false)
-				unavailableURL.Port = "20402"
-				unavailable := base.NewBaseInvoker(unavailableURL)
-				unavailable.SetAvailable(false)
-				successURL := traceTestURL(false)
-				successURL.Port = "20403"
-				success := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(successURL), call: func(context.Context, base.Invocation) result.Result {
-					calls++
-					return &result.RPCResult{}
-				}}
-				dir.list = func(base.Invocation) []base.Invoker {
-					listCalls++
-					switch listCalls {
-					case 1:
-						return []base.Invoker{first}
-					case 2:
-						return []base.Invoker{unavailable}
-					default:
-						return []base.Invoker{success}
-					}
-				}
-			}
 			invoker = traceTestFailover(t, dir)
 			res := (&clusterInterceptor{TracerProvider: tp}).Invoke(context.Background(), invoker, invocation.NewRPCInvocation("Call", nil, nil))
 			require.Len(t, exporter.GetSpans(), 1)
 			span := exporter.GetSpans()[0]
-			if mode == "skipped selection" {
-				require.NoError(t, res.Error())
-				require.Equal(t, 2, calls)
-				require.Equal(t, 3, listCalls)
-				require.EqualValues(t, 1, spanValue(span, "cluster.retry_count").AsInt64())
-				retries := spanEvents(span, "cluster.retry")
-				require.Len(t, retries, 1)
-				require.Contains(t, retries[0].Attributes, attribute.Int("attempt", 2))
-				selections := spanEvents(span, "cluster.select")
-				require.Len(t, selections, 2)
-				require.Contains(t, selections[1].Attributes, attribute.Int("attempt", 3))
-				require.Equal(t, "cluster.select", span.Events[0].Name)
-				require.Equal(t, "cluster.retry", span.Events[1].Name)
-				require.Equal(t, "cluster.select", span.Events[2].Name)
-			} else {
-				require.Error(t, res.Error())
-				require.Equal(t, 1, calls)
-				require.EqualValues(t, 0, spanValue(span, "cluster.retry_count").AsInt64())
-				require.Empty(t, spanEvents(span, "cluster.retry"))
-				if mode == "empty directory" {
-					require.Len(t, spanEvents(span, "cluster.no_provider"), 1)
-				}
+			require.Error(t, res.Error())
+			require.Equal(t, 1, calls)
+			require.EqualValues(t, 0, spanValue(span, "cluster.retry_count").AsInt64())
+			require.Empty(t, spanEvents(span, "cluster.retry"))
+			if !test.destroyed {
+				require.Len(t, spanEvents(span, "cluster.no_provider"), 1)
 			}
 		})
 	}
+}
+
+func TestClusterLogicalRetrySkippedSelection(t *testing.T) {
+	tp, exporter := traceTestProvider(t)
+	url := traceTestURL(true)
+	dir := &traceTestDirectory{Directory: directorybase.NewDirectory(url)}
+	calls := 0
+	first := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(url), call: func(context.Context, base.Invocation) result.Result {
+		calls++
+		return &result.RPCResult{Err: errors.New("first attempt failed")}
+	}}
+	dir.invokers = []base.Invoker{first}
+	unavailableURL := traceTestURL(false)
+	unavailableURL.Port = "20402"
+	unavailable := base.NewBaseInvoker(unavailableURL)
+	unavailable.SetAvailable(false)
+	successURL := traceTestURL(false)
+	successURL.Port = "20403"
+	success := &traceTestInvoker{BaseInvoker: base.NewBaseInvoker(successURL), call: func(context.Context, base.Invocation) result.Result {
+		calls++
+		return &result.RPCResult{}
+	}}
+	listCalls := 0
+	dir.list = func(base.Invocation) []base.Invoker {
+		listCalls++
+		switch listCalls {
+		case 1:
+			return []base.Invoker{first}
+		case 2:
+			return []base.Invoker{unavailable}
+		default:
+			return []base.Invoker{success}
+		}
+	}
+	invoker := traceTestFailover(t, dir)
+	res := (&clusterInterceptor{TracerProvider: tp}).Invoke(context.Background(), invoker, invocation.NewRPCInvocation("Call", nil, nil))
+	require.Len(t, exporter.GetSpans(), 1)
+	span := exporter.GetSpans()[0]
+	require.NoError(t, res.Error())
+	require.Equal(t, 2, calls)
+	require.Equal(t, 3, listCalls)
+	require.EqualValues(t, 1, spanValue(span, "cluster.retry_count").AsInt64())
+	retries := spanEvents(span, "cluster.retry")
+	require.Len(t, retries, 1)
+	require.Contains(t, retries[0].Attributes, attribute.Int("attempt", 2))
+	selections := spanEvents(span, "cluster.select")
+	require.Len(t, selections, 2)
+	require.Contains(t, selections[1].Attributes, attribute.Int("attempt", 3))
+	require.Equal(t, "cluster.select", span.Events[0].Name)
+	require.Equal(t, "cluster.retry", span.Events[1].Name)
+	require.Equal(t, "cluster.select", span.Events[2].Name)
 }
 
 func TestClusterLogicalCompletionRace(t *testing.T) {
