@@ -32,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -69,14 +70,14 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 	}
 
 	if f.rejectNewRequest() {
-		logger.Info("[Filter][GracefulShutdown] the application is closing, new request will be rejected.")
+		dubboLogger.CtxInfo(ctx, "[Filter][GracefulShutdown] the application is closing, new request will be rejected.")
 		handler := constant.DefaultKey
 		if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
 			handler = f.shutdownConfig.RejectRequestHandler
 		}
 		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(handler)
 		if err != nil {
-			logger.Warnf("[Filter][GracefulShutdown] get rejected execution handler failed, err=%v", err)
+			dubboLogger.CtxWarnf(ctx, "[Filter][GracefulShutdown] get rejected execution handler failed, err=%v", err)
 		} else {
 			return rejectedExecutionHandler.RejectedExecution(invoker.GetURL(), invocation)
 		}

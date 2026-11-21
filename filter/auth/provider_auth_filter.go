@@ -23,13 +23,10 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -63,7 +60,7 @@ func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocat
 		return authenticator.Authenticate(invocation, url)
 	})
 	if err != nil {
-		logger.Errorf("[Filter][Auth] auth the request occur exception, invocation=%v err=%v", invocation, err)
+		dubboLogger.CtxErrorf(ctx, "[Filter][Auth] auth the request occur exception, invocation=%v err=%v", invocation, err)
 		return &result.RPCResult{
 			Err: err,
 		}

@@ -24,14 +24,11 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -95,14 +92,14 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invokerSvc := invoker.GetURL().Service()
 	invokerUrl := invoker.Directory.GetURL()
 	if ivk == nil {
-		logger.Errorf("[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
+		dubboLogger.CtxErrorf(ctx, "[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
 		return &result.RPCResult{
 			Err: fmt.Errorf("failed to invoke the method %s of the service %s .No provider is available because can't connect server",
 				methodName, invokerSvc),
 		}
 	}
 
-	logger.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
+	dubboLogger.CtxErrorf(ctx, "[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
 		methodName, invokerSvc, retries, len(providers), len(invokers), invokerUrl, ip, constant.Version, res.Error().Error())
 
 	return res

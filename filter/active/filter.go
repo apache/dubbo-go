@@ -24,14 +24,11 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -91,14 +88,14 @@ func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, inv
 	// If the URL is missing or invalid, it means the Invoke phase was likely interrupted.
 	// Skip EndCount to prevent statistic inconsistency or panics.
 	if !ok || url == nil {
-		logger.Warn("[Filter][Active] activeFilter cannot get cached URL from attribute, skip EndCount. Invoker may not have passed Invoke phase.")
+		dubboLogger.CtxWarn(ctx, "[Filter][Active] activeFilter cannot get cached URL from attribute, skip EndCount. Invoker may not have passed Invoke phase.")
 		return result
 	}
 
 	startTime, err := strconv.ParseInt(rpcInv.GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
 		result.SetError(err)
-		logger.Error("[Filter][Active] parse dubbo_invoke_start_time to int64 failed")
+		dubboLogger.CtxError(ctx, "[Filter][Active] parse dubbo_invoke_start_time to int64 failed")
 		// When err is not nil, use default elapsed value of 1
 		base.EndCount(url, inv.MethodName(), 1, false)
 		return result

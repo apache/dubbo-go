@@ -40,16 +40,24 @@ import (
 // LogrusCtxLogger wraps DubboLogger with context-aware logging support.
 type LogrusCtxLogger struct {
 	*dubbogoLogger.DubboLogger
+	traceEnabled      bool
 	recordErrorToSpan bool
 }
 
 var _ logger.CtxLogger = (*LogrusCtxLogger)(nil)
 
-// NewLogrusCtxLogger creates a new LogrusCtxLogger.
+// NewLogrusCtxLogger creates a LogrusCtxLogger that adds trace fields from the context.
 func NewLogrusCtxLogger(base *dubbogoLogger.DubboLogger, recordErrorToSpan bool) *LogrusCtxLogger {
+	return newLogrusCtxLogger(base, true, recordErrorToSpan)
+}
+
+// newLogrusCtxLogger also covers trace integration being off, so framework code
+// can always log through CtxLogger: the Ctx methods then log like the plain ones.
+func newLogrusCtxLogger(base *dubbogoLogger.DubboLogger, traceEnabled, recordErrorToSpan bool) *LogrusCtxLogger {
 	return &LogrusCtxLogger{
 		DubboLogger:       base,
-		recordErrorToSpan: recordErrorToSpan,
+		traceEnabled:      traceEnabled,
+		recordErrorToSpan: traceEnabled && recordErrorToSpan,
 	}
 }
 
@@ -58,6 +66,9 @@ func (l *LogrusCtxLogger) withTraceFields(ctx context.Context) *logrus.Entry {
 	logrusLogger, ok := l.Logger.(*logrus.Logger)
 	if !ok {
 		return nil
+	}
+	if !l.traceEnabled {
+		return logrus.NewEntry(logrusLogger)
 	}
 
 	fields := logger.ExtractTraceFields(ctx)
