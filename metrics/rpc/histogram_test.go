@@ -22,6 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -54,6 +56,45 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
+
+func TestRPCCollectorExemplarStartup(t *testing.T) {
+	const childMode = "DUBBO_RPC_EXEMPLAR_STARTUP"
+	mode := os.Getenv(childMode)
+	if mode == "" {
+		for _, mode := range []string{"enabled", "exemplars-disabled", "histograms-disabled", "unsupported-registry"} {
+			t.Run(mode, func(t *testing.T) {
+				// Metrics.Init runs once per process.
+				args := []string{"-test.run=^TestRPCCollectorExemplarStartup$", "-test.count=1"}
+				if dir := os.Getenv("GOCOVERDIR"); dir != "" && testing.CoverMode() != "" {
+					// Merge the child process coverage into the parent test report.
+					args = append(args, "-test.gocoverdir="+dir)
+				}
+				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+				defer cancel()
+				cmd := exec.CommandContext(ctx, os.Args[0], args...)
+				cmd.Env = append(os.Environ(), childMode+"="+mode)
+				output, err := cmd.CombinedOutput()
+				require.NoError(t, err, "%s", output)
+			})
+		}
+		return
+	}
+
+	require.False(t, rpcexemplar.Enabled())
+	url := histogramTestURL(common.CONSUMER)
+	url.SetParam(constant.HistogramEnabledKey, strconv.FormatBool(mode != "histograms-disabled"))
+	url.SetParam(constant.HistogramExemplarsKey, strconv.FormatBool(mode != "exemplars-disabled"))
+	metrics.SetRegistry(url.Protocol, func(config *common.URL) metrics.MetricRegistry {
+		registry := metricsprom.NewPromMetricRegistry(prom.NewRegistry(), config)
+		if mode == "unsupported-registry" {
+			return &legacyHistogramRegistry{MetricRegistry: registry}
+		}
+		return registry
+	})
+	metrics.Init(url)
+	require.NotNil(t, activeCollector.Load())
+	assert.Equal(t, mode == "enabled", rpcexemplar.Enabled())
+}
 
 func TestRPCHistogramOpts(t *testing.T) {
 	defaults := []float64{0.1, 0.3, 0.5, 1, 3, 5, 10}
