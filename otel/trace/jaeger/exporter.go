@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"go.opentelemetry.io/otel/exporters/jaeger"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -45,10 +47,16 @@ type Exporter struct {
 	*trace.DefaultExporter
 }
 
+// deprecationWarning is logged once when the jaeger exporter is created.
+const deprecationWarning = "[OTel][Trace] the jaeger exporter is deprecated and will be removed in a future release: " +
+	"its OpenTelemetry module is no longer maintained. Jaeger accepts OTLP, so use the otlp-http or otlp-grpc exporter " +
+	"with Jaeger's OTLP endpoint (port 4318 or 4317) instead"
+
 func newJaegerExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
 	var initError error
 	if instance == nil {
 		initOnce.Do(func() {
+			logger.Warn(deprecationWarning)
 			customFunc := func() (sdktrace.SpanExporter, error) {
 				return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.Endpoint)))
 			}
