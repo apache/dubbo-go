@@ -24,6 +24,8 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -38,6 +40,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -576,14 +580,12 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
 
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   result.Result
+		name string
+		args args
+		want result.Result
 	}{
 		{
-			name:   "test",
-			fields: getFields(),
+			name: "test",
 			args: args{
 				ctx:        context.Background(),
 				invoker:    invoker,
@@ -594,10 +596,9 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &otelServerFilter{
-				Propagators:    tt.fields.Propagators,
-				TracerProvider: tt.fields.TracerProvider,
-			}
+			f, ok := extension.GetFilter(constant.OTELServerTraceKey)
+			require.True(t, ok)
+			require.False(t, f.(*otelServerFilter).captureExemplars)
 			if got := f.Invoke(tt.args.ctx, tt.args.invoker, tt.args.invocation); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Invoke() = %v, want %v", got, tt.want)
 			}
@@ -622,14 +623,12 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
 
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   result.Result
+		name string
+		args args
+		want result.Result
 	}{
 		{
-			name:   "test",
-			fields: getFields(),
+			name: "test",
 			args: args{
 				ctx:        context.Background(),
 				invoker:    invoker,
@@ -640,10 +639,9 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &otelClientFilter{
-				Propagators:    tt.fields.Propagators,
-				TracerProvider: tt.fields.TracerProvider,
-			}
+			f, ok := extension.GetFilter(constant.OTELClientTraceKey)
+			require.True(t, ok)
+			require.False(t, f.(*otelClientFilter).captureExemplars)
 			if got := f.Invoke(tt.args.ctx, tt.args.invoker, tt.args.invocation); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Invoke() = %v, want %v", got, tt.want)
 			}
@@ -669,7 +667,14 @@ func Test_otelServerFilter_Invoke_RPCAttributes(t *testing.T) {
 	)
 	invoker := NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(serviceURL).AnyTimes()
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res)
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, inv base.Invocation) result.Result {
+			sc := trace.SpanContextFromContext(ctx)
+			require.True(t, sc.IsValid())
+			require.Equal(t, &rpcexemplar.IDs{TraceID: sc.TraceID(), SpanID: sc.SpanID()},
+				rpcexemplar.ForInvocation(ctx, inv, constant.SideProvider))
+			return res
+		})
 
 	invocation := NewMockInvocation(ctrl)
 	invocation.EXPECT().ActualMethodName().Return("GetOrder").AnyTimes()
@@ -677,8 +682,9 @@ func Test_otelServerFilter_Invoke_RPCAttributes(t *testing.T) {
 	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
 
 	filter := &otelServerFilter{
-		Propagators:    propagation.TraceContext{},
-		TracerProvider: tracerProvider,
+		Propagators:      propagation.TraceContext{},
+		TracerProvider:   tracerProvider,
+		captureExemplars: true,
 	}
 	if got := filter.Invoke(context.Background(), invoker, invocation); got != res {
 		t.Fatalf("Invoke() returned %v, want the mocked result", got)
@@ -705,7 +711,14 @@ func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
 	)
 	invoker := NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(serviceURL).AnyTimes()
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res)
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, inv base.Invocation) result.Result {
+			sc := trace.SpanContextFromContext(ctx)
+			require.True(t, sc.IsValid())
+			require.Equal(t, &rpcexemplar.IDs{TraceID: sc.TraceID(), SpanID: sc.SpanID()},
+				rpcexemplar.ForInvocation(ctx, inv, constant.SideConsumer))
+			return res
+		})
 
 	invocation := NewMockInvocation(ctrl)
 	invocation.EXPECT().ActualMethodName().Return("GetOrder").AnyTimes()
@@ -714,8 +727,9 @@ func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
 	invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).AnyTimes()
 
 	filter := &otelClientFilter{
-		Propagators:    propagation.TraceContext{},
-		TracerProvider: tracerProvider,
+		Propagators:      propagation.TraceContext{},
+		TracerProvider:   tracerProvider,
+		captureExemplars: true,
 	}
 	if got := filter.Invoke(context.Background(), invoker, invocation); got != res {
 		t.Fatalf("Invoke() returned %v, want the mocked result", got)

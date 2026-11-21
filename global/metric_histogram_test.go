@@ -28,7 +28,7 @@ import (
 
 func TestHistogramConfigClone(t *testing.T) {
 	enabled := true
-	c := &MetricsConfig{Histogram: &HistogramConfig{Enabled: &enabled, Buckets: []float64{0.001, 1}}}
+	c := &MetricsConfig{Histogram: &HistogramConfig{Enabled: &enabled, Buckets: []float64{0.001, 1}, Exemplars: true}}
 	clone := c.Clone()
 	require.Equal(t, c, clone)
 	*clone.Histogram.Enabled = false
@@ -37,4 +37,26 @@ func TestHistogramConfigClone(t *testing.T) {
 	assert.InDelta(t, 0.001, c.Histogram.Buckets[0], 1e-12)
 	assert.Nil(t, (&MetricsConfig{}).Clone().Histogram)
 	assert.Equal(t, &HistogramConfig{}, (&HistogramConfig{}).Clone())
+}
+
+func TestRPCExemplarsRequireMetricsAndHistograms(t *testing.T) {
+	on, off := true, false
+	for _, tc := range []struct {
+		name   string
+		config *MetricsConfig
+		want   bool
+	}{
+		{"missing config", nil, false},
+		{"missing metrics flag", &MetricsConfig{Histogram: &HistogramConfig{Enabled: &on, Exemplars: true}}, false},
+		{"metrics off", &MetricsConfig{Enable: &off, Histogram: &HistogramConfig{Enabled: &on, Exemplars: true}}, false},
+		{"missing histogram", &MetricsConfig{Enable: &on}, false},
+		{"missing histogram flag", &MetricsConfig{Enable: &on, Histogram: &HistogramConfig{Exemplars: true}}, false},
+		{"histograms off", &MetricsConfig{Enable: &on, Histogram: &HistogramConfig{Enabled: &off, Exemplars: true}}, false},
+		{"default off", &MetricsConfig{Enable: &on, Histogram: &HistogramConfig{Enabled: &on}}, false},
+		{"enabled", &MetricsConfig{Enable: &on, Histogram: &HistogramConfig{Enabled: &on, Exemplars: true}}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.config.RPCExemplarsEnabled())
+		})
+	}
 }

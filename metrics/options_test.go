@@ -34,6 +34,7 @@ func TestDefaultOptions(t *testing.T) {
 	assert.Nil(t, opts.Metrics.Enable)
 	assert.Nil(t, opts.Metrics.Aggregation.Enabled)
 	assert.Nil(t, opts.Metrics.Histogram.Enabled)
+	assert.False(t, opts.Metrics.Histogram.Exemplars)
 	assert.Empty(t, opts.Metrics.Histogram.Buckets)
 	assert.Nil(t, opts.Metrics.Probe.Enabled)
 	assert.Nil(t, opts.Metrics.Prometheus.Pushgateway.Enabled)
@@ -55,6 +56,14 @@ func TestHistogramOptions(t *testing.T) {
 	assert.Equal(t, []float64{0.001, 0.01, 1}, first.Metrics.Histogram.Buckets)
 	first.Metrics.Histogram.Buckets[0] = 10
 	assert.Equal(t, []float64{0.001, 0.01, 1}, second.Metrics.Histogram.Buckets)
+}
+
+func TestHistogramExemplarsOption(t *testing.T) {
+	opts := NewOptions(WithHistogramExemplars())
+	assert.True(t, opts.Metrics.Histogram.Exemplars)
+	assert.Nil(t, opts.Metrics.Enable)
+	assert.Nil(t, opts.Metrics.Histogram.Enabled)
+	assert.True(t, NewOptions(WithEnabled(), WithHistogramEnabled(), WithHistogramExemplars()).Metrics.RPCExemplarsEnabled())
 }
 
 func TestNewOptions(t *testing.T) {

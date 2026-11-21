@@ -37,12 +37,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsprom "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -352,17 +357,33 @@ func assertHistogramIdentities(t *testing.T, family *dto.MetricFamily, identitie
 }
 
 func TestRPCHistogramObservationTerminals(t *testing.T) {
-	for _, expire := range []bool{false, true} {
-		t.Run(fmt.Sprintf("expired=%t", expire), func(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		exemplars bool
+		expire    bool
+	}{
+		{"completed with exemplar", true, false},
+		{"completed without exemplar support", false, false},
+		{"expired", true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			reg := prom.NewRegistry()
 			url := histogramTestURL(common.CONSUMER)
+			url.SetParam(constant.HistogramExemplarsKey, strconv.FormatBool(tc.exemplars))
 			p := metricsprom.NewPromMetricRegistry(reg, url)
 			c := newRPCCollector(p, url)
-			before := recordingEvent(t, c, common.CONSUMER)
-			c.record(before)
-			assertNoHistogramSamples(t, reg)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+			tracer := sdktrace.NewTracerProvider().Tracer("test")
+			ctx, span := tracer.Start(ctx, "Call", trace.WithSpanKind(trace.SpanKindClient))
+			defer span.End()
+			inv := invocation.NewRPCInvocation("Call", nil, nil)
+			ctx = rpcexemplar.WithSpan(ctx, inv, span, trace.SpanKindClient)
+			before := NewBeforeInvokeEventWithExemplar(ctx, base.NewBaseInvoker(url), inv).(*metricsEvent)
+			before.collector = c
+			require.NotNil(t, before.exemplar)
+			c.record(before)
+			assertNoHistogramSamples(t, reg)
 			_, observation := rpcerror.WithObservation(ctx)
 			done := make(chan struct{})
 			observation.OnComplete(func(completion rpcerror.Completion) {
@@ -371,7 +392,8 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			})
 			observation.BeginAsync(ctx, time.Minute)
 			observation.FinishInvoke(nil, true)
-			if expire {
+			span.End() // The latency callback runs after the tracing filter returns.
+			if tc.expire {
 				cancel()
 			} else {
 				observation.Complete(nil)
@@ -384,7 +406,7 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			observation.Complete(nil)
 			observation.Complete(errors.New("late failure"))
 			assert.Zero(t, scalarSnapshot(t, reg)["dubbo_consumer_requests_processing_total"])
-			if expire {
+			if tc.expire {
 				assertNoHistogramSamples(t, reg)
 				assert.Zero(t, scalarSnapshot(t, reg)["dubbo_consumer_requests_total"])
 				return
@@ -392,6 +414,20 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			h := metricFamily(t, reg, consumerRTHistogram.Name).Metric[0].GetHistogram()
 			require.Equal(t, uint64(1), h.GetSampleCount())
 			require.InDelta(t, 0.0005, h.GetSampleSum(), 1e-12)
+			exemplar := h.GetBucket()[0].GetExemplar()
+			if tc.exemplars {
+				require.NotNil(t, exemplar)
+				labels := make(map[string]string)
+				for _, label := range exemplar.GetLabel() {
+					labels[label.GetName()] = label.GetValue()
+				}
+				require.Equal(t, map[string]string{
+					"trace_id": span.SpanContext().TraceID().String(),
+					"span_id":  span.SpanContext().SpanID().String(),
+				}, labels)
+			} else {
+				require.Nil(t, exemplar)
+			}
 		})
 	}
 }

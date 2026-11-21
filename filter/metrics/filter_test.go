@@ -24,21 +24,19 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestMetricsFilterInvoke(t *testing.T) {
-	mockChan := make(chan metrics.MetricsEvent, 10)
-	defer close(mockChan)
-	metrics.Subscribe(constant.MetricsRpc, mockChan)
-
 	url, _ := common.NewURL(
 		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider" +
 			"&cluster=failover&environment=dev&group=&interface=com.ikurento.user.UserProvider&loadbalance=random&methods.GetUser." +
@@ -51,12 +49,25 @@ func TestMetricsFilterInvoke(t *testing.T) {
 	inv := invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
 	ctx := context.Background()
 
-	filter := newFilter()
-	result := filter.Invoke(ctx, invoker, inv)
-	assert.NotNil(t, result)
-	result = filter.OnResponse(ctx, nil, invoker, inv)
-	assert.Nil(t, result)
+	for _, tc := range []struct {
+		name   string
+		filter filter.Filter
+	}{
+		{"default", newFilter()},
+		{"exemplars enabled without a local span", &metricsFilter{captureExemplars: true}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mockChan := make(chan metrics.MetricsEvent, 10)
+			metrics.Subscribe(constant.MetricsRpc, mockChan)
+			defer metrics.Unsubscribe(constant.MetricsRpc)
 
-	assert.Len(t, mockChan, 2)
-	assert.Equal(t, constant.MetricsRpc, (<-mockChan).Type())
+			res := tc.filter.Invoke(ctx, invoker, inv)
+			assert.NotNil(t, res)
+			assert.Nil(t, tc.filter.OnResponse(ctx, nil, invoker, inv))
+
+			require.Len(t, mockChan, 2)
+			assert.Equal(t, constant.MetricsRpc, (<-mockChan).Type())
+			assert.Equal(t, constant.MetricsRpc, (<-mockChan).Type())
+		})
+	}
 }
