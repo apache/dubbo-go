@@ -25,7 +25,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
@@ -33,14 +32,14 @@ import (
 // A struct key preserves every existing label without delimiter collisions or
 // JSON encoding on each measurement. Labels are captured before RPC execution.
 type seriesKey struct {
-	role, application, applicationVersion, hostname, ip, service, method, group, version string
+	role, application, applicationVersion, hostname, ip, service, method, group, version, protocol string
 }
 
 func keyOf(e *metricsEvent) seriesKey {
 	l := e.labels
 	return seriesKey{e.role, l[constant.TagApplicationName], l[constant.TagApplicationVersion],
 		l[constant.TagHostname], l[constant.TagIp], l[constant.TagInterface], l[constant.TagMethod],
-		l[constant.TagGroup], l[constant.TagVersion]}
+		l[constant.TagGroup], l[constant.TagVersion], l[constant.TagProtocol]}
 }
 
 type counterPair struct {
@@ -169,7 +168,7 @@ func (s *rpcSeries) record(e *metricsEvent) {
 				s.counter(&s.succeeded, "requests_succeed_total").inc()
 			} else {
 				s.counter(&s.failed, "requests_failed_total").inc()
-				kind := classifyError(rpcerror.Mark(e.err, e.origin))
+				kind := classifyEvent(e)
 				s.counter(&s.failures[kind], failureSuffixes[kind]).inc()
 			}
 		}

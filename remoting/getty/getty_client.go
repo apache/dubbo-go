@@ -48,9 +48,11 @@ import (
 )
 
 var (
-	errSessionNotExist   = errors.New("session not exist")
-	errClientClosed      = errors.New("client closed")
-	errClientReadTimeout = errors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
+	// Transport-level failures: no usable session, or the getty client is closed.
+	errSessionNotExist = rpcerror.Mark(errors.New("session not exist"), rpcerror.Network)
+	errClientClosed    = rpcerror.Mark(errors.New("client closed"), rpcerror.Network)
+	// No response arrived within the request timeout.
+	errClientReadTimeout = rpcerror.NewKindError(rpcerror.KindTimeout, "maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf = GetDefaultClientConfig()
 
@@ -266,6 +268,7 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
+		response.Observation.RecordKind(response.Kind)
 	case <-ctx.Done():
 		return perrors.WithStack(ctx.Err())
 	}

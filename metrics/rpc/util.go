@@ -33,7 +33,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// buildLabels will build the labels for the rpc metrics
+// buildLabels builds the labels of the RPC metrics. The label set is a stable
+// contract (see README.md#label-contract-3337): every RPC series carries exactly
+// these keys, all of which are bounded by the deployment rather than by
+// request data. The provider/consumer side is encoded in the metric name and
+// the failure category in dedicated failure metrics, so neither is a label.
 func buildLabels(url *common.URL, invocation base.Invocation) map[string]string {
 	applicationName, applicationVersion := metricApplication(url)
 	return map[string]string{
@@ -45,7 +49,17 @@ func buildLabels(url *common.URL, invocation base.Invocation) map[string]string 
 		constant.TagMethod:             invocation.MethodName(),
 		constant.TagGroup:              url.Group(),
 		constant.TagVersion:            url.GetParam(constant.VersionKey, ""),
+		constant.TagProtocol:           metricProtocol(url),
 	}
+}
+
+// metricProtocol returns the RPC protocol (e.g. "dubbo", "tri") of url. A
+// registry URL wrapping the real service URL reports the wrapped protocol.
+func metricProtocol(url *common.URL) string {
+	if (url.Protocol == constant.RegistryProtocol || url.Protocol == constant.ServiceRegistryProtocol) && url.SubURL != nil {
+		return url.SubURL.Protocol
+	}
+	return url.Protocol
 }
 
 // metricApplication keeps consumer metrics on the local application. A
