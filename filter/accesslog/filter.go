@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -56,6 +57,9 @@ const (
 	Types = "types"
 	// Arguments represents the arguments string in log.
 	Arguments = "arguments"
+	// TraceID and SpanID identify the request's span, when it has one.
+	TraceID = "trace_id"
+	SpanID  = "span_id"
 )
 
 var (
@@ -119,7 +123,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation ba
 
 	// the user do not
 	if len(accessLog) > 0 {
-		accessLogData := Data{data: f.buildAccessLogData(invoker, invocation), accessLog: accessLog}
+		accessLogData := Data{data: f.buildAccessLogData(ctx, invoker, invocation), accessLog: accessLog}
 		f.logIntoChannel(accessLogData)
 	}
 	return invoker.Invoke(ctx, invocation)
@@ -147,8 +151,12 @@ func (f *Filter) logIntoChannel(accessLogData Data) {
 }
 
 // buildAccessLogData builds the access log data
-func (f *Filter) buildAccessLogData(_ base.Invoker, invocation base.Invocation) map[string]string {
+func (f *Filter) buildAccessLogData(ctx context.Context, _ base.Invoker, invocation base.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
+	if fields := dubboLogger.ExtractTraceFields(ctx); fields.TraceID != "" {
+		dataMap[TraceID] = fields.TraceID
+		dataMap[SpanID] = fields.SpanID
+	}
 	attachments := invocation.Attachments()
 	itf, ok := stringAttachment(attachments, constant.InterfaceKey)
 	if !ok || len(itf) == 0 {
@@ -427,6 +435,12 @@ func (d *Data) toLogMessage() string {
 
 	if len(d.data[Arguments]) > 0 {
 		builder.WriteString(d.data[Arguments])
+	}
+	if len(d.data[TraceID]) > 0 {
+		builder.WriteString(" " + TraceID + "=")
+		builder.WriteString(d.data[TraceID])
+		builder.WriteString(" " + SpanID + "=")
+		builder.WriteString(d.data[SpanID])
 	}
 	return builder.String()
 }

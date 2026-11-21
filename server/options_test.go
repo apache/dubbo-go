@@ -1289,3 +1289,23 @@ func TestCodecServiceReceivePolicyInheritance(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"hessian2"}, next.Service.AcceptedSerializations)
 }
+
+// TestTracingServerFilterRunsFirst checks that, with tracing enabled, the
+// OpenTelemetry server filter is first in the provider chain, so the other
+// provider filters run inside the server span.
+func TestTracingServerFilterRunsFirst(t *testing.T) {
+	srv, err := NewServer()
+	require.NoError(t, err)
+	enabled := true
+	srv.cfg.Otel = global.DefaultOtelConfig()
+	srv.cfg.Otel.TracingConfig.Enable = &enabled
+
+	svcOpts := defaultServiceOptions()
+	svcOpts.Provider = srv.cfg.Provider
+	svcOpts.Application = srv.cfg.Application
+	svcOpts.Registries = srv.cfg.Registries
+	svcOpts.Protocols = srv.cfg.Protocols
+	require.NoError(t, svcOpts.init(srv, WithInterface("com.example.TracingFilterOrder")))
+	assert.Equal(t, constant.OTELServerTraceKey+","+constant.DefaultServiceFilters,
+		svcOpts.getUrlMap().Get(constant.ServiceFilterKey))
+}

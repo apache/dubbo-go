@@ -25,13 +25,10 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -64,7 +61,7 @@ func newSeataFilter() filter.Filter {
 func (f *seataFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	xid := invocation.GetAttachmentWithDefaultValue(string(SEATA_XID), "")
 	if len(strings.TrimSpace(xid)) > 0 {
-		logger.Debugf("[Filter][Seata] method and XID, method=%v xid=%v", invocation.MethodName(), xid)
+		dubboLogger.CtxDebugf(ctx, "[Filter][Seata] method and XID, method=%v xid=%v", invocation.MethodName(), xid)
 		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)
 	}
 	return invoker.Invoke(ctx, invocation)

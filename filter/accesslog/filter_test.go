@@ -99,7 +99,7 @@ func TestBuildAccessLogDataSkipsNonStringAttachments(t *testing.T) {
 
 	var data map[string]string
 	require.NotPanics(t, func() {
-		data = (&Filter{}).buildAccessLogData(nil, inv)
+		data = (&Filter{}).buildAccessLogData(context.Background(), nil, inv)
 	})
 	assert.Equal(t, "fallback.Service", data[constant.InterfaceKey])
 	assert.NotContains(t, data, constant.MethodKey)

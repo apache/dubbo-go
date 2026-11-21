@@ -38,15 +38,12 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps/limiter"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -79,17 +76,17 @@ func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, invoc
 	if len(tpsLimiter) > 0 {
 		limiter, err := extension.GetTpsLimiter(tpsLimiter)
 		if err != nil {
-			logger.Warnf("[Filter][TPS] get TPS limiter failed, err=%v", err)
+			dubboLogger.CtxWarnf(ctx, "[Filter][TPS] get TPS limiter failed, err=%v", err)
 			return invoker.Invoke(ctx, invocation)
 		}
 		allow := limiter.IsAllowable(invoker.GetURL(), invocation)
 		if allow {
 			return invoker.Invoke(ctx, invocation)
 		}
-		logger.Errorf("[Filter][TPS] the invocation was rejected due to over the limiter limitation, url=%s", url.String())
+		dubboLogger.CtxErrorf(ctx, "[Filter][TPS] the invocation was rejected due to over the limiter limitation, url=%s", url.String())
 		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(rejectedExeHandler)
 		if err != nil {
-			logger.Warnf("[Filter][TPS] get rejected execution handler failed, err=%v", err)
+			dubboLogger.CtxWarnf(ctx, "[Filter][TPS] get rejected execution handler failed, err=%v", err)
 		} else {
 			return rejectedExecutionHandler.RejectedExecution(url, invocation)
 		}
