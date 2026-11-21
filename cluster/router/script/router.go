@@ -231,6 +231,12 @@ func (s *ScriptRouter) Notify(invokers []base.Invoker) {
 		if err != nil {
 			logger.Errorf("[Router][Script] query script rule failed, applicationName=%s listenTarget=%s error=%v", s.applicationName, listenTarget, err)
 		}
-		s.Process(&config_center.ConfigChangeEvent{Key: listenTarget, Value: value, ConfigType: remoting.EventTypeUpdate})
+		// No rule for this provider application: reset rather than parse an
+		// empty value, which is not a malformed rule.
+		eventType := remoting.EventTypeUpdate
+		if value == "" {
+			eventType = remoting.EventTypeDel
+		}
+		s.Process(&config_center.ConfigChangeEvent{Key: listenTarget, Value: value, ConfigType: eventType})
 	}
 }

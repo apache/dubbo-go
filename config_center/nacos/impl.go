@@ -164,6 +164,14 @@ func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.H
 
 // GetRule retrieves a router rule from Nacos configuration center.
 func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
+	// Nacos rejects an empty data ID, and no config can be stored under one.
+	// This happens when the config center is used only for dynamic rules and
+	// data-id is left unset, so report it as absent like other backends do.
+	if key == "" {
+		logger.Debug("[ConfigCenter][Nacos] skip querying config with empty key")
+		return "", nil
+	}
+
 	tmpOpts := config_center.NewOptions(opts...)
 	group := n.resolvedGroup(tmpOpts.Center.Group)
 
