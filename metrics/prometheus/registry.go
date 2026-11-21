@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 import (
@@ -122,7 +123,31 @@ func (p *promMetricRegistry) HistogramWithOptions(m *metrics.MetricId, opts *met
 			Buckets: buckets,
 		}, m.TagKeys())
 	}).(*prom.HistogramVec)
-	return vec.With(m.Tags)
+	histogram := vec.With(m.Tags)
+	if p.exemplarsEnabled() && p.url.GetParamBool(constant.HistogramEnabledKey, false) {
+		if observer, ok := histogram.(prom.ExemplarObserver); ok {
+			return exemplarHistogram{Observer: histogram, exemplars: observer}
+		}
+	}
+	return histogram
+}
+
+type exemplarHistogram struct {
+	prom.Observer
+	exemplars prom.ExemplarObserver
+}
+
+func (h exemplarHistogram) ObserveWithExemplar(value float64, traceID, spanID string) {
+	if traceID == "" || spanID == "" || !utf8.ValidString(traceID) || !utf8.ValidString(spanID) ||
+		len("trace_id")+len("span_id")+utf8.RuneCountInString(traceID)+utf8.RuneCountInString(spanID) > prom.ExemplarMaxRunes {
+		h.Observe(value)
+		return
+	}
+	h.exemplars.ObserveWithExemplar(value, prom.Labels{"trace_id": traceID, "span_id": spanID})
+}
+
+func (p *promMetricRegistry) exemplarsEnabled() bool {
+	return p.url != nil && p.url.GetParamBool(constant.HistogramExemplarsKey, false)
 }
 
 func (p *promMetricRegistry) Summary(m *metrics.MetricId) metrics.ObservableMetric {
@@ -175,11 +200,17 @@ func (p *promMetricRegistry) Export() {
 	}
 }
 
+func (p *promMetricRegistry) httpHandler() http.Handler {
+	return promhttp.InstrumentMetricHandler(p.r, promhttp.HandlerFor(p.gather, promhttp.HandlerOpts{
+		EnableOpenMetrics: p.exemplarsEnabled(),
+	}))
+}
+
 func (p *promMetricRegistry) exportHttp() {
 	mux := http.NewServeMux()
 	path := p.url.GetParam(constant.PrometheusExporterMetricsPathKey, constant.PrometheusDefaultMetricsPath)
 	port := p.url.GetParam(constant.PrometheusExporterMetricsPortKey, constant.PrometheusDefaultMetricsPort)
-	mux.Handle(path, promhttp.InstrumentMetricHandler(p.r, promhttp.HandlerFor(p.gather, promhttp.HandlerOpts{})))
+	mux.Handle(path, p.httpHandler())
 	srv := &http.Server{Addr: ":" + port, Handler: mux}
 	extension.AddCustomShutdownCallback(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

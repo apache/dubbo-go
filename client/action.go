@@ -503,12 +503,7 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	if ref.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
 	}
-	if metrics.Enable != nil && *metrics.Enable {
-		defaultReferenceFilter += fmt.Sprintf(",%s", constant.MetricsFilterKey)
-	}
-	if tracing.Enable != nil && *tracing.Enable {
-		defaultReferenceFilter += fmt.Sprintf(",%s", constant.OTELClientTraceKey)
-	}
+	defaultReferenceFilter = commonCfg.AppendObservabilityFilters(defaultReferenceFilter, ref.Filter, constant.OTELClientTraceKey, metrics, tracing)
 	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
 
 	for _, v := range ref.MethodsConfig {

@@ -29,6 +29,12 @@ type HistogramProvider interface {
 	HistogramWithOptions(*MetricId, *HistogramOpts) ObservableMetric
 }
 
+// ExemplarObserver is an optional extension for histogram observations with
+// OpenTelemetry trace and span IDs. The observation still counts as one sample.
+type ExemplarObserver interface {
+	ObserveWithExemplar(value float64, traceID, spanID string)
+}
+
 // HistogramOpts configures finite bucket upper bounds, in the same unit as
 // observed values. Bounds must be positive, finite and strictly increasing.
 // Empty Buckets selects the registry's defaults. The first registration of a

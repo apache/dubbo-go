@@ -85,6 +85,20 @@ This section is the stable contract of the built-in RPC metrics: names,
 labels, failure taxonomy and the RED model built on them. Dashboards and alerts
 should rely only on what is listed here.
 
+### Trace exemplars for latency histograms
+
+Set `metrics.histogram.exemplars: true` or pass
+`metrics.WithHistogramExemplars()` to `dubbo.WithMetrics`. This also enables
+OpenMetrics negotiation on the existing Prometheus HTTP exporter. Enable RPC
+latency histograms and OpenTelemetry tracing to produce exemplars. To read them,
+send `Accept: application/openmetrics-text` when scraping the metrics endpoint.
+
+A latency observation can carry the `trace_id` and `span_id` of its sampled
+client-attempt or server Span. Automatic filter chains run tracing before
+metrics when exemplars are enabled. This puts tracing setup and teardown
+outside the latency measurement. If you set your own filter order, place the
+local tracing filter before `metrics` to capture the Span.
+
 ### Label contract (#3337)
 
 Every RPC series carries exactly these labels, on both sides:

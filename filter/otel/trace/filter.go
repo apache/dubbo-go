@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -44,14 +45,16 @@ func init() {
 	// TODO: use single filter to simplify filter field in configuration
 	extension.SetFilter(constant.OTELServerTraceKey, func() filter.Filter {
 		return &otelServerFilter{
-			Propagators:    otel.GetTextMapPropagator(),
-			TracerProvider: otel.GetTracerProvider(),
+			Propagators:      otel.GetTextMapPropagator(),
+			TracerProvider:   otel.GetTracerProvider(),
+			captureExemplars: rpcexemplar.Enabled(),
 		}
 	})
 	extension.SetFilter(constant.OTELClientTraceKey, func() filter.Filter {
 		return &otelClientFilter{
-			Propagators:    otel.GetTextMapPropagator(),
-			TracerProvider: otel.GetTracerProvider(),
+			Propagators:      otel.GetTextMapPropagator(),
+			TracerProvider:   otel.GetTracerProvider(),
+			captureExemplars: rpcexemplar.Enabled(),
 		}
 	})
 }
@@ -77,8 +80,9 @@ var _ filter.Filter = (*otelServerFilter)(nil)
 // by creating and managing trace spans using the configured propagator
 // and tracer provider.
 type otelServerFilter struct {
-	Propagators    propagation.TextMapPropagator
-	TracerProvider trace.TracerProvider
+	Propagators      propagation.TextMapPropagator
+	TracerProvider   trace.TracerProvider
+	captureExemplars bool
 }
 
 func (f *otelServerFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, protocol base.Invocation) result.Result {
@@ -103,6 +107,9 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	)
 	defer span.End()
 
+	if f.captureExemplars {
+		ctx = rpcexemplar.WithSpan(ctx, invocation, span, trace.SpanKindServer)
+	}
 	res := invoker.Invoke(ctx, invocation)
 
 	if res.Error() != nil {
@@ -119,8 +126,9 @@ var _ filter.Filter = (*otelClientFilter)(nil)
 // by creating and managing trace spans using the configured propagator
 // and tracer provider.
 type otelClientFilter struct {
-	Propagators    propagation.TextMapPropagator
-	TracerProvider trace.TracerProvider
+	Propagators      propagation.TextMapPropagator
+	TracerProvider   trace.TracerProvider
+	captureExemplars bool
 }
 
 func (f *otelClientFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, protocol base.Invocation) result.Result {
@@ -149,6 +157,9 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	Inject(ctx, attachments, f.Propagators)
 	for k, v := range attachments {
 		invocation.SetAttachment(k, v)
+	}
+	if f.captureExemplars {
+		ctx = rpcexemplar.WithSpan(ctx, invocation, span, trace.SpanKindClient)
 	}
 	res := invoker.Invoke(ctx, invocation)
 

@@ -29,6 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
@@ -43,6 +44,9 @@ func init() {
 			rc := newRPCCollector(registry, url)
 			metrics.SubscribeRecorder(constant.MetricsRpc, rc.record)
 			activeCollector.Store(rc)
+			if rc.histogramRegistry != nil && url.GetParamBool(constant.HistogramExemplarsKey, false) {
+				rpcexemplar.Enable()
+			}
 		}
 	}
 
@@ -143,7 +147,7 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 		}
 	}
 	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
-	c.reportRTHistogram(role, labels, event.costTime.Seconds())
+	c.reportRTHistogram(event)
 }
 
 func (c *rpcCollector) recordQps(role string, labels map[string]string) {

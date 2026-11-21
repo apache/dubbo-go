@@ -508,6 +508,7 @@ const (
 	AggregationBucketNumKey              = "aggregation.bucket.num"
 	AggregationTimeWindowSecondsKey      = "aggregation.time.window.seconds"
 	HistogramEnabledKey                  = "histogram.enabled"
+	HistogramExemplarsKey                = "histogram.exemplars"
 	HistogramBucketsKey                  = "histogram.buckets"
 	PrometheusExporterEnabledKey         = "prometheus.exporter.enabled"
 	PrometheusExporterMetricsPortKey     = "prometheus.exporter.metrics.port"

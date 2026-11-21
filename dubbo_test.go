@@ -560,18 +560,21 @@ func TestHistogramConfigDefaultsAndURL(t *testing.T) {
 		assert.Equal(t, []float64{0.1, 0.3, 0.5, 1, 3, 5, 10}, rc.Metrics.Histogram.Buckets)
 		u := metricsURL(rc)
 		assert.False(t, u.GetParamBool(constant.HistogramEnabledKey, true))
+		assert.False(t, u.GetParamBool(constant.HistogramExemplarsKey, true))
 		assert.Equal(t, "0.1,0.3,0.5,1,3,5,10", u.GetParam(constant.HistogramBucketsKey, ""))
 	}
 }
 
 func TestHistogramFunctionalConfigAndClone(t *testing.T) {
 	rc := defaultInstanceOptions()
-	WithMetrics(metrics.WithEnabled(), metrics.WithHistogramEnabled(), metrics.WithHistogramBuckets([]float64{0.0005, 0.005}))(rc)
+	WithMetrics(metrics.WithEnabled(), metrics.WithHistogramEnabled(), metrics.WithHistogramExemplars(), metrics.WithHistogramBuckets([]float64{0.0005, 0.005}))(rc)
 	require.NoError(t, rc.initGlobalMetrics(false))
 	u := metricsURL(rc)
 	assert.True(t, u.GetParamBool(constant.HistogramEnabledKey, false))
 	assert.Equal(t, "0.0005,0.005", u.GetParam(constant.HistogramBucketsKey, ""))
+	assert.True(t, u.GetParamBool(constant.HistogramExemplarsKey, false))
 	clone := rc.CloneMetrics()
+	assert.True(t, clone.RPCExemplarsEnabled())
 	clone.Histogram.Buckets[0] = 10
 	*clone.Histogram.Enabled = false
 	assert.Equal(t, []float64{0.0005, 0.005}, rc.Metrics.Histogram.Buckets)

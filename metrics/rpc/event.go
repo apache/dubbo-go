@@ -18,12 +18,14 @@
 package rpc
 
 import (
+	"context"
 	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -32,11 +34,12 @@ import (
 // metricsEvent is the event defined for rpc metrics
 type metricsEvent struct {
 	collector *rpcCollector // snapshot readiness; a call begun before Init stays unrecorded
-	name      metricsName
 	costTime  time.Duration
 	role      string
 	labels    map[string]string
 	err       error
+	exemplar  *rpcexemplar.IDs
+	name      metricsName
 	hasResult bool
 	origin    rpcerror.Origin
 	kind      rpcerror.Kind
@@ -56,6 +59,17 @@ const (
 )
 
 func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
+	return newBeforeInvokeEvent(invoker, invocation)
+}
+
+// NewBeforeInvokeEventWithExemplar snapshots the local RPC span for completion.
+func NewBeforeInvokeEventWithExemplar(ctx context.Context, invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
+	event := newBeforeInvokeEvent(invoker, invocation)
+	event.exemplar = rpcexemplar.ForInvocation(ctx, invocation, event.role)
+	return event
+}
+
+func newBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) *metricsEvent {
 	return &metricsEvent{
 		collector: activeCollector.Load(),
 		name:      BeforeInvoke,
@@ -68,11 +82,14 @@ func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metr
 // not retain or read a mutable invocation, result, URL, or session.
 func NewCompletionEvent(before metrics.MetricsEvent, duration time.Duration, c rpcerror.Completion) metrics.MetricsEvent {
 	start := before.(*metricsEvent)
-	name := AfterInvoke
-	if !c.Known {
-		name = ObservationExpired
+	event := &metricsEvent{collector: start.collector, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin, kind: c.Kind}
+	if c.Known {
+		event.name = AfterInvoke
+		event.exemplar = start.exemplar
+	} else {
+		event.name = ObservationExpired
 	}
-	return &metricsEvent{collector: start.collector, name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin, kind: c.Kind}
+	return event
 }
 
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {

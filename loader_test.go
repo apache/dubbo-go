@@ -83,6 +83,7 @@ dubbo:
     enable: true
     histogram:
       enabled: true
+      exemplars: true
       buckets: [0.0001, 0.001, 0.01, 1]
 `)))
 	rc, err := loadInstanceOptions(conf)
@@ -94,6 +95,7 @@ dubbo:
 	assert.Equal(t, []float64{0.0001, 0.001, 0.01, 1}, rc.Metrics.Histogram.Buckets)
 	u := metricsURL(rc)
 	assert.True(t, u.GetParamBool(constant.HistogramEnabledKey, false))
+	assert.True(t, u.GetParamBool(constant.HistogramExemplarsKey, false))
 	assert.Equal(t, "0.0001,0.001,0.01,1", u.GetParam(constant.HistogramBucketsKey, ""))
 }
 

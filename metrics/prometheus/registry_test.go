@@ -22,6 +22,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -218,5 +221,55 @@ func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 		return false // completed normally
 	case <-time.After(timeout):
 		return true // timed out
+	}
+}
+
+func TestHistogramExemplarHTTPNegotiation(t *testing.T) {
+	for _, scenario := range []struct {
+		name                 string
+		histogram, exemplars bool
+	}{
+		{"enabled", true, true},
+		{"exemplars disabled", true, false},
+		{"histogram disabled", false, true},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			opts := common.NewURLWithOptions()
+			opts.SetParam(constant.HistogramEnabledKey, strconv.FormatBool(scenario.histogram))
+			opts.SetParam(constant.HistogramExemplarsKey, strconv.FormatBool(scenario.exemplars))
+			p := NewPromMetricRegistry(prom.NewRegistry(), opts)
+			histogram := p.HistogramWithOptions(metricId, &metrics.HistogramOpts{Buckets: []float64{0.5, 1}})
+			exemplars, ok := histogram.(metrics.ExemplarObserver)
+			require.Equal(t, scenario.histogram && scenario.exemplars, ok)
+			if ok {
+				exemplars.ObserveWithExemplar(0.25, strings.Repeat("a", 32), strings.Repeat("b", 16))
+				exemplars.ObserveWithExemplar(0.75, strings.Repeat("界", 112), "z")
+				exemplars.ObserveWithExemplar(0.75, strings.Repeat("界", 113), "z")
+			} else {
+				histogram.Observe(0.25)
+			}
+			handler := p.httpHandler()
+			for _, accept := range []string{"application/openmetrics-text", "text/plain"} {
+				request := httptest.NewRequest("GET", "/metrics", nil)
+				request.Header.Set("Accept", accept)
+				response := httptest.NewRecorder()
+				handler.ServeHTTP(response, request)
+				require.Equal(t, http.StatusOK, response.Code)
+				openMetrics := scenario.exemplars && accept == "application/openmetrics-text"
+				if openMetrics {
+					require.Contains(t, response.Header().Get("Content-Type"), accept)
+				} else {
+					require.Contains(t, response.Header().Get("Content-Type"), "text/plain")
+				}
+				if ok && openMetrics {
+					require.Contains(t, response.Body.String(), `span_id="bbbbbbbbbbbbbbbb"`)
+					require.Contains(t, response.Body.String(), `trace_id="`+strings.Repeat("界", 112)+`"`)
+					require.NotContains(t, response.Body.String(), strings.Repeat("界", 113))
+					require.Contains(t, response.Body.String(), `dubbo_request_count{app="dubbo",version="1.0.0"} 3`)
+				} else {
+					require.NotContains(t, response.Body.String(), "span_id=")
+				}
+			}
+		})
 	}
 }
