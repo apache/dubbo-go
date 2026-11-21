@@ -34,6 +34,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
@@ -152,7 +153,7 @@ func (l *LogrusCtxLogger) recordErrorToSpanIfPresent(ctx context.Context, templa
 	}
 
 	span := trace.SpanFromContext(ctx)
-	if span == nil || !span.IsRecording() {
+	if span == nil || !span.IsRecording() || rpcerror.OwnsSpan(ctx, span.SpanContext().SpanID().String()) {
 		return
 	}
 
