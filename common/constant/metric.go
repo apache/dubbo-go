@@ -58,6 +58,7 @@ const (
 	PrometheusDefaultMetricsPort        = "9090"
 	PrometheusDefaultPushInterval       = 30
 	PrometheusDefaultJobName            = "default_dubbo_job"
+	OtlpMetricsDefaultExportInterval    = 30 // seconds
 	ProbeDefaultPort                    = "22222"
 	ProbeDefaultLivenessPath            = "/live"
 	ProbeDefaultReadinessPath           = "/ready"
