@@ -48,8 +48,7 @@ endif
 RACE_SKIP_TESTS := TestListener \
 TestDubboProtocol_Refer \
 TestCfgAPI_Export \
-TestCfgAPI_Call \
-TestTCPPackageHandle
+TestCfgAPI_Call
 space := $(subst x, ,x)
 
 GOLANGCI_LINT := $(TOOLS_BIN)/golangci-lint$(BIN_EXT)

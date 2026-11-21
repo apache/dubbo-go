@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"sync"
 )
 
 import (
@@ -44,12 +45,29 @@ import (
 )
 
 var (
-	srvConf = GetDefaultServerConfig()
+	srvConf     = GetDefaultServerConfig()
+	srvConfLock sync.RWMutex
 )
 
-func initServer(url *common.URL) {
+type preparedServerConfig struct {
+	tlsBuilder *getty.ServerTlsConfigBuilder
+	hasParams  bool
+	params     []byte
+	marshalErr error
+}
+
+func initServer(url *common.URL) (conf ServerConfig) {
+	var prepared preparedServerConfig
+	defer func() {
+		conf = applyServerConfig(prepared)
+	}()
+	prepareServerConfig(url, &prepared)
+	return
+}
+
+func serverProtocolConfig(url *common.URL) *global.ProtocolConfig {
 	if url.Protocol == "" {
-		return
+		return nil
 	}
 
 	// Ensure application config is available via URL attribute
@@ -58,60 +76,90 @@ func initServer(url *common.URL) {
 	protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey)
 	if !ok || protocolConfRaw == nil {
 		logger.Warn("[Remoting][Getty] protocolConfig not found in URL attributes")
-		return
+		return nil
 	}
 	protocolConfMap, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
 	if !ok || protocolConfMap == nil {
 		logger.Warn("[Remoting][Getty] protocolConfig assert failed or is nil")
-		return
+		return nil
 	}
 
 	protocolConf := protocolConfMap[url.Protocol]
 	if protocolConf == nil {
 		logger.Debug("[Remoting][Getty] use default getty server config")
+	}
+	return protocolConf
+}
+
+func prepareServerConfig(url *common.URL, prepared *preparedServerConfig) {
+	protocolConf := serverProtocolConfig(url)
+	if protocolConf == nil {
 		return
-	} else {
-		// server tls config
-		if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
-			if !ok {
-				logger.Error("[Remoting][Getty] getty server initialized the TLSConfig configuration failed")
-				return
-			}
-			if dubbotls.IsServerTLSValid(tlsConf) {
-				srvConf.SSLEnabled = true
-				srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
-					ServerKeyCertChainPath:        tlsConf.TLSCertFile,
-					ServerPrivateKeyPath:          tlsConf.TLSKeyFile,
-					ServerTrustCertCollectionPath: tlsConf.CACertFile,
-				}
-				logger.Info("[Remoting][Getty] getty server initialized the TLSConfig configuration")
-			}
-		}
-		//getty params
-		gettyServerConfig := protocolConf.Params
-		if gettyServerConfig == nil {
-			logger.Debug("[Remoting][Getty] gettyServerConfig is nil")
+	}
+
+	// server tls config
+	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			logger.Error("[Remoting][Getty] getty server initialized the TLSConfig configuration failed")
 			return
 		}
+		if dubbotls.IsServerTLSValid(tlsConf) {
+			prepared.tlsBuilder = &getty.ServerTlsConfigBuilder{
+				ServerKeyCertChainPath:        tlsConf.TLSCertFile,
+				ServerPrivateKeyPath:          tlsConf.TLSKeyFile,
+				ServerTrustCertCollectionPath: tlsConf.CACertFile,
+			}
+		}
+	}
+	//getty params
+	gettyServerConfig := protocolConf.Params
+	if gettyServerConfig == nil {
+		logger.Debug("[Remoting][Getty] gettyServerConfig is nil")
+		return
+	}
 
-		gettyServerConfigBytes, err := yaml.Marshal(gettyServerConfig)
-		if err != nil {
+	prepared.params, prepared.marshalErr = yaml.Marshal(gettyServerConfig)
+	prepared.hasParams = true
+}
+
+func applyServerConfig(prepared preparedServerConfig) ServerConfig {
+	srvConfLock.Lock()
+	defer srvConfLock.Unlock()
+
+	if prepared.tlsBuilder != nil {
+		srvConf.SSLEnabled = true
+		srvConf.TLSBuilder = prepared.tlsBuilder
+		logger.Info("[Remoting][Getty] getty server initialized the TLSConfig configuration")
+	}
+	if prepared.hasParams {
+		if prepared.marshalErr != nil {
+			panic(prepared.marshalErr)
+		}
+		if err := yaml.Unmarshal(prepared.params, srvConf); err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(gettyServerConfigBytes, srvConf)
-		if err != nil {
+		if err := srvConf.CheckValidity(); err != nil {
 			panic(err)
 		}
 	}
+	return cloneServerConfig(*srvConf)
+}
 
-	if err := srvConf.CheckValidity(); err != nil {
-		panic(err)
+func cloneServerConfig(conf ServerConfig) ServerConfig {
+	if builder, ok := conf.TLSBuilder.(*getty.ServerTlsConfigBuilder); ok && builder != nil {
+		copied := *builder
+		conf.TLSBuilder = &copied
 	}
+	return conf
 }
 
 // SetServerConfig set dubbo server config.
 func SetServerConfig(s ServerConfig) {
+	srvConfLock.Lock()
+	defer srvConfLock.Unlock()
+
+	s = cloneServerConfig(s)
 	srvConf = &s
 	err := srvConf.CheckValidity()
 	if err != nil {
@@ -122,7 +170,10 @@ func SetServerConfig(s ServerConfig) {
 
 // GetServerConfig get getty server config.
 func GetServerConfig() ServerConfig {
-	return *srvConf
+	srvConfLock.RLock()
+	defer srvConfLock.RUnlock()
+
+	return cloneServerConfig(*srvConf)
 }
 
 // Server define getty server
@@ -138,9 +189,9 @@ type Server struct {
 // NewServer create a new Server
 func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) result.RPCResult) *Server {
 	// init
-	initServer(url)
+	conf := initServer(url)
 	s := &Server{
-		conf:           *srvConf,
+		conf:           conf,
 		addr:           url.Location,
 		codec:          remoting.GetCodec(url.Protocol),
 		requestHandler: handlers,
@@ -225,7 +276,7 @@ func (s *Server) Start() {
 	serverOpts := []getty.ServerOption{getty.WithLocalAddress(addr)}
 	if s.conf.SSLEnabled {
 		serverOpts = append(serverOpts, getty.WithServerSslEnabled(s.conf.SSLEnabled),
-			getty.WithServerTlsConfigBuilder(srvConf.TLSBuilder))
+			getty.WithServerTlsConfigBuilder(s.conf.TLSBuilder))
 		logger.Info("[Remoting][Getty] getty server initialized the TLSConfig configuration")
 	}
 

@@ -131,7 +131,8 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (any, int,
 // Write send the data to client
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg any) ([]byte, error) {
 	res, ok := pkg.(*remoting.Response)
-	maxBufLength := srvConf.GettySessionParam.MaxMsgLen + impl.HEADER_LENGTH
+	maxMsgLen := p.server.conf.GettySessionParam.MaxMsgLen
+	maxBufLength := maxMsgLen + impl.HEADER_LENGTH
 	if ok {
 		buf, err := (p.server.codec).EncodeResponse(res)
 		if err != nil {
@@ -140,8 +141,8 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg any) ([]byte, erro
 		}
 		bufLength := buf.Len()
 		if bufLength > maxBufLength {
-			logger.Errorf("[Remoting][Getty] data length %d too large, max payload=%d", bufLength-impl.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
-			return nil, fmt.Errorf("data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
+			logger.Errorf("[Remoting][Getty] data length %d too large, max payload=%d", bufLength-impl.HEADER_LENGTH, maxMsgLen)
+			return nil, fmt.Errorf("data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, maxMsgLen)
 		}
 		return buf.Bytes(), nil
 	}
@@ -155,8 +156,8 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg any) ([]byte, erro
 		}
 		bufLength := buf.Len()
 		if bufLength > maxBufLength {
-			logger.Errorf("[Remoting][Getty] data length %d too large, max payload=%d", bufLength-impl.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
-			return nil, fmt.Errorf("data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
+			logger.Errorf("[Remoting][Getty] data length %d too large, max payload=%d", bufLength-impl.HEADER_LENGTH, maxMsgLen)
+			return nil, fmt.Errorf("data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, maxMsgLen)
 		}
 		return buf.Bytes(), nil
 	}
