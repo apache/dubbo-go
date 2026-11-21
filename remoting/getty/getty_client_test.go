@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"reflect"
 	"sync"
@@ -32,6 +33,8 @@ import (
 	dubboGetty "github.com/apache/dubbo-getty"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
+
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -554,10 +557,46 @@ func (s *cancelAfterWriteSession) setAfterWrite(cb func()) {
 	s.mu.Unlock()
 }
 
+// levelRecorder captures Errorf and Debugf calls and delegates the rest to
+// the logger it replaces.
+type levelRecorder struct {
+	logger.Logger
+	mu     sync.Mutex
+	debugs []string
+	errors []string
+}
+
+func (l *levelRecorder) Errorf(format string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.errors = append(l.errors, fmt.Sprintf(format, args...))
+}
+
+func (l *levelRecorder) Debugf(format string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.debugs = append(l.debugs, fmt.Sprintf(format, args...))
+}
+
+func (l *levelRecorder) snapshot() (debugs, errs []string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]string{}, l.debugs...), append([]string{}, l.errors...)
+}
+
+func installLevelRecorder(t *testing.T) *levelRecorder {
+	t.Helper()
+	prev := logger.GetLogger()
+	rec := &levelRecorder{Logger: prev}
+	logger.SetLogger(rec)
+	t.Cleanup(func() { logger.SetLogger(prev) })
+	return rec
+}
+
 // TestRequestContextCancelRemovesPending is a regression test for the
 // ctx.Done() wait branch. Cancellation must return ctx.Err(), drop the
-// pending response, leave the shared session open for reuse, and tolerate
-// a late Handle without panicking. Unlike the read-timeout path,
+// pending response, leave the shared session open for reuse, and log a
+// late Handle at debug instead of error. Unlike the read-timeout path,
 // cancellation must not close the session.
 func TestRequestContextCancelRemovesPending(t *testing.T) {
 	session := &cancelAfterWriteSession{}
@@ -568,7 +607,6 @@ func TestRequestContextCancelRemovesPending(t *testing.T) {
 	}
 
 	runCanceled := func(t *testing.T) {
-		t.Helper()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		session.setAfterWrite(cancel)
@@ -587,13 +625,17 @@ func TestRequestContextCancelRemovesPending(t *testing.T) {
 			"pending response must be removed after cancellation")
 		require.Equal(t, 0, session.closes(), "cancellation must not close the shared session")
 
+		rec := installLevelRecorder(t)
 		require.NotPanics(t, func() {
 			remoting.NewResponse(request.ID, "2.0.2").Handle()
 		})
+		debugs, errs := rec.snapshot()
+		require.Empty(t, errs, "late response after cancellation must not log at error: %v", errs)
+		require.NotEmpty(t, debugs, "late response after cancellation must log at debug")
 	}
 
-	runCanceled(t)
-	runCanceled(t)
+	t.Run("first request", runCanceled)
+	t.Run("reused session", runCanceled)
 }
 
 func TestRequestContextCancelAndLateHandleRace(t *testing.T) {
