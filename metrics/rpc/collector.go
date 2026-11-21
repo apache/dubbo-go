@@ -130,6 +130,15 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 	}
 	labels := event.labels
 	c.incRequestsTotal(role, labels)
+	if role == constant.SideConsumer {
+		if event.retry {
+			c.metricSet.consumer.retriesTotal.Inc(labels)
+		} else {
+			// Export the counter with requests_total, before the first retry, so
+			// that it can be subtracted from requests_total.
+			c.metricSet.consumer.retriesTotal.Add(labels, 0)
+		}
+	}
 	c.decRequestsProcessingTotal(role, labels)
 	if event.hasResult {
 		if event.err == nil {
