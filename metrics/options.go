@@ -81,13 +81,23 @@ func WithHistogramBuckets(buckets []float64) Option {
 	}
 }
 
-// WithAggregationEnabled enables metrics aggregation, such as the
-// time-window based aggregation for counters and rt metrics.
+// WithAggregationEnabled enables the sliding-window RPC metrics: QPS, the
+// *_aggregate counters, the aggregated RT and the RT quantiles.
 //
-// Aggregation is disabled by default (applied at instance initialization).
+// Aggregation is enabled by default (applied at instance initialization).
 func WithAggregationEnabled() Option {
 	return func(opts *Options) {
 		enabled := true
+		opts.Metrics.Aggregation.Enabled = &enabled
+	}
+}
+
+// WithAggregationDisabled disables the sliding-window RPC metrics enabled by
+// default. The cumulative counters and RT metrics are not affected. Dashboards
+// that query QPS, *_aggregate metrics or RT quantiles show no data without them.
+func WithAggregationDisabled() Option {
+	return func(opts *Options) {
+		enabled := false
 		opts.Metrics.Aggregation.Enabled = &enabled
 	}
 }

@@ -90,7 +90,7 @@ dubbo:
 	require.NoError(t, rc.initGlobalMetrics(false))
 	require.True(t, *rc.Metrics.Enable)
 	require.True(t, *rc.Metrics.Histogram.Enabled)
-	assert.False(t, *rc.Metrics.Aggregation.Enabled)
+	assert.True(t, *rc.Metrics.Aggregation.Enabled, "histograms leave the aggregation default unchanged")
 	assert.Equal(t, []float64{0.0001, 0.001, 0.01, 1}, rc.Metrics.Histogram.Buckets)
 	u := metricsURL(rc)
 	assert.True(t, u.GetParamBool(constant.HistogramEnabledKey, false))

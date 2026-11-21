@@ -39,8 +39,10 @@ type HistogramConfig struct {
 	Buckets []float64 `default:"[0.1,0.3,0.5,1,3,5,10]" yaml:"buckets" json:"buckets,omitempty" property:"buckets"`
 }
 
+// AggregateConfig controls the sliding-window RPC metrics: QPS, the *_aggregate
+// counters, the aggregated RT and the RT quantiles.
 type AggregateConfig struct {
-	Enabled           *bool `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Enabled           *bool `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 	BucketNum         int   `default:"10" yaml:"bucket-num" json:"bucket-num,omitempty" property:"bucket-num"`
 	TimeWindowSeconds int   `default:"120" yaml:"time-window-seconds" json:"time-window-seconds,omitempty" property:"time-window-seconds"`
 }
