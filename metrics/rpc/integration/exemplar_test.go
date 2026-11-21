@@ -255,6 +255,7 @@ func TestFilterToRPCExemplars(t *testing.T) {
 				invocation.WithCallBack(func(response common.CallbackResponse) { called <- response }),
 			)
 			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
 			require.NoError(t, chain.Invoke(ctx, inv).Error())
 			id := <-transport.sent
 			span := spans.Ended()[len(spans.Ended())-1].SpanContext()
