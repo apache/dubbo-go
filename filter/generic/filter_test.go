@@ -29,6 +29,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"go.opentelemetry.io/otel/trace"
+
 	"go.uber.org/mock/gomock"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -38,11 +42,20 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
+
+func genericExemplarContext(t *testing.T, inv base.Invocation, kind trace.SpanKind) (context.Context, rpcexemplar.IDs) {
+	t.Helper()
+	ctx, span := sdktrace.NewTracerProvider().Tracer("test").Start(context.Background(), "Call", trace.WithSpanKind(kind))
+	t.Cleanup(func() { span.End() })
+	sc := span.SpanContext()
+	return rpcexemplar.WithSpan(ctx, inv, span, kind), rpcexemplar.IDs{TraceID: sc.TraceID(), SpanID: sc.SpanID()}
+}
 
 type mockGenericPOJO struct {
 	Name string
@@ -57,17 +70,21 @@ func TestFilter_Invoke(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault))
-	filter := &genericFilter{}
+	filter := &genericFilter{captureExemplars: true}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	normalInvocation := invocation.NewRPCInvocation("Hello", []any{"arg1"}, make(map[string]any))
 
+	ctx, ids := genericExemplarContext(t, normalInvocation, trace.SpanKindClient)
+
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(2)
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Not(normalInvocation)).DoAndReturn(
 		func(ctx context.Context, invocation base.Invocation) result.Result {
+			assert.Equal(t, &ids, rpcexemplar.ForInvocation(ctx, invocation, constant.SideConsumer))
+			assert.Nil(t, rpcexemplar.ForInvocation(ctx, normalInvocation, constant.SideConsumer))
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "Hello", args[0])
@@ -77,7 +94,7 @@ func TestFilter_Invoke(t *testing.T) {
 			return &result.RPCResult{}
 		})
 
-	r := filter.Invoke(context.Background(), mockInvoker, normalInvocation)
+	r := filter.Invoke(ctx, mockInvoker, normalInvocation)
 	assert.NotNil(t, r)
 }
 
@@ -86,7 +103,7 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault))
-	filter := &genericFilter{}
+	filter := &genericFilter{captureExemplars: true}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -97,10 +114,14 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 		[]string{"arg1"},
 	}, make(map[string]any))
 
+	ctx, ids := genericExemplarContext(t, genericInvocation, trace.SpanKindClient)
+
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(3)
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(arg0 context.Context, invocation base.Invocation) result.Result {
+		func(ctx context.Context, invocation base.Invocation) result.Result {
+			assert.Equal(t, &ids, rpcexemplar.ForInvocation(ctx, invocation, constant.SideConsumer))
+			assert.Nil(t, rpcexemplar.ForInvocation(ctx, genericInvocation, constant.SideConsumer))
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "hello", args[0])
@@ -110,7 +131,7 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 			return &result.RPCResult{}
 		})
 
-	r := filter.Invoke(context.Background(), mockInvoker, genericInvocation)
+	r := filter.Invoke(ctx, mockInvoker, genericInvocation)
 	assert.NotNil(t, r)
 }
 
@@ -294,7 +315,7 @@ func TestFilter_InvokeEmptyInvocationGenericModeUsesConfiguredMode(t *testing.T)
 }
 
 func TestFilter_InvokeWithoutGenericModePassesThrough(t *testing.T) {
-	filter := &genericFilter{}
+	filter := newGenericFilter()
 	invokeURL := common.NewURLWithOptions(common.WithParams(url.Values{}))
 	inv := invocation.NewRPCInvocation("Hello", []any{"arg1"}, nil)
 

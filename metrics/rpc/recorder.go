@@ -179,7 +179,7 @@ func (s *rpcSeries) record(e *metricsEvent) {
 		// Record optional histograms last so a broken registry cannot interrupt
 		// the existing counters, processing gauge or RT observations.
 		if s.histogramRegistry != nil {
-			s.rtHistogram().Observe(e.costTime.Seconds())
+			e.observeHistogram(s.rtHistogram())
 		}
 	}
 }

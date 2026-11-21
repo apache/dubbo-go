@@ -70,6 +70,14 @@ func WithHistogramEnabled() Option {
 	}
 }
 
+// WithHistogramExemplars enables trace exemplars on RPC latency histograms.
+// Enable the histograms and tracing separately to record exemplars.
+func WithHistogramExemplars() Option {
+	return func(opts *Options) {
+		opts.Metrics.Histogram.Exemplars = true
+	}
+}
+
 // WithHistogramBuckets sets finite RPC latency bucket upper bounds in seconds.
 // Bounds must be positive, finite and strictly increasing. Missing or invalid
 // bounds use [0.1, 0.3, 0.5, 1, 3, 5, 10]; invalid bounds produce a startup warning.

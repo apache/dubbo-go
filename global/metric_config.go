@@ -35,8 +35,15 @@ type MetricsConfig struct {
 // HistogramConfig enables cumulative RPC latency buckets independently of the
 // sliding-window aggregation. Bucket upper bounds are in seconds.
 type HistogramConfig struct {
-	Enabled *bool     `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
-	Buckets []float64 `default:"[0.1,0.3,0.5,1,3,5,10]" yaml:"buckets" json:"buckets,omitempty" property:"buckets"`
+	Enabled   *bool     `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Buckets   []float64 `default:"[0.1,0.3,0.5,1,3,5,10]" yaml:"buckets" json:"buckets,omitempty" property:"buckets"`
+	Exemplars bool      `yaml:"exemplars" json:"exemplars,omitempty" property:"exemplars"`
+}
+
+// RPCExemplarsEnabled reports whether RPC latency samples may carry exemplars.
+func (c *MetricsConfig) RPCExemplarsEnabled() bool {
+	return c != nil && c.Enable != nil && *c.Enable && c.Histogram != nil &&
+		c.Histogram.Enabled != nil && *c.Histogram.Enabled && c.Histogram.Exemplars
 }
 
 type AggregateConfig struct {
@@ -132,7 +139,7 @@ func (c *HistogramConfig) Clone() *HistogramConfig {
 		enabled = new(bool)
 		*enabled = *c.Enabled
 	}
-	return &HistogramConfig{Enabled: enabled, Buckets: append([]float64(nil), c.Buckets...)}
+	return &HistogramConfig{Enabled: enabled, Buckets: append([]float64(nil), c.Buckets...), Exemplars: c.Exemplars}
 }
 
 func defaultPrometheusConfig() *PrometheusConfig {

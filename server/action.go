@@ -408,12 +408,7 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	if svcOpts.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
 	}
-	if metrics.Enable != nil && *metrics.Enable {
-		filters += fmt.Sprintf(",%s", constant.MetricsFilterKey)
-	}
-	if tracing.Enable != nil && *tracing.Enable {
-		filters += fmt.Sprintf(",%s", constant.OTELServerTraceKey)
-	}
+	filters = commonCfg.AppendObservabilityFilters(filters, filters, constant.OTELServerTraceKey, metrics, tracing)
 	// Provider URLs are consumed directly by protocolwrapper. Normalize the
 	// suppression markers here because provider filter chains do not pass through
 	// the consumer-side MergeValue path that removes them.

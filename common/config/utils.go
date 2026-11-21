@@ -75,6 +75,34 @@ func Verify(s any) error {
 	return nil
 }
 
+// AppendObservabilityFilters adds the automatic filters in execution order.
+// When exemplars are enabled, honor explicitly positioned metrics and tracing filters.
+func AppendObservabilityFilters(filters, explicit, traceFilter string, metrics *global.MetricsConfig, tracing *global.OtelTraceConfig) string {
+	metricsEnabled := metrics.Enable != nil && *metrics.Enable
+	tracingEnabled := tracing.Enable != nil && *tracing.Enable
+	if metrics.RPCExemplarsEnabled() {
+		for name := range strings.SplitSeq(explicit, ",") {
+			switch strings.TrimSpace(name) {
+			case constant.MetricsFilterKey:
+				metricsEnabled = false
+			case traceFilter:
+				tracingEnabled = false
+			}
+		}
+		if tracingEnabled {
+			filters += "," + traceFilter
+			tracingEnabled = false
+		}
+	}
+	if metricsEnabled {
+		filters += "," + constant.MetricsFilterKey
+	}
+	if tracingEnabled {
+		filters += "," + traceFilter
+	}
+	return filters
+}
+
 func MergeValue(str1, str2, def string) string {
 	if str1 == "" && str2 == "" {
 		return def

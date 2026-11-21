@@ -208,3 +208,29 @@ func TestEnsureApplicationAttribute(t *testing.T) {
 		assert.Equal(t, constant.DefaultDubboApp, application.Name)
 	})
 }
+
+func TestAppendObservabilityFilters(t *testing.T) {
+	enabled := true
+	config := global.DefaultMetricsConfig()
+	config.Enable = &enabled
+	config.Histogram.Enabled = &enabled
+	tracing := &global.OtelTraceConfig{Enable: &enabled}
+	for _, scenario := range []struct {
+		name      string
+		exemplars bool
+		explicit  string
+		want      string
+	}{
+		{"legacy", false, "", "custom,metrics,otelClientTrace"},
+		{"automatic", true, "", "custom,otelClientTrace,metrics"},
+		{"explicit order", true, "metrics,otelClientTrace", "custom,metrics,otelClientTrace"},
+		{"explicit position", true, "metrics,default,otelClientTrace", "metrics,custom,otelClientTrace"},
+		{"suppress tracer", true, "-otelClientTrace", "custom,metrics"},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			config.Histogram.Exemplars = scenario.exemplars
+			defaults := AppendObservabilityFilters("custom", scenario.explicit, constant.OTELClientTraceKey, config, tracing)
+			assert.Equal(t, scenario.want, MergeValue(scenario.explicit, "", defaults))
+		})
+	}
+}
