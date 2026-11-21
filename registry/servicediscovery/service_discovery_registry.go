@@ -185,7 +185,9 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	}
 
 	for _, instance := range instances {
+		start := time.Now()
 		err := s.serviceDiscovery.Register(instance)
+		metrics.Publish(metricsRegistry.NewRegisterEvent(err == nil, start))
 		if err != nil {
 			return fmt.Errorf("register service failed: %w", err)
 		}
@@ -855,8 +857,10 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 	if id, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey); exist {
 		metadata.AddService(id, url)
 	}
-	metrics.Publish(metricsRegistry.NewServerRegisterEvent(true, time.Now()))
-	return s.serviceNameMapping.Map(url)
+	start := time.Now()
+	err := s.serviceNameMapping.Map(url)
+	metrics.Publish(metricsRegistry.NewServerRegisterEvent(err == nil, start))
+	return err
 }
 
 func shouldRegister(url *common.URL) bool {
