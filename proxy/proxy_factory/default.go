@@ -251,9 +251,11 @@ func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocat
 		if err != nil {
 			var proError *triple_protocol.Error
 			if !errors.As(err, &proError) {
-				err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
-			} else if proError.Code() != triple_protocol.CodeBizError {
-				err = triple_protocol.NewError(proError.Code(), proError.Unwrap())
+				if errors.Is(err, context.DeadlineExceeded) {
+					err = triple_protocol.NewError(triple_protocol.CodeDeadlineExceeded, err)
+				} else {
+					err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
+				}
 			}
 			result.SetError(err)
 		}

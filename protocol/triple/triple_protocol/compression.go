@@ -27,6 +27,10 @@ import (
 	"sync"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+)
+
 const (
 	compressionGzip     = "gzip"
 	compressionIdentity = "identity"
@@ -85,7 +89,7 @@ func newCompressionPool(
 func (c *compressionPool) Decompress(dst *bytes.Buffer, src *bytes.Buffer, readMaxBytes int64) *Error {
 	decompressor, err := c.getDecompressor(src)
 	if err != nil {
-		return errorf(CodeInvalidArgument, "get decompressor: %w", err)
+		return errorf(CodeInvalidArgument, "get decompressor: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	reader := io.Reader(decompressor)
 	if readMaxBytes > 0 && readMaxBytes < math.MaxInt64 {
@@ -94,7 +98,7 @@ func (c *compressionPool) Decompress(dst *bytes.Buffer, src *bytes.Buffer, readM
 	bytesRead, err := dst.ReadFrom(reader)
 	if err != nil {
 		_ = c.putDecompressor(decompressor)
-		return errorf(CodeInvalidArgument, "decompress: %w", err)
+		return errorf(CodeInvalidArgument, "decompress: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	if readMaxBytes > 0 && bytesRead > readMaxBytes {
 		discardedBytes, err := io.Copy(io.Discard, decompressor)
@@ -105,7 +109,7 @@ func (c *compressionPool) Decompress(dst *bytes.Buffer, src *bytes.Buffer, readM
 		return errorf(CodeResourceExhausted, "message size %d is larger than configured max %d", bytesRead+discardedBytes, readMaxBytes)
 	}
 	if err := c.putDecompressor(decompressor); err != nil {
-		return errorf(CodeUnknown, "recycle decompressor: %w", err)
+		return errorf(CodeUnknown, "recycle decompressor: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	return nil
 }
@@ -113,14 +117,14 @@ func (c *compressionPool) Decompress(dst *bytes.Buffer, src *bytes.Buffer, readM
 func (c *compressionPool) Compress(dst *bytes.Buffer, src *bytes.Buffer) *Error {
 	compressor, err := c.getCompressor(dst)
 	if err != nil {
-		return errorf(CodeUnknown, "get compressor: %w", err)
+		return errorf(CodeUnknown, "get compressor: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	if _, err := io.Copy(compressor, src); err != nil {
 		_ = c.putCompressor(compressor)
-		return errorf(CodeInternal, "compress: %w", err)
+		return errorf(CodeInternal, "compress: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	if err := c.putCompressor(compressor); err != nil {
-		return errorf(CodeInternal, "recycle compressor: %w", err)
+		return errorf(CodeInternal, "recycle compressor: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	return nil
 }
