@@ -18,7 +18,7 @@
 package consistenthashing
 
 import (
-	"encoding/json"
+	"fmt"
 	"hash/crc32"
 	"regexp"
 	"sync"
@@ -63,16 +63,7 @@ func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.I
 	methodName := invocation.MethodName()
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
-	// hash the invokers
-	var bs []byte
-	for _, invoker := range invokers {
-		b, err := json.Marshal(invoker)
-		if err != nil {
-			return nil
-		}
-		bs = append(bs, b...)
-	}
-	hashCode := crc32.ChecksumIEEE(bs)
+	hashCode := invokersHashCode(invokers)
 
 	selectorsMu.RLock()
 	selector, ok := selectors[key]
@@ -88,4 +79,16 @@ func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.I
 		selectorsMu.Unlock()
 	}
 	return selector.Select(invocation)
+}
+
+// invokersHashCode identifies the invoker list a selector was built from, so the ring is rebuilt
+// whenever the list changes. Like the Java implementation it goes by invoker identity: the invoker
+// types keep their state in unexported fields, so encoding them (with encoding/json, say) gives
+// "{}" for every invoker and only tells lists of different lengths apart.
+func invokersHashCode(invokers []base.Invoker) uint32 {
+	h := crc32.NewIEEE()
+	for _, invoker := range invokers {
+		_, _ = fmt.Fprintf(h, "%p;", invoker)
+	}
+	return h.Sum32()
 }
