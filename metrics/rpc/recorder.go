@@ -107,7 +107,7 @@ func (c *rpcCollector) getSeries(e *metricsEvent) *rpcSeries {
 	s.processing = s.registry.Gauge(s.id("requests_processing_total"))
 	if !s.aggregation.disabled {
 		w := s.aggregation.window
-		s.qps = aggregate.NewTimeWindowCounter(w.BucketNum, w.TimeWindowSeconds)
+		s.qps = aggregate.NewTimeWindowCounter(w.BucketNum, int64(w.TimeWindowSeconds))
 		s.gauges.GaugeFunc(s.id("qps_total"), s.qps.QPS)
 	}
 	// Publish only a fully bound series. On initialization failure, later calls
@@ -123,7 +123,7 @@ func (s *rpcSeries) newCounter(suffix string) *counterPair {
 	p := &counterPair{counter: s.registry.Counter(s.id(suffix))}
 	if !s.aggregation.disabled {
 		w := s.aggregation.window
-		p.window = aggregate.NewTimeWindowCounter(w.BucketNum, w.TimeWindowSeconds)
+		p.window = aggregate.NewTimeWindowCounter(w.BucketNum, int64(w.TimeWindowSeconds))
 		s.gauges.GaugeFunc(s.id(suffix+"_aggregate"), p.window.Count)
 	}
 	return p
@@ -154,8 +154,8 @@ func (s *rpcSeries) completed() *completionMetrics {
 		rt: s.registry.Rt(s.id("rt_milliseconds"), &metrics.RtOpts{})}
 	if !s.aggregation.disabled {
 		w := s.aggregation.window
-		m.rtWindow = s.registry.Rt(s.id("rt"), &metrics.RtOpts{Aggregate: true, BucketNum: w.BucketNum, TimeWindowSeconds: w.TimeWindowSeconds})
-		m.quantiles = aggregate.NewTimeWindowQuantile(metrics.DefaultCompression, w.BucketNum, w.TimeWindowSeconds)
+		m.rtWindow = s.registry.Rt(s.id("rt"), &metrics.RtOpts{Aggregate: true, BucketNum: w.BucketNum, TimeWindowSeconds: int64(w.TimeWindowSeconds)})
+		m.quantiles = aggregate.NewTimeWindowQuantile(metrics.DefaultCompression, w.BucketNum, int64(w.TimeWindowSeconds))
 		for i, q := range []float64{.5, .9, .95, .99} {
 			suffix := []string{"rt_milliseconds_p50", "rt_milliseconds_p90", "rt_milliseconds_p95", "rt_milliseconds_p99"}[i]
 			s.gauges.GaugeFunc(s.id(suffix), func() float64 { return m.quantiles.Quantile(q) })

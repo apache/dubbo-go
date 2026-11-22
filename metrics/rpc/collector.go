@@ -75,7 +75,7 @@ func aggregationSettingsOf(url *common.URL) aggregationSettings {
 		disabled: !url.GetParamBool(constant.AggregationEnabledKey, true),
 		window: metrics.Window{
 			BucketNum:         url.GetParamByIntValue(constant.AggregationBucketNumKey, metrics.DefaultBucketNum),
-			TimeWindowSeconds: url.GetParamInt(constant.AggregationTimeWindowSecondsKey, metrics.DefaultTimeWindowSeconds),
+			TimeWindowSeconds: url.GetParamByIntValue(constant.AggregationTimeWindowSecondsKey, metrics.DefaultTimeWindowSeconds),
 		}.OrDefault(),
 	}
 }

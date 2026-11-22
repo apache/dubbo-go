@@ -42,7 +42,7 @@ const (
 // split into BucketNum buckets.
 type Window struct {
 	BucketNum         int
-	TimeWindowSeconds int64
+	TimeWindowSeconds int
 }
 
 // DefaultWindow returns the window used when none is configured.
@@ -63,8 +63,8 @@ func (w Window) OrDefault() Window {
 	if w.TimeWindowSeconds <= 0 {
 		w.TimeWindowSeconds = DefaultTimeWindowSeconds
 	}
-	if int64(w.BucketNum) > w.TimeWindowSeconds {
-		w.BucketNum = int(w.TimeWindowSeconds)
+	if w.BucketNum > w.TimeWindowSeconds {
+		w.BucketNum = w.TimeWindowSeconds
 	}
 	return w
 }
@@ -382,7 +382,7 @@ func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
 		d.mux.Lock()
 		twc, ok = d.cache[key]
 		if !ok {
-			twc = aggregate.NewTimeWindowCounter(d.window.BucketNum, d.window.TimeWindowSeconds)
+			twc = aggregate.NewTimeWindowCounter(d.window.BucketNum, int64(d.window.TimeWindowSeconds))
 			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
 				r.GaugeFunc(NewMetricIdByLabels(d.metricKey, labels), twc.QPS)
 			}
@@ -434,7 +434,7 @@ func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
 		d.mux.Lock()
 		twc, ok = d.cache[key]
 		if !ok {
-			twc = aggregate.NewTimeWindowCounter(d.window.BucketNum, d.window.TimeWindowSeconds)
+			twc = aggregate.NewTimeWindowCounter(d.window.BucketNum, int64(d.window.TimeWindowSeconds))
 			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
 				r.GaugeFunc(NewMetricIdByLabels(d.metricKey, labels), twc.Count)
 			}
@@ -488,7 +488,7 @@ func (d *DefaultQuantileMetricVec) Record(labels map[string]string, v float64) {
 		d.mux.Lock()
 		twq, ok = d.cache[key]
 		if !ok {
-			twq = aggregate.NewTimeWindowQuantile(DefaultCompression, d.window.BucketNum, d.window.TimeWindowSeconds)
+			twq = aggregate.NewTimeWindowQuantile(DefaultCompression, d.window.BucketNum, int64(d.window.TimeWindowSeconds))
 			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
 				for i, q := range d.quantiles {
 					r.GaugeFunc(NewMetricIdByLabels(d.metricKeys[i], labels), func() float64 { return twq.Quantile(q) })
