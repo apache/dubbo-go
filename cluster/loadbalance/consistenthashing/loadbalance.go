@@ -63,7 +63,14 @@ func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.I
 	methodName := invocation.MethodName()
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
-	hashCode := invokersHashCode(invokers)
+	// Key the ring on invoker identity, as the Java implementation does with invokers.hashCode().
+	// The invoker types keep their state in unexported fields, so encoding them (with encoding/json,
+	// say) gives "{}" for every invoker and only tells lists of different lengths apart.
+	h := crc32.NewIEEE()
+	for _, invoker := range invokers {
+		_, _ = fmt.Fprintf(h, "%p;", invoker)
+	}
+	hashCode := h.Sum32()
 
 	selectorsMu.RLock()
 	selector, ok := selectors[key]
@@ -79,16 +86,4 @@ func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.I
 		selectorsMu.Unlock()
 	}
 	return selector.Select(invocation)
-}
-
-// invokersHashCode identifies the invoker list a selector was built from, so the ring is rebuilt
-// whenever the list changes. Like the Java implementation it goes by invoker identity: the invoker
-// types keep their state in unexported fields, so encoding them (with encoding/json, say) gives
-// "{}" for every invoker and only tells lists of different lengths apart.
-func invokersHashCode(invokers []base.Invoker) uint32 {
-	h := crc32.NewIEEE()
-	for _, invoker := range invokers {
-		_, _ = fmt.Fprintf(h, "%p;", invoker)
-	}
-	return h.Sum32()
 }
