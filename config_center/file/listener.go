@@ -80,14 +80,16 @@ func (ls *listenerSet) Snapshot() []config_center.ConfigurationListener {
 	return listeners
 }
 
-// NewCacheListener creates a new CacheListener
-func NewCacheListener(rootPath string) *CacheListener {
+// NewCacheListener creates a new CacheListener and returns an error if watcher initialization fails.
+func NewCacheListener(rootPath string) (*CacheListener, error) {
 	cl := &CacheListener{rootPath: rootPath}
 	// start watcher
 	watch, err := fsnotify.NewWatcher()
 	if err != nil {
 		logger.Errorf("[ConfigCenter][File] listen config fail, err=%v", err)
+		return nil, err
 	}
+	cl.watch = watch
 	go func() {
 		for {
 			select {
@@ -142,13 +144,12 @@ func NewCacheListener(rootPath string) *CacheListener {
 			}
 		}
 	}()
-	cl.watch = watch
 
 	extension.AddCustomShutdownCallback(func() {
-		cl.watch.Close()
+		cl.Close()
 	})
 
-	return cl
+	return cl, nil
 }
 
 func removeCallback(listeners []config_center.ConfigurationListener, key string, event remoting.EventType) {
@@ -177,10 +178,16 @@ func callback(listener config_center.ConfigurationListener, path, data string, e
 
 // Close will remove key listener and close watcher
 func (cl *CacheListener) Close() error {
+	if cl == nil {
+		return nil
+	}
 	cl.keyListeners.Range(func(key, value any) bool {
 		cl.keyListeners.Delete(key)
 		return true
 	})
+	if cl.watch == nil {
+		return nil
+	}
 	return cl.watch.Close()
 }
 

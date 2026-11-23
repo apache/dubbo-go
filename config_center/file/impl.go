@@ -79,7 +79,10 @@ func newFileSystemDynamicConfiguration(url *common.URL) (*FileSystemDynamicConfi
 		encoding: encode,
 	}
 
-	c.cacheListener = NewCacheListener(c.rootPath)
+	c.cacheListener, err = NewCacheListener(c.rootPath)
+	if err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
