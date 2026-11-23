@@ -1,5 +1,4 @@
 //go:build linux
-// +build linux
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -57,20 +56,20 @@ func testCacheListenerWatcherInitFailure(t *testing.T) {
 	url.SetParam(ConfigCenterDirParamName, rootPath)
 
 	var limit syscall.Rlimit
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit); err != nil {
-		t.Fatalf("get file descriptor limit error %v", err)
+	if limitErr := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit); limitErr != nil {
+		t.Fatalf("get file descriptor limit error %v", limitErr)
 	}
 	if limit.Max < 3 {
 		t.Skipf("file descriptor hard limit is too low: %d", limit.Max)
 	}
 	originalLimit := limit
 	limit.Cur = 3
-	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &limit); err != nil {
-		t.Fatalf("set file descriptor limit error %v", err)
+	if setErr := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &limit); setErr != nil {
+		t.Fatalf("set file descriptor limit error %v", setErr)
 	}
 	defer func() {
-		if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &originalLimit); err != nil {
-			t.Errorf("restore file descriptor limit error %v", err)
+		if restoreErr := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &originalLimit); restoreErr != nil {
+			t.Errorf("restore file descriptor limit error %v", restoreErr)
 		}
 	}()
 
