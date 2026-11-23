@@ -237,6 +237,9 @@ func (rc *InstanceOptions) initGlobalMetrics(activateRuntime bool) error {
 	if rc.Metrics.Prometheus.Pushgateway == nil {
 		rc.Metrics.Prometheus.Pushgateway = &global.PushgatewayConfig{}
 	}
+	if rc.Metrics.Otlp == nil {
+		rc.Metrics.Otlp = &global.OtlpMetricsConfig{}
+	}
 	if rc.Metrics.Aggregation == nil {
 		rc.Metrics.Aggregation = &global.AggregateConfig{}
 	}
@@ -297,6 +300,13 @@ func metricsURL(rc *InstanceOptions) *common.URL {
 			u.SetParam(constant.PrometheusPushgatewayPushIntervalKey, strconv.Itoa(pushGateway.PushInterval))
 			u.SetParam(constant.PrometheusPushgatewayJobKey, pushGateway.Job)
 		}
+	}
+	if otlp := mc.Otlp; otlp != nil && otlp.Enabled != nil {
+		u.SetParam(constant.OtlpMetricsEnabledKey, strconv.FormatBool(*otlp.Enabled))
+		u.SetParam(constant.OtlpMetricsEndpointKey, otlp.Endpoint)
+		u.SetParam(constant.OtlpMetricsProtocolKey, otlp.Protocol)
+		u.SetParam(constant.OtlpMetricsInsecureKey, strconv.FormatBool(otlp.Insecure))
+		u.SetParam(constant.OtlpMetricsExportIntervalKey, strconv.Itoa(otlp.ExportInterval))
 	}
 	return u
 }
