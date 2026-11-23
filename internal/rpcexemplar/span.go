@@ -22,6 +22,7 @@ package rpcexemplar
 import (
 	"context"
 	"reflect"
+	"sync"
 	"sync/atomic"
 )
 
@@ -51,37 +52,59 @@ type IDs struct {
 }
 
 type exemplarSpan struct {
-	invocation base.Invocation
-	kind       trace.SpanKind
-	ids        IDs
+	scope *invocationScope
+	owner int
+	kind  trace.SpanKind
+	ids   IDs
+}
+
+type invocationScope struct {
+	mu          sync.Mutex
+	invocations []base.Invocation
+}
+
+func (s *invocationScope) release() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// A context retained after Invoke must not keep the arguments alive.
+	s.invocations = nil
 }
 
 // WithSpan associates a span started by the local tracing filter with its invocation.
 // Only non-nil pointer invocations can carry an exemplar. Equal values may
 // represent unrelated calls, so a value invocation retains ordinary metrics.
-func WithSpan(ctx context.Context, invocation base.Invocation, span trace.Span, kind trace.SpanKind) context.Context {
+// The returned function releases all invocation bindings when the filter exits.
+func WithSpan(ctx context.Context, invocation base.Invocation, span trace.Span, kind trace.SpanKind) (context.Context, func()) {
 	if !span.IsRecording() || !hasPointerIdentity(invocation) {
-		return ctx
+		return ctx, func() {}
 	}
 	spanContext := span.SpanContext()
 	if !spanContext.IsValid() || !spanContext.IsSampled() {
-		return ctx
+		return ctx, func() {}
 	}
+	scope := &invocationScope{invocations: []base.Invocation{invocation}}
 	return context.WithValue(ctx, exemplarSpanKey{}, exemplarSpan{
-		invocation: invocation,
-		kind:       kind,
-		ids:        IDs{TraceID: spanContext.TraceID(), SpanID: spanContext.SpanID()},
-	})
+		scope: scope,
+		kind:  kind,
+		ids:   IDs{TraceID: spanContext.TraceID(), SpanID: spanContext.SpanID()},
+	}), scope.release
 }
 
 // Rebind carries span ownership across an internal rewrite of the same RPC.
 // Matching the old invocation prevents a nested call from claiming its parent's Span.
 func Rebind(ctx context.Context, original, rewritten base.Invocation) context.Context {
 	local, ok := ctx.Value(exemplarSpanKey{}).(exemplarSpan)
-	if !ok || local.invocation != original || !hasPointerIdentity(rewritten) {
+	if !ok || !hasPointerIdentity(rewritten) {
 		return ctx
 	}
-	local.invocation = rewritten
+	scope := local.scope
+	scope.mu.Lock()
+	defer scope.mu.Unlock()
+	if local.owner >= len(scope.invocations) || scope.invocations[local.owner] != original {
+		return ctx
+	}
+	local.owner = len(scope.invocations)
+	scope.invocations = append(scope.invocations, rewritten)
 	return context.WithValue(ctx, exemplarSpanKey{}, local)
 }
 
@@ -93,11 +116,17 @@ func hasPointerIdentity(invocation base.Invocation) bool {
 // ForInvocation returns the IDs of the Span that owns this local invocation.
 func ForInvocation(ctx context.Context, invocation base.Invocation, role string) *IDs {
 	local, ok := ctx.Value(exemplarSpanKey{}).(exemplarSpan)
-	if !ok || local.invocation != invocation {
+	if !ok {
 		return nil
 	}
 	if (local.kind == trace.SpanKindClient && role == constant.SideConsumer) ||
 		(local.kind == trace.SpanKindServer && role == constant.SideProvider) {
+		scope := local.scope
+		scope.mu.Lock()
+		defer scope.mu.Unlock()
+		if local.owner >= len(scope.invocations) || scope.invocations[local.owner] != invocation {
+			return nil
+		}
 		snapshot := local.ids
 		return &snapshot
 	}

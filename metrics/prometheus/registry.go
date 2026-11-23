@@ -124,7 +124,7 @@ func (p *promMetricRegistry) HistogramWithOptions(m *metrics.MetricId, opts *met
 		}, m.TagKeys())
 	}).(*prom.HistogramVec)
 	histogram := vec.With(m.Tags)
-	if p.exemplarsEnabled() && p.url.GetParamBool(constant.HistogramEnabledKey, false) {
+	if p.exemplarsEnabled() {
 		if observer, ok := histogram.(prom.ExemplarObserver); ok {
 			return exemplarHistogram{Observer: histogram, exemplars: observer}
 		}
@@ -147,7 +147,8 @@ func (h exemplarHistogram) ObserveWithExemplar(value float64, traceID, spanID st
 }
 
 func (p *promMetricRegistry) exemplarsEnabled() bool {
-	return p.url != nil && p.url.GetParamBool(constant.HistogramExemplarsKey, false)
+	return p.url != nil && p.url.GetParamBool(constant.HistogramEnabledKey, false) &&
+		p.url.GetParamBool(constant.HistogramExemplarsKey, false)
 }
 
 func (p *promMetricRegistry) Summary(m *metrics.MetricId) metrics.ObservableMetric {

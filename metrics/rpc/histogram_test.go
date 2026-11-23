@@ -419,7 +419,8 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			ctx, span := tracer.Start(ctx, "Call", trace.WithSpanKind(trace.SpanKindClient))
 			defer span.End()
 			inv := invocation.NewRPCInvocation("Call", nil, nil)
-			ctx = rpcexemplar.WithSpan(ctx, inv, span, trace.SpanKindClient)
+			ctx, release := rpcexemplar.WithSpan(ctx, inv, span, trace.SpanKindClient)
+			t.Cleanup(release)
 			before := NewBeforeInvokeEventWithExemplar(ctx, base.NewBaseInvoker(url), inv).(*metricsEvent)
 			before.collector = c
 			require.NotNil(t, before.exemplar)
@@ -433,7 +434,8 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			})
 			observation.BeginAsync(ctx, time.Minute)
 			observation.FinishInvoke(nil, true)
-			span.End() // The latency callback runs after the tracing filter returns.
+			release() // The latency callback runs after the tracing filter returns.
+			span.End()
 			if tc.expire {
 				cancel()
 			} else {

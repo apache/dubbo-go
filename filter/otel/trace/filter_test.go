@@ -666,6 +666,7 @@ func Test_otelServerFilter_Invoke_RPCAttributes(t *testing.T) {
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
 	invoker := NewMockInvoker(ctrl)
+	var retainedContext context.Context
 	invoker.EXPECT().GetURL().Return(serviceURL).AnyTimes()
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, inv base.Invocation) result.Result {
@@ -673,6 +674,7 @@ func Test_otelServerFilter_Invoke_RPCAttributes(t *testing.T) {
 			require.True(t, sc.IsValid())
 			require.Equal(t, &rpcexemplar.IDs{TraceID: sc.TraceID(), SpanID: sc.SpanID()},
 				rpcexemplar.ForInvocation(ctx, inv, constant.SideProvider))
+			retainedContext = context.WithoutCancel(ctx)
 			return res
 		})
 
@@ -690,6 +692,7 @@ func Test_otelServerFilter_Invoke_RPCAttributes(t *testing.T) {
 		t.Fatalf("Invoke() returned %v, want the mocked result", got)
 	}
 
+	require.Nil(t, rpcexemplar.ForInvocation(retainedContext, invocation, constant.SideProvider))
 	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindServer, "gray", "1.0.0")
 }
 
@@ -710,6 +713,7 @@ func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
 	invoker := NewMockInvoker(ctrl)
+	var retainedContext context.Context
 	invoker.EXPECT().GetURL().Return(serviceURL).AnyTimes()
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, inv base.Invocation) result.Result {
@@ -717,6 +721,7 @@ func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
 			require.True(t, sc.IsValid())
 			require.Equal(t, &rpcexemplar.IDs{TraceID: sc.TraceID(), SpanID: sc.SpanID()},
 				rpcexemplar.ForInvocation(ctx, inv, constant.SideConsumer))
+			retainedContext = context.WithoutCancel(ctx)
 			return res
 		})
 
@@ -735,6 +740,7 @@ func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
 		t.Fatalf("Invoke() returned %v, want the mocked result", got)
 	}
 
+	require.Nil(t, rpcexemplar.ForInvocation(retainedContext, invocation, constant.SideConsumer))
 	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindClient, "gray", "1.0.0")
 }
 

@@ -408,11 +408,7 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	if svcOpts.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
 	}
-	filters = commonCfg.AppendObservabilityFilters(filters, filters, constant.OTELServerTraceKey, metrics, tracing)
-	// Provider URLs are consumed directly by protocolwrapper. Normalize the
-	// suppression markers here because provider filter chains do not pass through
-	// the consumer-side MergeValue path that removes them.
-	filters = commonCfg.MergeValue(filters, "", "")
+	filters = commonCfg.MergeObservabilityFilters(filters, "", constant.OTELServerTraceKey, metrics, tracing)
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config

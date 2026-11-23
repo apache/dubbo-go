@@ -64,7 +64,8 @@ func TestSpanOwnershipAfterRewrite(t *testing.T) {
 			defer span.End()
 			ids := IDs{TraceID: span.SpanContext().TraceID(), SpanID: span.SpanContext().SpanID()}
 
-			local := WithSpan(ctx, inv, span, side.kind)
+			local, release := WithSpan(ctx, inv, span, side.kind)
+			t.Cleanup(release)
 			assert.Nil(t, ForInvocation(ctx, inv, side.role))
 			assert.Equal(t, &ids, ForInvocation(local, inv, side.role))
 			assert.Nil(t, ForInvocation(local, inv, side.other))
@@ -78,6 +79,12 @@ func TestSpanOwnershipAfterRewrite(t *testing.T) {
 			assert.Equal(t, &ids, ForInvocation(rebound, rewritten, side.role))
 			assert.Nil(t, ForInvocation(rebound, inv, side.role))
 			assert.Equal(t, &ids, ForInvocation(local, inv, side.role))
+
+			release()
+			assert.Nil(t, local.Value(exemplarSpanKey{}).(exemplarSpan).scope.invocations)
+			assert.Nil(t, ForInvocation(context.WithoutCancel(local), inv, side.role))
+			assert.Nil(t, ForInvocation(context.WithoutCancel(rebound), rewritten, side.role))
+			assert.Same(t, rebound, Rebind(rebound, rewritten, nested))
 		})
 	}
 }
@@ -112,7 +119,9 @@ func TestWithSpanRequiresSampledLocalSpanAndPointerInvocation(t *testing.T) {
 		{"typed nil", nilInvocation, sampled},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, ctx, WithSpan(ctx, tc.inv, tc.span, trace.SpanKindClient))
+			local, release := WithSpan(ctx, tc.inv, tc.span, trace.SpanKindClient)
+			defer release()
+			assert.Equal(t, ctx, local)
 		})
 	}
 }

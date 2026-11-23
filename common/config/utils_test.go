@@ -209,7 +209,7 @@ func TestEnsureApplicationAttribute(t *testing.T) {
 	})
 }
 
-func TestAppendObservabilityFilters(t *testing.T) {
+func TestMergeObservabilityFilters(t *testing.T) {
 	enabled := true
 	config := global.DefaultMetricsConfig()
 	config.Enable = &enabled
@@ -225,12 +225,14 @@ func TestAppendObservabilityFilters(t *testing.T) {
 		{"automatic", true, "", "custom,otelClientTrace,metrics"},
 		{"explicit order", true, "metrics,otelClientTrace", "custom,metrics,otelClientTrace"},
 		{"explicit position", true, "metrics,default,otelClientTrace", "metrics,custom,otelClientTrace"},
+		{"explicit trace", true, "otelClientTrace,other", "custom,otelClientTrace,metrics,other"},
+		{"explicit metrics before default", true, "metrics,other,default", "otelClientTrace,metrics,other,custom"},
 		{"suppress tracer", true, "-otelClientTrace", "custom,metrics"},
+		{"suppress metrics", true, "otelClientTrace,-metrics", "custom,otelClientTrace"},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			config.Histogram.Exemplars = scenario.exemplars
-			defaults := AppendObservabilityFilters("custom", scenario.explicit, constant.OTELClientTraceKey, config, tracing)
-			assert.Equal(t, scenario.want, MergeValue(scenario.explicit, "", defaults))
+			assert.Equal(t, scenario.want, MergeObservabilityFilters("custom", scenario.explicit, constant.OTELClientTraceKey, config, tracing))
 		})
 	}
 }

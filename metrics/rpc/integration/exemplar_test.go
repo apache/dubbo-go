@@ -220,7 +220,8 @@ func TestFilterToRPCExemplars(t *testing.T) {
 		ctx, parent := provider.Tracer("fixture").Start(context.Background(), "outer RPC")
 		defer parent.End()
 		outer := invocation.NewRPCInvocation("Outer", nil, nil)
-		ctx = rpcexemplar.WithSpan(ctx, outer, parent, trace.SpanKindClient)
+		ctx, release := rpcexemplar.WithSpan(ctx, outer, parent, trace.SpanKindClient)
+		defer release()
 
 		url := common.NewURLWithOptions(
 			common.WithPath("example.Exemplar"),

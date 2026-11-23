@@ -54,7 +54,9 @@ func genericExemplarContext(t *testing.T, inv base.Invocation, kind trace.SpanKi
 	ctx, span := sdktrace.NewTracerProvider().Tracer("test").Start(context.Background(), "Call", trace.WithSpanKind(kind))
 	t.Cleanup(func() { span.End() })
 	sc := span.SpanContext()
-	return rpcexemplar.WithSpan(ctx, inv, span, kind), rpcexemplar.IDs{TraceID: sc.TraceID(), SpanID: sc.SpanID()}
+	local, release := rpcexemplar.WithSpan(ctx, inv, span, kind)
+	t.Cleanup(release)
+	return local, rpcexemplar.IDs{TraceID: sc.TraceID(), SpanID: sc.SpanID()}
 }
 
 type mockGenericPOJO struct {

@@ -108,7 +108,9 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	defer span.End()
 
 	if f.captureExemplars {
-		ctx = rpcexemplar.WithSpan(ctx, invocation, span, trace.SpanKindServer)
+		var release func()
+		ctx, release = rpcexemplar.WithSpan(ctx, invocation, span, trace.SpanKindServer)
+		defer release()
 	}
 	res := invoker.Invoke(ctx, invocation)
 
@@ -159,7 +161,9 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		invocation.SetAttachment(k, v)
 	}
 	if f.captureExemplars {
-		ctx = rpcexemplar.WithSpan(ctx, invocation, span, trace.SpanKindClient)
+		var release func()
+		ctx, release = rpcexemplar.WithSpan(ctx, invocation, span, trace.SpanKindClient)
+		defer release()
 	}
 	res := invoker.Invoke(ctx, invocation)
 

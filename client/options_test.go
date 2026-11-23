@@ -153,6 +153,32 @@ func TestWithExtensionBuildsClientConfigAndMergesFilter(t *testing.T) {
 		refOpts.getURLMap().Get(constant.ReferenceFilterKey))
 }
 
+func TestExemplarClientFilterOrder(t *testing.T) {
+	enabled := true
+	metricsConfig := global.DefaultMetricsConfig()
+	metricsConfig.Enable = &enabled
+	metricsConfig.Histogram.Enabled = &enabled
+	metricsConfig.Histogram.Exemplars = true
+	otelConfig := global.DefaultOtelConfig()
+	otelConfig.TracingConfig.Enable = &enabled
+	for _, tc := range []struct {
+		name, configured, want string
+	}{
+		{"explicit tracing", "otelClientTrace,custom", constant.DefaultReferenceFilters + ",otelClientTrace,metrics,custom"},
+		{"explicit metrics", "metrics,custom,default", "otelClientTrace,metrics,custom," + constant.DefaultReferenceFilters},
+		{"explicit pair", "metrics,otelClientTrace", constant.DefaultReferenceFilters + ",metrics,otelClientTrace"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			refOpts := &ReferenceOptions{
+				Reference: &global.ReferenceConfig{Filter: tc.configured},
+				Metrics:   metricsConfig,
+				Otel:      otelConfig,
+			}
+			require.Equal(t, tc.want, refOpts.getURLMap().Get(constant.ReferenceFilterKey))
+		})
+	}
+}
+
 func TestWithExtensionRejectsUnsupportedClientScope(t *testing.T) {
 	const prefix = "client-entry-unsupported"
 	extension.UnregisterConfig(prefix)

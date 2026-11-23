@@ -255,11 +255,13 @@ func TestHistogramExemplarHTTPNegotiation(t *testing.T) {
 				response := httptest.NewRecorder()
 				handler.ServeHTTP(response, request)
 				require.Equal(t, http.StatusOK, response.Code)
-				openMetrics := scenario.exemplars && accept == "application/openmetrics-text"
+				openMetrics := scenario.histogram && scenario.exemplars && accept == "application/openmetrics-text"
 				if openMetrics {
 					require.Contains(t, response.Header().Get("Content-Type"), accept)
+					require.True(t, strings.HasSuffix(response.Body.String(), "# EOF\n"))
 				} else {
 					require.Contains(t, response.Header().Get("Content-Type"), "text/plain")
+					require.NotContains(t, response.Body.String(), "# EOF")
 				}
 				if ok && openMetrics {
 					require.Contains(t, response.Body.String(), `span_id="bbbbbbbbbbbbbbbb"`)

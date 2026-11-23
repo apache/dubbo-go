@@ -162,6 +162,35 @@ func TestWithExtensionPreservesDefaultServerFilters(t *testing.T) {
 		svcOpts.getUrlMap().Get(constant.ServiceFilterKey))
 }
 
+func TestExemplarServerFilterOrder(t *testing.T) {
+	enabled := true
+	metricsConfig := global.DefaultMetricsConfig()
+	metricsConfig.Enable = &enabled
+	metricsConfig.Histogram.Enabled = &enabled
+	metricsConfig.Histogram.Exemplars = true
+	otelConfig := global.DefaultOtelConfig()
+	otelConfig.TracingConfig.Enable = &enabled
+	srv, err := NewServer(SetServerMetrics(metricsConfig), SetServerOtel(otelConfig))
+	require.NoError(t, err)
+	for _, tc := range []struct {
+		name, configured, want string
+	}{
+		{"explicit metrics", "custom,metrics", "custom,otelServerTrace,metrics"},
+		{"explicit tracing", "otelServerTrace,custom", "otelServerTrace,custom,metrics"},
+		{"explicit pair", "metrics,otelServerTrace", "metrics,otelServerTrace"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svcOpts := defaultServiceOptions()
+			svcOpts.Provider = srv.cfg.Provider
+			svcOpts.Application = srv.cfg.Application
+			svcOpts.Registries = srv.cfg.Registries
+			svcOpts.Protocols = srv.cfg.Protocols
+			require.NoError(t, svcOpts.init(srv, WithInterface("example.Service"), WithFilter(tc.configured)))
+			require.Equal(t, tc.want, svcOpts.getUrlMap().Get(constant.ServiceFilterKey))
+		})
+	}
+}
+
 func TestWithExtensionRejectsUnsupportedServerScope(t *testing.T) {
 	const prefix = "server-entry-unsupported"
 	extension.UnregisterConfig(prefix)

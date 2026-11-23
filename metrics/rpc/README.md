@@ -87,17 +87,21 @@ should rely only on what is listed here.
 
 ### Trace exemplars for latency histograms
 
-Set `metrics.histogram.exemplars: true` or pass
-`metrics.WithHistogramExemplars()` to `dubbo.WithMetrics`. This also enables
-OpenMetrics negotiation on the existing Prometheus HTTP exporter. Enable RPC
-latency histograms and OpenTelemetry tracing to produce exemplars. To read them,
-send `Accept: application/openmetrics-text` when scraping the metrics endpoint.
+Set `metrics.histogram.enabled: true` and `metrics.histogram.exemplars: true`,
+or pass both `metrics.WithHistogramEnabled()` and
+`metrics.WithHistogramExemplars()` to `dubbo.WithMetrics`. Both switches must be
+on to enable OpenMetrics negotiation on the existing Prometheus HTTP exporter.
+Enable OpenTelemetry tracing to produce exemplars, and send
+`Accept: application/openmetrics-text` when scraping them.
 
 A latency observation can carry the `trace_id` and `span_id` of its sampled
-client-attempt or server Span. Automatic filter chains run tracing before
-metrics when exemplars are enabled. This puts tracing setup and teardown
-outside the latency measurement. If you set your own filter order, place the
-local tracing filter before `metrics` to capture the Span.
+client-attempt or server Span. The default chain runs tracing before metrics,
+with tracing setup and teardown outside the latency measurement. If you list
+just one of these filters, the framework inserts enabled tracing before
+a configured metrics filter or enabled metrics after a configured tracing
+filter as needed. If you list both, their configured order takes precedence.
+Place the local tracing filter before `metrics`
+to capture the Span.
 
 ### Label contract (#3337)
 
