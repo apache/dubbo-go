@@ -22,6 +22,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -320,6 +321,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	healthClient := tri.NewClient(httpClient, healthURL, tri.WithTimeout(timeout))
 
+	// The HTTP/3 sample calls each RPC with a one-second context while the
+	// reference URL carries a longer timeout. The first request also pays for
+	// the TLS and HTTP/2 handshake, and against the Java server that handshake
+	// can outlast the call deadline even though the RPC itself is fast.
+	// Establish the connection now, under the reference timeout, so a later
+	// call-level deadline covers the RPC rather than connection setup.
+	if callProtocol == constant.CallHTTP2AndHTTP3 {
+		warmUpTripleTransport(httpClient, baseTriURL, timeout)
+	}
+
 	initialized = true
 	return &clientManager{
 		resources:    resources,
@@ -328,6 +339,31 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		triClient:    triClient,
 		healthClient: healthClient,
 	}, nil
+}
+
+// warmUpTripleTransport performs one request so the HTTP transport caches a
+// connection before the caller starts a short-lived RPC. A failure is not
+// fatal: the call still dials on its own context.
+func warmUpTripleTransport(client *http.Client, rawURL string, timeout time.Duration) {
+	if client == nil || rawURL == "" || timeout <= 0 {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodOptions, rawURL, nil)
+	if err != nil {
+		logger.Debugf("[Triple][Client] create transport warm-up request failed for %s, err=%v", rawURL, err)
+		return
+	}
+	resp, err := client.Do(req)
+	if resp != nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}
+	if err != nil {
+		logger.Debugf("[Triple][Client] transport warm-up for %s finished with err=%v", rawURL, err)
+	}
 }
 
 func (cm *clientManager) callHealthWatch(ctx context.Context, service string) (*tri.ServerStreamForClient, error) {

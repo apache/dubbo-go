@@ -19,8 +19,11 @@ package triple
 
 import (
 	"context"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -705,4 +708,42 @@ func TestCodecClientInitializationRollback(t *testing.T) {
 			require.EqualValues(t, 1, c.closes.Load())
 		})
 	}
+}
+
+func TestWarmUpTripleTransport(t *testing.T) {
+	t.Run("skips when it cannot dial", func(t *testing.T) {
+		warmUpTripleTransport(nil, "https://127.0.0.1", time.Second)
+		warmUpTripleTransport(&http.Client{}, "", time.Second)
+		warmUpTripleTransport(&http.Client{}, "https://127.0.0.1", 0)
+		warmUpTripleTransport(&http.Client{}, "https://127.0.0.1", -time.Second)
+	})
+
+	t.Run("logs a request that cannot be built", func(t *testing.T) {
+		warmUpTripleTransport(&http.Client{}, "http://[", time.Second)
+	})
+
+	t.Run("logs a failed request and drains a response body", func(t *testing.T) {
+		client := &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+			return nil, errors.New("dial failed")
+		})}
+		warmUpTripleTransport(client, "https://127.0.0.1", time.Second)
+
+		client.Transport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusBadGateway,
+				Body:       io.NopCloser(strings.NewReader("unavailable")),
+				Request:    r,
+			}, errors.New("unavailable")
+		})
+		warmUpTripleTransport(client, "https://127.0.0.1", time.Second)
+	})
+
+	t.Run("drains a successful response", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodOptions, r.Method)
+			_, _ = io.WriteString(w, "ok")
+		}))
+		t.Cleanup(srv.Close)
+		warmUpTripleTransport(srv.Client(), srv.URL, time.Second)
+	})
 }

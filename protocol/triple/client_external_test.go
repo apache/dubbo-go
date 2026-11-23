@@ -21,13 +21,17 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"math/big"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -215,6 +219,96 @@ func testClientInvokeWithTimeout(t *testing.T, tlsConfig *global.TLSConfig) {
 	// 7. Ensure that the duration is at least the timeout duration
 	assert.GreaterOrEqual(t, duration, timeout)
 	assert.Less(t, duration, timeout+time.Second, "Invocation took too long, likely not timing out correctly")
+}
+
+// TestHTTP3ClientWarmsTransportBeforeCallDeadline verifies that the first
+// TLS/HTTP handshake is paid for while the client is created, under the
+// reference timeout. A later RPC keeps the caller's shorter deadline, which
+// is what the HTTP/3 Java interop sample uses.
+func TestHTTP3ClientWarmsTransportBeforeCallDeadline(t *testing.T) {
+	caCertFile, serverCertFile, serverKeyFile, cleanup := generateTestCerts(t)
+	defer cleanup()
+
+	cert, err := tls.LoadX509KeyPair(serverCertFile, serverKeyFile)
+	require.NoError(t, err)
+
+	var requests atomic.Int32
+	const firstResponseDelay = 600 * time.Millisecond
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if requests.Add(1) == 1 {
+			time.Sleep(firstResponseDelay)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	listener, err := tls.Listen("tcp", "127.0.0.1:0", &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		NextProtos:   []string{"h2"},
+	})
+	require.NoError(t, err)
+	server := &http.Server{Handler: handler}
+	t.Cleanup(func() {
+		_ = server.Close()
+	})
+	go func() {
+		_ = server.Serve(listener)
+	}()
+
+	_, port, err := net.SplitHostPort(listener.Addr().String())
+	require.NoError(t, err)
+
+	proto := triple.GetProtocol()
+	rawURL := "tri://127.0.0.1:" + port + "/greet.GreetService"
+	serviceURL, err := common.NewURL(
+		rawURL,
+		common.WithMethods([]string{"Greet"}),
+		common.WithProtocol(triple.TRIPLE),
+		common.WithParamsValue(constant.IDLMode, constant.NONIDL),
+		common.WithParamsValue(constant.SerializationKey, constant.MsgpackSerialization),
+		common.WithParamsValue(constant.TimeoutKey, "2s"),
+	)
+	require.NoError(t, err)
+	serviceURL.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+		CACertFile:    caCertFile,
+		TLSCertFile:   serverCertFile,
+		TLSKeyFile:    serverKeyFile,
+		TLSServerName: "localhost",
+	})
+	serviceURL.SetAttribute(constant.TripleConfigKey, &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	})
+	serviceURL.SetParam(constant.SslEnabledKey, "true")
+
+	referStarted := time.Now()
+	invoker := proto.Refer(serviceURL)
+	referElapsed := time.Since(referStarted)
+	require.NotNil(t, invoker)
+	t.Cleanup(func() {
+		invoker.Destroy()
+	})
+	require.GreaterOrEqual(t, referElapsed, firstResponseDelay-50*time.Millisecond,
+		"connection setup must happen while referring, got %s", referElapsed)
+
+	inv := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName("Greet"),
+		invocation.WithParameterRawValues([]any{"param", "param"}),
+	)
+	inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+
+	callTimeout := 250 * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	defer cancel()
+	callStarted := time.Now()
+	result := invoker.Invoke(ctx, inv)
+	callElapsed := time.Since(callStarted)
+
+	require.Less(t, callElapsed, callTimeout+150*time.Millisecond,
+		"call after warm-up took %s", callElapsed)
+	if err = result.Error(); err != nil {
+		require.NotErrorIs(t, err, context.DeadlineExceeded)
+	}
+	require.GreaterOrEqual(t, requests.Load(), int32(1))
+	t.Logf("refer=%s call=%s requests=%d port=%s err=%v", referElapsed, callElapsed, requests.Load(), port, result.Error())
 }
 
 // TestClientInvokeWithTimeout tests that a Triple client invocation correctly times out.
