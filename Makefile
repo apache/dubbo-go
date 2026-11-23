@@ -46,7 +46,6 @@ endif
 # TestListener is skipped: an Agollo client started by earlier tests keeps polling
 # and races inside Agollo v4.4.0 (getAppConfig vs SyncAndUpdate); also reproducible on develop.
 RACE_SKIP_TESTS := TestListener \
-TestDubboProtocol_Refer \
 TestCfgAPI_Export \
 TestCfgAPI_Call \
 TestTCPPackageHandle

@@ -131,8 +131,8 @@ github.com/aliyun/credentials-go v1.3.10/go.mod h1:Jm6d+xIgwJVLVWT561vy67ZRP4lPT
 github.com/aliyun/credentials-go v1.4.3 h1:N3iHyvHRMyOwY1+0qBLSf3hb5JFiOujVSVuEpgeGttY=
 github.com/aliyun/credentials-go v1.4.3/go.mod h1:Jm6d+xIgwJVLVWT561vy67ZRP4lPTQxMbEYRuT2Ti1U=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/apache/dubbo-getty v1.4.10 h1:ZmkpHJa/qgS0evX2tTNqNCz6rClI/9Wwp7ctyMml82w=
-github.com/apache/dubbo-getty v1.4.10/go.mod h1:V64WqLIxksEgNu5aBJBOxNIvpOZyfUJ7J/DXBlKSUoA=
+github.com/apache/dubbo-getty v1.5.1-0.20261122055653-5f05b9f9f48f h1:u6w+Hbdq3xEPYTqgdn6NnWS03PCUivwY8BVhxKeFnRA=
+github.com/apache/dubbo-getty v1.5.1-0.20261122055653-5f05b9f9f48f/go.mod h1:QHg5XtrbcvjKC6/gwJymn59fEhzvwJu/bL//iijUOs8=
 github.com/apache/dubbo-go-hessian2 v1.9.1/go.mod h1:xQUjE7F8PX49nm80kChFvepA/AvqAZ0oh/UaB6+6pBE=
 github.com/apache/dubbo-go-hessian2 v1.9.3/go.mod h1:xQUjE7F8PX49nm80kChFvepA/AvqAZ0oh/UaB6+6pBE=
 github.com/apache/dubbo-go-hessian2 v1.13.2 h1:A15pmQMReoT0ho74j/B4m+mhCs+bngqyCGXDOvUwxmY=

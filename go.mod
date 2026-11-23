@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/alibaba/sentinel-golang v1.0.4
-	github.com/apache/dubbo-getty v1.4.10
+	github.com/apache/dubbo-getty v1.5.1-0.20261122055653-5f05b9f9f48f
 	github.com/apache/dubbo-go-hessian2 v1.13.2
 	github.com/apolloconfig/agollo/v4 v4.4.0
 	github.com/cenkalti/backoff/v4 v4.2.1
