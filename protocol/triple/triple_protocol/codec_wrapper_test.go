@@ -29,6 +29,8 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
+	msgpack "github.com/ugorji/go/codec"
+
 	"google.golang.org/protobuf/proto"
 )
 
@@ -633,6 +635,61 @@ func TestProtoWrapperCodec_Msgpack(t *testing.T) {
 	codec := newProtoWrapperCodec(&msgpackCodec{})
 	assert.Equal(t, codec.Name(), codecNameMsgPack)
 	assert.Equal(t, codec.WireCodecName(), codecNameProto)
+}
+
+func TestMsgpackWrapperConcurrentWireCompatibility(t *testing.T) {
+	t.Parallel()
+
+	type payload struct {
+		ID   int64
+		Tags []string
+	}
+	want := payload{ID: -300, Tags: []string{"triple", "msgpack"}}
+	// Match the legacy encoder's fresh handle using a payload with stable field order.
+	var legacyPayload []byte
+	if err := msgpack.NewEncoderBytes(&legacyPayload, new(msgpack.MsgpackHandle)).Encode(want); err != nil {
+		t.Fatal(err)
+	}
+	argTypes := []string{"example.Payload"}
+	legacyRequest, err := proto.Marshal(&interoperability.TripleRequestWrapper{
+		SerializeType: codecNameMsgPack, Args: [][]byte{legacyPayload}, ArgTypes: argTypes,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacyResponse, err := proto.Marshal(&interoperability.TripleResponseWrapper{
+		SerializeType: codecNameMsgPack, Data: legacyPayload,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := newProtoWrapperCodec(&msgpackCodec{})
+	request := SerializationArguments{Values: []any{want}, TypeNames: argTypes}
+
+	for range 16 {
+		t.Run("roundtrip", func(t *testing.T) {
+			t.Parallel()
+
+			encodedRequest, err := client.Marshal(request)
+			assert.Nil(t, err)
+			assert.Equal(t, encodedRequest, legacyRequest)
+
+			server := &tripleServerCodecSession{delegate: &protoBinaryCodec{}, allowedSerializeType: codecNameMsgPack}
+			var received payload
+			if !assert.Nil(t, server.Unmarshal(legacyRequest, []any{&received})) {
+				return
+			}
+			assert.Equal(t, received, want)
+
+			encodedResponse, err := server.Marshal([]any{received})
+			assert.Nil(t, err)
+			assert.Equal(t, encodedResponse, legacyResponse)
+
+			var reply payload
+			assert.Nil(t, client.Unmarshal(legacyResponse, &reply))
+			assert.Equal(t, reply, want)
+		})
+	}
 }
 
 func TestServerCodecSession_UnmarshalWrappedRequest_MsgPack(t *testing.T) {
