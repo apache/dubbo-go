@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+// Package jaeger registers the "jaeger" trace exporter.
+//
+// Deprecated: the OpenTelemetry jaeger exporter module is no longer maintained.
+// Jaeger accepts OTLP, so use the otlp-http or otlp-grpc exporter with Jaeger's
+// OTLP endpoint (port 4318 or 4317) instead.
 package jaeger
 
 import (
