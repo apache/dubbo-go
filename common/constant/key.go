@@ -135,6 +135,7 @@ const (
 const (
 	TimestampKey                       = "timestamp"
 	RemoteTimestampKey                 = "remote.timestamp"
+	InstanceTimestampKey               = "instance.timestamp" // registration time of an application-level instance, carried on its service URLs
 	ClusterKey                         = "cluster"
 	LoadbalanceKey                     = "loadbalance"
 	WeightKey                          = "weight"

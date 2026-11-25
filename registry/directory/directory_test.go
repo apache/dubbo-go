@@ -460,6 +460,48 @@ func TestClosingTombstoneAllowsRebuildAfterGenuineRestart(t *testing.T) {
 	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
 }
 
+// TestClosingTombstoneAllowsRebuildAfterInstanceRestart covers application-level
+// discovery: the URL is rebuilt from MetadataInfo cached by revision, so the
+// export timestamp is unchanged after a restart and only the instance
+// registration timestamp tells the new run apart (#3848).
+func TestClosingTombstoneAllowsRebuildAfterInstanceRestart(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir(true)
+
+	instanceURL := func(instanceTimestamp string) *common.URL {
+		u, err := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+			common.WithParamsValue(constant.ClusterKey, "mock1"),
+			common.WithParamsValue(constant.GroupKey, "group"),
+			common.WithParamsValue(constant.VersionKey, "1.0.0"),
+			common.WithParamsValue(constant.TimestampKey, "1000"),
+			common.WithParamsValue(constant.InstanceTimestampKey, instanceTimestamp))
+		require.NoError(t, err)
+		return u
+	}
+	oldURL, newURL := instanceURL("1795000000000"), instanceURL("1795000009000")
+
+	oldEvent := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: oldURL}
+	key := registryDirectory.invokerCacheKey(oldEvent)
+	require.Equal(t, key, registryDirectory.invokerCacheKey(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newURL}))
+
+	mockRegistry.MockEvent(oldEvent)
+	time.Sleep(1e9)
+	require.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+
+	require.True(t, registryDirectory.RemoveClosingInstance(key))
+	require.True(t, hasActiveClosingTombstone(registryDirectory, key))
+
+	// Stale snapshot of the closing run stays vetoed.
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: oldURL})
+	time.Sleep(1e9)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
+
+	// The restarted run has the same export timestamp but a new registration timestamp.
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newURL})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
+}
+
 func TestRefreshConfiguratorsUseLatestBatch(t *testing.T) {
 	realConfigurator := extension.GetDefaultConfiguratorFunc()
 
