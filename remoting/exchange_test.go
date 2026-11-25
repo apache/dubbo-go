@@ -19,6 +19,8 @@ package remoting
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -26,6 +28,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -169,4 +173,91 @@ func TestPendingResponseClaimConcurrentWithCleanup(t *testing.T) {
 			t.Fatalf("claimed %d times", claims.Load())
 		}
 	}
+}
+
+type recordLogger struct {
+	mu     sync.Mutex
+	debugs []string
+	errors []string
+}
+
+func (l *recordLogger) Info(args ...any)  {}
+func (l *recordLogger) Warn(args ...any)  {}
+func (l *recordLogger) Error(args ...any) {}
+func (l *recordLogger) Debug(args ...any) {}
+func (l *recordLogger) Fatal(args ...any) {}
+
+func (l *recordLogger) Infof(string, ...any)  {}
+func (l *recordLogger) Warnf(string, ...any)  {}
+func (l *recordLogger) Fatalf(string, ...any) {}
+
+func (l *recordLogger) Errorf(format string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.errors = append(l.errors, fmt.Sprintf(format, args...))
+}
+
+func (l *recordLogger) Debugf(format string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.debugs = append(l.debugs, fmt.Sprintf(format, args...))
+}
+
+func (l *recordLogger) snapshot() (debugs, errors []string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]string{}, l.debugs...), append([]string{}, l.errors...)
+}
+
+func installRecordLogger(t *testing.T) *recordLogger {
+	t.Helper()
+	rec := &recordLogger{}
+	prev := logger.GetLogger()
+	logger.SetLogger(rec)
+	t.Cleanup(func() { logger.SetLogger(prev) })
+	return rec
+}
+
+func TestHandleCanceledRequestLogsDebug(t *testing.T) {
+	rec := installRecordLogger(t)
+	id := SequenceID()
+	AddPendingResponse(NewPendingResponse(id))
+	require.NotNil(t, RemoveCancelledPendingResponse(SequenceType(id)))
+	require.Nil(t, GetPendingResponse(SequenceType(id)))
+
+	NewResponse(id, "2.0.2").Handle()
+
+	debugs, errors := rec.snapshot()
+	require.Empty(t, errors, "canceled late response must not log at error: %v", errors)
+	require.NotEmpty(t, debugs)
+	require.Contains(t, debugs[0], fmt.Sprintf("ID=%d", id))
+	require.NotContains(t, strings.Join(debugs, "\n"), "failed to get pending")
+}
+
+func TestHandleUnknownIDLogsError(t *testing.T) {
+	rec := installRecordLogger(t)
+	id := SequenceID()
+	NewResponse(id, "2.0.2").Handle()
+	_, errors := rec.snapshot()
+	require.NotEmpty(t, errors)
+	require.Contains(t, errors[0], "failed to get pending")
+}
+
+func TestRemoveCancelledPendingResponseMissingDoesNotMark(t *testing.T) {
+	rec := installRecordLogger(t)
+	id := SequenceID()
+	require.Nil(t, RemoveCancelledPendingResponse(SequenceType(id)))
+	NewResponse(id, "2.0.2").Handle()
+	_, errors := rec.snapshot()
+	require.NotEmpty(t, errors)
+	require.Contains(t, errors[0], "failed to get pending")
+}
+
+func TestTakeCancelledPendingExpires(t *testing.T) {
+	id := SequenceType(SequenceID())
+	markPendingCancelled(id)
+	cancelledPendingMu.Lock()
+	cancelledPending[id] = time.Now().Add(-time.Second)
+	cancelledPendingMu.Unlock()
+	require.False(t, takeCancelledPending(id))
 }
