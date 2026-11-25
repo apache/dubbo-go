@@ -82,9 +82,17 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 			continue
 		}
 		invoked = append(invoked, ivk)
+		// The metrics filter counts an attempt of the invocation marked in its
+		// context as a retry. Attempts of the same invocation inside an enclosing
+		// retry, such as a group failover inside a multi-group failover, inherit
+		// the mark; other RPCs started with this context do not match it.
+		attemptCtx := ctx
+		if len(invoked) > 1 {
+			attemptCtx = protocolbase.WithRetryAttempt(ctx, invocation)
+		}
 		// DO INVOKE
 		ivkURL := ivk.GetURL().Key()
-		res = ivk.Invoke(ctx, invocation)
+		res = ivk.Invoke(attemptCtx, invocation)
 		if res.Error() != nil && !isBizError(res.Error()) {
 			providers = append(providers, ivkURL)
 			continue

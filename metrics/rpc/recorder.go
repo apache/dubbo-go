@@ -75,6 +75,7 @@ type rpcSeries struct {
 	succeeded         atomic.Pointer[counterPair]
 	failed            atomic.Pointer[counterPair]
 	failures          [7]atomic.Pointer[counterPair]
+	retries           atomic.Pointer[metrics.CounterMetric]
 	histogramRegistry metrics.HistogramProvider
 	histogramOpts     *metrics.HistogramOpts
 	histogramID       *metrics.MetricId
@@ -165,6 +166,23 @@ func (s *rpcSeries) completed() *completionMetrics {
 	return m
 }
 
+// retriesCounter returns the consumer retry counter, created at zero with
+// requests_total so that it can be subtracted from it. It has no sliding-window
+// variant.
+func (s *rpcSeries) retriesCounter() metrics.CounterMetric {
+	if p := s.retries.Load(); p != nil {
+		return *p
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if p := s.retries.Load(); p != nil {
+		return *p
+	}
+	counter := s.registry.Counter(s.id("retries_total"))
+	s.retries.Store(&counter)
+	return counter
+}
+
 var failureSuffixes = [...]string{"requests_unknown_failed_total", "requests_timeout_total",
 	"requests_limit_total", "requests_failed_service_unavailable_total", "requests_business_failed_total",
 	"requests_failed_network_total", "requests_failed_codec_total"}
@@ -181,6 +199,12 @@ func (s *rpcSeries) record(e *metricsEvent) {
 	case AfterInvoke:
 		m := s.completed()
 		m.completed.inc()
+		if e.role == constant.SideConsumer {
+			retries := s.retriesCounter()
+			if e.retry {
+				retries.Inc()
+			}
+		}
 		s.processing.Dec()
 		if e.hasResult {
 			if e.err == nil {

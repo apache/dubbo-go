@@ -192,8 +192,9 @@ func TestRecorderLazyResultsAndExpiry(t *testing.T) {
 	end.hasResult = true
 	c.record(&end)
 	values = scalarSnapshot(t, r)
-	if len(values) != 18 {
-		t.Fatalf("success-only identity created %d scalars, want 18", len(values))
+	// 18 result scalars plus the consumer retry counter at zero.
+	if retries, ok := values["dubbo_consumer_retries_total"]; len(values) != 19 || !ok || retries != 0 {
+		t.Fatalf("success-only identity created %d scalars, want 19: %v", len(values), values)
 	}
 	if c.getSeries(before).failed.Load() != nil {
 		t.Fatal("unused failed counter bound")
