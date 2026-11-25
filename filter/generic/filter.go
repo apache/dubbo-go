@@ -125,7 +125,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
 
-		return invoker.Invoke(ctx, newIvc)
+		return invoker.Invoke(base.TransferRetryAttempt(ctx, inv, newIvc), newIvc)
 	} else if isMakingAGenericCall(invoker, inv) {
 		// Arguments format: [methodName string, types []string, args []hessian.Object]
 		oldArgs := inv.Arguments()
@@ -152,7 +152,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
 
-		return invoker.Invoke(ctx, newIvc)
+		return invoker.Invoke(base.TransferRetryAttempt(ctx, inv, newIvc), newIvc)
 	}
 	return invoker.Invoke(ctx, inv)
 }

@@ -33,6 +33,7 @@ type providerMetrics struct {
 
 type consumerMetrics struct {
 	rpcCommonMetrics
+	retriesTotal metrics.CounterVec
 }
 
 // rpcCommonMetrics is the common metrics for both provider and consumer
@@ -118,6 +119,7 @@ func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 
 func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 	cm.initFailureOrigins(registry, "consumer")
+	cm.retriesTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_retries_total", "The number of retries sent by consumers after a failed attempt"))
 	cm.qpsTotal = metrics.NewQpsMetricVec(registry, cm.key("dubbo_consumer_qps_total", "The number of requests sent by consumers per second"))
 	cm.requestsTotal = metrics.NewCounterVec(registry, cm.key("dubbo_consumer_requests_total", "The total number of requests sent by consumers"))
 	cm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, cm.key("dubbo_consumer_requests_total_aggregate", "The total number of requests sent by consumers under the sliding window"))
