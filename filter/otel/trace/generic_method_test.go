@@ -26,8 +26,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/otel/propagation"
+
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 

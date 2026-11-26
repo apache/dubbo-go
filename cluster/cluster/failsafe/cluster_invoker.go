@@ -85,8 +85,7 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 		// ignore
 		// The error text can hold remote data, so the span gets the method and
 		// service only. The log line keeps the error.
-		spanErr := fmt.Errorf("[Cluster][Failsafe] ignore exception, method=%s service=%s",
-			invocation.MethodName(), invoker.GetURL().Service())
+		spanErr := fmt.Errorf("[Cluster][Failsafe] ignore exception, method=%s service=%s", methodName, url.Service())
 		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr), "[Cluster][Failsafe] ignore exception, err=%v", res.Error().Error())
 		return &result.RPCResult{}
 	}
