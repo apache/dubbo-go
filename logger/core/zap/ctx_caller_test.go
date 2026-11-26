@@ -40,15 +40,20 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
-// installObservedZapCtxLogger installs a ZapCtxLogger built like instantiate
-// does (AddCaller, AddCallerSkip(1)) as the global logger.
-func installObservedZapCtxLogger(t *testing.T, traceEnabled bool) *observer.ObservedLogs {
+// installObservedLogger installs the global logger the way instantiate builds
+// it (AddCaller, AddCallerSkip(1)): a ZapCtxLogger with trace integration on,
+// the plain DubboLogger with it off.
+func installObservedLogger(t *testing.T, traceEnabled bool) *observer.ObservedLogs {
 	t.Helper()
 	core, logs := observer.New(zapcore.DebugLevel)
 	sugar := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
 	base := &dubbogoLogger.DubboLogger{Logger: sugar, DynamicLevel: zap.NewAtomicLevelAt(zapcore.DebugLevel)}
 	prev := dubbogoLogger.GetLogger()
-	dubbogoLogger.SetLogger(newZapCtxLogger(base, traceEnabled, false))
+	if traceEnabled {
+		dubbogoLogger.SetLogger(NewZapCtxLogger(base, false))
+	} else {
+		dubbogoLogger.SetLogger(base)
+	}
 	t.Cleanup(func() { dubbogoLogger.SetLogger(prev) })
 	return logs
 }
@@ -65,20 +70,21 @@ func TestCtxLoggingReportsCallSite(t *testing.T) {
 	traceCtx, wantTraceID, _, _ := mustZapTraceContext(t)
 
 	calls := []struct {
-		name string
-		log  func(ctx context.Context) int
+		name      string
+		withTrace bool
+		log       func(ctx context.Context) int
 	}{
-		{"package Ctx function", func(ctx context.Context) int {
+		{"gost Ctx function", true, func(ctx context.Context) int {
 			l := nextLine()
-			logger.CtxWarnf(ctx, "msg")
+			dubbogoLogger.CtxWarnf(ctx, "msg")
 			return l
 		}},
-		{"CtxLogger method", func(ctx context.Context) int {
+		{"gost Ctx function without format", true, func(ctx context.Context) int {
 			l := nextLine()
-			logger.GetCtxLogger().CtxWarnf(ctx, "msg")
+			dubbogoLogger.CtxWarn(ctx, "msg")
 			return l
 		}},
-		{"plain gost function", func(context.Context) int {
+		{"plain gost function", false, func(context.Context) int {
 			l := nextLine()
 			dubbogoLogger.Warnf("msg")
 			return l
@@ -87,7 +93,7 @@ func TestCtxLoggingReportsCallSite(t *testing.T) {
 	for _, traceEnabled := range []bool{true, false} {
 		for _, c := range calls {
 			t.Run(fmt.Sprintf("%s/trace=%t", c.name, traceEnabled), func(t *testing.T) {
-				logs := installObservedZapCtxLogger(t, traceEnabled)
+				logs := installObservedLogger(t, traceEnabled)
 				wantLine := c.log(traceCtx)
 
 				entries := logs.All()
@@ -98,7 +104,7 @@ func TestCtxLoggingReportsCallSite(t *testing.T) {
 				assert.Equal(t, wantLine, caller.Line)
 
 				fields := entries[0].ContextMap()
-				if traceEnabled && c.name != "plain gost function" {
+				if traceEnabled && c.withTrace {
 					assert.Equal(t, wantTraceID, fields["trace_id"])
 				} else {
 					assert.NotContains(t, fields, "trace_id")
@@ -106,4 +112,22 @@ func TestCtxLoggingReportsCallSite(t *testing.T) {
 			})
 		}
 	}
+}
+
+// TestCtxLoggerMethodReportsCallSite checks that calling a Ctx method on the
+// logger directly still reports its call site.
+func TestCtxLoggerMethodReportsCallSite(t *testing.T) {
+	traceCtx, wantTraceID, _, _ := mustZapTraceContext(t)
+	logs := installObservedLogger(t, true)
+	ctxLogger, ok := dubbogoLogger.GetLogger().(logger.CtxLogger)
+	require.True(t, ok)
+
+	wantLine := nextLine()
+	ctxLogger.CtxWarnf(traceCtx, "msg")
+
+	entries := logs.All()
+	require.Len(t, entries, 1)
+	assert.Equal(t, "ctx_caller_test.go", filepath.Base(entries[0].Caller.File))
+	assert.Equal(t, wantLine, entries[0].Caller.Line)
+	assert.Equal(t, wantTraceID, entries[0].ContextMap()["trace_id"])
 }

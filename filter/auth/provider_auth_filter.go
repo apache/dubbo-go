@@ -19,6 +19,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -30,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -63,7 +65,11 @@ func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocat
 		return authenticator.Authenticate(invocation, url)
 	})
 	if err != nil {
-		logger.CtxErrorf(ctx, "[Filter][Auth] auth the request occur exception, invocation=%v err=%v", invocation, err)
+		// The invocation holds the request arguments and attachments, so the span
+		// gets the method name only.
+		spanErr := fmt.Errorf("[Filter][Auth] auth the request occur exception, method=%s err=%w", invocation.MethodName(), err)
+		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
+			"[Filter][Auth] auth the request occur exception, invocation=%v err=%v", invocation, err)
 		return &result.RPCResult{
 			Err: err,
 		}

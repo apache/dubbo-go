@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -122,7 +123,12 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 	}
 
-	logger.CtxErrorf(ctx, "[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
+	// The registry URL can hold credentials, so the span leaves it and the
+	// consumer address out.
+	spanErr := fmt.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d lastErr=%w",
+		methodName, invokerSvc, retries, len(providers), len(invokers), res.Error())
+	logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
+		"[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
 		methodName, invokerSvc, retries, len(providers), len(invokers), invokerUrl, ip, constant.Version, res.Error().Error())
 
 	return res
