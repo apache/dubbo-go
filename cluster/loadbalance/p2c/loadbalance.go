@@ -64,13 +64,15 @@ var rndPool = sync.Pool{
 }
 
 // defaultRnd is the default implementation of randomPicker.
-// It handles edge cases for n <= 2 and ensures two distinct random indices for n > 2.
+// It handles n <= 1 and otherwise returns two distinct indices in random order.
 func defaultRnd(n int) (i, j int) {
 	if n <= 1 {
 		return 0, 0
 	}
 	if n == 2 {
-		return 0, 1
+		// The order matters: Select returns i when it has no metrics for it.
+		i = rand.Intn(2) // NOSONAR
+		return i, 1 - i
 	}
 
 	rnd := rndPool.Get().(*rand.Rand)
