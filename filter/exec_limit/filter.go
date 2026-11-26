@@ -50,6 +50,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/modern-go/concurrent"
 )
 
@@ -58,7 +60,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -111,7 +112,7 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, i
 
 	limitRate, err := strconv.ParseInt(limitRateConfig, 0, 0)
 	if err != nil {
-		dubboLogger.CtxErrorf(ctx, "[Filter][ExecLimit] the configuration of execute.limit is invalid, limitRateConfig=%s", limitRateConfig)
+		logger.CtxErrorf(ctx, "[Filter][ExecLimit] the configuration of execute.limit is invalid, limitRateConfig=%s", limitRateConfig)
 		return &result.RPCResult{}
 	}
 
@@ -126,12 +127,12 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, i
 	concurrentCount := state.(*ExecuteState).increase()
 	defer state.(*ExecuteState).decrease()
 	if concurrentCount > limitRate {
-		dubboLogger.CtxErrorf(ctx, "[Filter][ExecLimit] the invocation was rejected due to over the execute limitation, url=%s", ivkURL.String())
+		logger.CtxErrorf(ctx, "[Filter][ExecLimit] the invocation was rejected due to over the execute limitation, url=%s", ivkURL.String())
 		rejectedHandlerConfig := ivkURL.GetParam(methodConfigPrefix+constant.ExecuteRejectedExecutionHandlerKey,
 			ivkURL.GetParam(constant.ExecuteRejectedExecutionHandlerKey, constant.DefaultKey))
 		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(rejectedHandlerConfig)
 		if err != nil {
-			dubboLogger.CtxWarnf(ctx, "[Filter][ExecLimit] get rejected execution handler failed, err=%v", err)
+			logger.CtxWarnf(ctx, "[Filter][ExecLimit] get rejected execution handler failed, err=%v", err)
 		} else {
 			return rejectedExecutionHandler.RejectedExecution(ivkURL, invocation)
 		}

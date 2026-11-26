@@ -39,7 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -80,7 +79,7 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	// check if invoker is closing
 	if f.isClosingInvoker(invoker) {
-		dubboLogger.CtxWarnf(ctx, "[Filter][GracefulShutdown] skipping closing invoker, url=%s", invoker.GetURL().String())
+		logger.CtxWarnf(ctx, "[Filter][GracefulShutdown] skipping closing invoker, url=%s", invoker.GetURL().String())
 		return &result.RPCResult{Err: errors.New("provider is closing")}
 	}
 

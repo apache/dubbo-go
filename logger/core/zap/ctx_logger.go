@@ -41,34 +41,28 @@ import (
 // ZapCtxLogger wraps DubboLogger with context-aware logging support.
 type ZapCtxLogger struct {
 	*dubbogoLogger.DubboLogger
-	traceEnabled      bool
 	recordErrorToSpan bool
 
 	callerSkippedOnce sync.Once
-	callerSkipped     logger.CtxLogger
+	callerSkipped     dubbogoLogger.CtxLogger
 }
 
-var _ logger.CtxLogger = (*ZapCtxLogger)(nil)
+var (
+	_ logger.CtxLogger            = (*ZapCtxLogger)(nil)
+	_ dubbogoLogger.CallerSkipper = (*ZapCtxLogger)(nil)
+)
 
-// NewZapCtxLogger creates a ZapCtxLogger that adds trace fields from the context.
 func NewZapCtxLogger(base *dubbogoLogger.DubboLogger, recordErrorToSpan bool) *ZapCtxLogger {
-	return newZapCtxLogger(base, true, recordErrorToSpan)
-}
-
-// newZapCtxLogger also covers trace integration being off, so framework code
-// can always log through CtxLogger: the Ctx methods then log like the plain ones.
-func newZapCtxLogger(base *dubbogoLogger.DubboLogger, traceEnabled, recordErrorToSpan bool) *ZapCtxLogger {
 	return &ZapCtxLogger{
 		DubboLogger:       base,
-		traceEnabled:      traceEnabled,
-		recordErrorToSpan: traceEnabled && recordErrorToSpan,
+		recordErrorToSpan: recordErrorToSpan,
 	}
 }
 
 // CallerSkipped returns this logger with one more caller frame skipped. The
-// logger package's Ctx functions log through it, so the reported caller is
-// their call site rather than the function itself.
-func (l *ZapCtxLogger) CallerSkipped() logger.CtxLogger {
+// package-level Ctx functions of gost's logger package log through it, so the
+// reported caller is their call site rather than the function itself.
+func (l *ZapCtxLogger) CallerSkipped() dubbogoLogger.CtxLogger {
 	l.callerSkippedOnce.Do(func() {
 		l.callerSkipped = l
 		if sugar, ok := l.Logger.(*zap.SugaredLogger); ok {
@@ -77,7 +71,6 @@ func (l *ZapCtxLogger) CallerSkipped() logger.CtxLogger {
 					Logger:       sugar.WithOptions(zap.AddCallerSkip(1)),
 					DynamicLevel: l.DynamicLevel,
 				},
-				traceEnabled:      l.traceEnabled,
 				recordErrorToSpan: l.recordErrorToSpan,
 			}
 		}
@@ -90,9 +83,6 @@ func (l *ZapCtxLogger) withTraceFields(ctx context.Context) *zap.SugaredLogger {
 	zapLogger, ok := l.Logger.(*zap.SugaredLogger)
 	if !ok {
 		return nil
-	}
-	if !l.traceEnabled {
-		return zapLogger
 	}
 
 	fields := logger.ExtractTraceFields(ctx)
@@ -188,6 +178,12 @@ func (l *ZapCtxLogger) recordErrorToSpanIfPresent(ctx context.Context, template 
 
 	span := trace.SpanFromContext(ctx)
 	if span == nil || !span.IsRecording() {
+		return
+	}
+
+	if err := logger.SpanErrorFromContext(ctx); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		return
 	}
 

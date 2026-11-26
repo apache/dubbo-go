@@ -22,9 +22,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -55,7 +58,7 @@ func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation p
 	for _, ivk := range invokers {
 		res = ivk.Invoke(ctx, invocation)
 		if res.Error() != nil {
-			dubboLogger.CtxWarnf(ctx, "[Cluster][Broadcast] invoke failed, err=%v invoker=%v", res.Error(), ivk)
+			logger.CtxWarnf(ctx, "[Cluster][Broadcast] invoke failed, err=%v invoker=%v", res.Error(), ivk)
 			err = res.Error()
 		}
 	}

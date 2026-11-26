@@ -40,24 +40,16 @@ import (
 // LogrusCtxLogger wraps DubboLogger with context-aware logging support.
 type LogrusCtxLogger struct {
 	*dubbogoLogger.DubboLogger
-	traceEnabled      bool
 	recordErrorToSpan bool
 }
 
 var _ logger.CtxLogger = (*LogrusCtxLogger)(nil)
 
-// NewLogrusCtxLogger creates a LogrusCtxLogger that adds trace fields from the context.
+// NewLogrusCtxLogger creates a new LogrusCtxLogger.
 func NewLogrusCtxLogger(base *dubbogoLogger.DubboLogger, recordErrorToSpan bool) *LogrusCtxLogger {
-	return newLogrusCtxLogger(base, true, recordErrorToSpan)
-}
-
-// newLogrusCtxLogger also covers trace integration being off, so framework code
-// can always log through CtxLogger: the Ctx methods then log like the plain ones.
-func newLogrusCtxLogger(base *dubbogoLogger.DubboLogger, traceEnabled, recordErrorToSpan bool) *LogrusCtxLogger {
 	return &LogrusCtxLogger{
 		DubboLogger:       base,
-		traceEnabled:      traceEnabled,
-		recordErrorToSpan: traceEnabled && recordErrorToSpan,
+		recordErrorToSpan: recordErrorToSpan,
 	}
 }
 
@@ -66,9 +58,6 @@ func (l *LogrusCtxLogger) withTraceFields(ctx context.Context) *logrus.Entry {
 	logrusLogger, ok := l.Logger.(*logrus.Logger)
 	if !ok {
 		return nil
-	}
-	if !l.traceEnabled {
-		return logrus.NewEntry(logrusLogger)
 	}
 
 	fields := logger.ExtractTraceFields(ctx)
@@ -164,6 +153,12 @@ func (l *LogrusCtxLogger) recordErrorToSpanIfPresent(ctx context.Context, templa
 
 	span := trace.SpanFromContext(ctx)
 	if span == nil || !span.IsRecording() {
+		return
+	}
+
+	if err := logger.SpanErrorFromContext(ctx); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		return
 	}
 

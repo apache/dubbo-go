@@ -39,7 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -173,7 +172,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-		dubboLogger.CtxErrorf(ctx, "[Cluster][Failback] check invokers failed, method=%s service=%s err=%v",
+		logger.CtxErrorf(ctx, "[Cluster][Failback] check invokers failed, method=%s service=%s err=%v",
 			invocation.MethodName(), invoker.GetURL().Service(), err)
 		return &result.RPCResult{}
 	}
@@ -199,7 +198,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)
 		invoker.enqueueInitialRetry(ctx, timerTask)
 
-		dubboLogger.CtxErrorf(ctx, "[Cluster][Failback] invoke failed, method=%s service=%s err=%v",
+		logger.CtxErrorf(ctx, "[Cluster][Failback] invoke failed, method=%s service=%s err=%v",
 			methodName, url.Service(), res.Error().Error())
 		// ignore
 		return &result.RPCResult{}
@@ -253,12 +252,12 @@ func (invoker *failbackClusterInvoker) enqueueInitialRetry(ctx context.Context, 
 	}
 
 	if invoker.taskList.Len() >= invoker.failbackTasks {
-		dubboLogger.CtxWarnf(ctx, "[Cluster][Failback] task list full, len=%d", invoker.taskList.Len())
+		logger.CtxWarnf(ctx, "[Cluster][Failback] task list full, len=%d", invoker.taskList.Len())
 		return
 	}
 
 	if err := invoker.taskList.Put(retryTask); err != nil {
-		dubboLogger.CtxWarnf(ctx, "[Cluster][Failback] put initial task failed, err=%v", err)
+		logger.CtxWarnf(ctx, "[Cluster][Failback] put initial task failed, err=%v", err)
 	}
 }
 

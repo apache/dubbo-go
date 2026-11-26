@@ -24,13 +24,16 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	clsutils "dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -82,21 +85,21 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 		}
 	}
 	if remainingStr == "" {
-		dubboLogger.CtxErrorf(ctx, "[Cluster][AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string",
+		logger.CtxErrorf(ctx, "[Cluster][AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string",
 			constant.AdaptiveServiceRemainingKey, constant.AdaptiveServiceRemainingKey, remainingIface)
 		return res
 	}
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
-		dubboLogger.CtxWarnf(ctx, "[Cluster][AdaptiveSvc] parse remaining failed, remaining=%s err=%v, expected int", remainingStr, err)
+		logger.CtxWarnf(ctx, "[Cluster][AdaptiveSvc] parse remaining failed, remaining=%s err=%v, expected int", remainingStr, err)
 		return res
 	}
-	dubboLogger.CtxDebugf(ctx, "[Cluster][AdaptiveSvc] received server status, %s=%s",
+	logger.CtxDebugf(ctx, "[Cluster][AdaptiveSvc] received server status, %s=%s",
 		constant.AdaptiveServiceRemainingKey, remainingStr)
 	err = metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
 		invocation.MethodName(), metrics.HillClimbing, uint64(remaining))
 	if err != nil {
-		dubboLogger.CtxWarnf(ctx, "[Cluster][AdaptiveSvc] update metrics failed, err=%v", err)
+		logger.CtxWarnf(ctx, "[Cluster][AdaptiveSvc] update metrics failed, err=%v", err)
 		return &result.RPCResult{Err: err}
 	}
 

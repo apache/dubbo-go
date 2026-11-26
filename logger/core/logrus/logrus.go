@@ -86,6 +86,10 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 
 	baseLogger := &dubbogoLogger.DubboLogger{Logger: lg}
 	traceEnabled := config.GetParamBool(constant.LoggerTraceEnabledKey, false)
-	recordErrorToSpan := config.GetParamBool(constant.LoggerTraceRecordErrorKey, true)
-	return newLogrusCtxLogger(baseLogger, traceEnabled, recordErrorToSpan), err
+	if traceEnabled {
+		recordErrorToSpan := config.GetParamBool(constant.LoggerTraceRecordErrorKey, true)
+		return NewLogrusCtxLogger(baseLogger, recordErrorToSpan), err
+	}
+
+	return baseLogger, err
 }
