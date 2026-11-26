@@ -106,7 +106,7 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	res := invoker.Invoke(ctx, invocation)
 
 	if res.Error() != nil {
-		span.SetStatus(codes.Error, res.Error().Error())
+		recordSpanError(span, res.Error(), errorType(res.Error()))
 	} else {
 		span.SetStatus(codes.Ok, codes.Ok.String())
 	}
@@ -153,7 +153,7 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	res := invoker.Invoke(ctx, invocation)
 
 	if res.Error() != nil {
-		span.SetStatus(codes.Error, res.Error().Error())
+		recordSpanError(span, res.Error(), errorType(res.Error()))
 	} else {
 		span.SetStatus(codes.Ok, codes.Ok.String())
 	}

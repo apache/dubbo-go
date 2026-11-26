@@ -18,7 +18,7 @@
 package consistenthashing
 
 import (
-	"encoding/json"
+	"fmt"
 	"hash/crc32"
 	"regexp"
 	"sync"
@@ -63,16 +63,14 @@ func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.I
 	methodName := invocation.MethodName()
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
-	// hash the invokers
-	var bs []byte
+	// Key the ring on invoker identity, as the Java implementation does with invokers.hashCode().
+	// The invoker types keep their state in unexported fields, so encoding them (with encoding/json,
+	// say) gives "{}" for every invoker and only tells lists of different lengths apart.
+	h := crc32.NewIEEE()
 	for _, invoker := range invokers {
-		b, err := json.Marshal(invoker)
-		if err != nil {
-			return nil
-		}
-		bs = append(bs, b...)
+		_, _ = fmt.Fprintf(h, "%p;", invoker)
 	}
-	hashCode := crc32.ChecksumIEEE(bs)
+	hashCode := h.Sum32()
 
 	selectorsMu.RLock()
 	selector, ok := selectors[key]

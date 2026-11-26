@@ -135,6 +135,7 @@ const (
 const (
 	TimestampKey                       = "timestamp"
 	RemoteTimestampKey                 = "remote.timestamp"
+	InstanceTimestampKey               = "instance.timestamp" // registration time of an application-level instance, carried on its service URLs
 	ClusterKey                         = "cluster"
 	LoadbalanceKey                     = "loadbalance"
 	WeightKey                          = "weight"
@@ -518,6 +519,13 @@ const (
 	PrometheusPushgatewayPasswordKey     = "prometheus.pushgateway.password"
 	PrometheusPushgatewayPushIntervalKey = "prometheus.pushgateway.push.interval"
 	PrometheusPushgatewayJobKey          = "prometheus.pushgateway.job"
+	OtlpMetricsEnabledKey                = "otlp.enabled"
+	OtlpMetricsEndpointKey               = "otlp.endpoint"
+	OtlpMetricsProtocolKey               = "otlp.protocol"
+	OtlpMetricsInsecureKey               = "otlp.insecure"
+	OtlpMetricsExportIntervalKey         = "otlp.export.interval"
+	OtlpMetricsProtocolHTTP              = "http"
+	OtlpMetricsProtocolGrpc              = "grpc"
 
 	ProbeEnabledKey          = "probe.enabled"
 	ProbePortKey             = "probe.port"
