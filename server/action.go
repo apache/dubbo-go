@@ -418,6 +418,9 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	// suppression markers here because provider filter chains do not pass through
 	// the consumer-side MergeValue path that removes them.
 	filters = commonCfg.MergeValue(filters, "", "")
+	if svcOpts.internal {
+		filters = withoutProviderObservabilityFilters(filters)
+	}
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config
@@ -457,6 +460,24 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	}
 
 	return urlMap
+}
+
+// withoutProviderObservabilityFilters removes the provider metrics and OTel
+// server trace filters, however they were configured. Framework services such
+// as the health check are not application RPCs: as in Dubbo Java, whose Triple
+// builtin services bypass the provider filter chain, the provider neither
+// counts nor traces them.
+func withoutProviderObservabilityFilters(filters string) string {
+	names := strings.Split(filters, ",")
+	kept := names[:0]
+	for _, name := range names {
+		switch strings.TrimSpace(name) {
+		case constant.MetricsFilterKey, constant.OTELServerTraceKey:
+		default:
+			kept = append(kept, name)
+		}
+	}
+	return strings.Join(kept, ",")
 }
 
 // GetExportedUrls will return the url in service config's exporter
