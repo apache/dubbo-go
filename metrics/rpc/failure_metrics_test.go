@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsProm "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -70,7 +71,7 @@ func TestFailureCountersAndSnapshot(t *testing.T) {
 			reg := prom.NewRegistry()
 			url, _ := common.NewURL("dubbo://127.0.0.1:20880/Fixture?application=fixture&registry.role=" + strconv.Itoa(role))
 			registry := metricsProm.NewPromMetricRegistry(reg, url)
-			c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
+			c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry, metrics.DefaultWindow())}
 			invoker := base.NewBaseInvoker(url)
 			inv := invocation.NewRPCInvocation("Call", nil, nil)
 			for _, origin := range []rpcerror.Origin{rpcerror.Codec, rpcerror.Network} {
@@ -141,7 +142,7 @@ func TestCallbackExpiryDoesNotInventMetrics(t *testing.T) {
 	reg := prom.NewRegistry()
 	url, _ := common.NewURL("dubbo://127.0.0.1/Fixture?registry.role=" + strconv.Itoa(common.CONSUMER))
 	registry := metricsProm.NewPromMetricRegistry(reg, url)
-	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
+	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry, metrics.DefaultWindow())}
 	before := NewBeforeInvokeEvent(base.NewBaseInvoker(url), invocation.NewRPCInvocation("Call", nil, nil))
 	c.beforeInvokeHandler(before.(*metricsEvent))
 	expired := NewCompletionEvent(before, time.Second, rpcerror.Completion{}).(*metricsEvent)

@@ -49,7 +49,7 @@ func newRecordingCollector(t *testing.T) (*rpcCollector, *prom.Registry) {
 	reg := prom.NewRegistry()
 	url, _ := common.NewURL("prometheus://127.0.0.1")
 	r := metricsProm.NewPromMetricRegistry(reg, url)
-	return &rpcCollector{registry: r, metricSet: buildMetricSet(r)}, reg
+	return &rpcCollector{registry: r, metricSet: buildMetricSet(r, metrics.DefaultWindow())}, reg
 }
 func recordingEvent(t *testing.T, c *rpcCollector, role int) *metricsEvent {
 	t.Helper()
@@ -262,7 +262,7 @@ type legacyRegistry struct{ metrics.MetricRegistry }
 func TestLegacyRegistryRetainsSerializedWindowGauges(t *testing.T) {
 	c, r := newRecordingCollector(t)
 	c.registry = legacyRegistry{c.registry}
-	c.metricSet = buildMetricSet(c.registry)
+	c.metricSet = buildMetricSet(c.registry, metrics.DefaultWindow())
 	before := recordingEvent(t, c, common.CONSUMER)
 	var wg sync.WaitGroup
 	for range 16 {
@@ -291,7 +291,7 @@ func (panickingRegistry) Gauge(*metrics.MetricId) metrics.GaugeMetric {
 func TestRecordingFailureIsIsolated(t *testing.T) {
 	c, _ := newRecordingCollector(t)
 	c.registry = panickingRegistry{c.registry}
-	c.metricSet = buildMetricSet(c.registry)
+	c.metricSet = buildMetricSet(c.registry, metrics.DefaultWindow())
 	e := recordingEvent(t, c, common.CONSUMER)
 	c.record(e) // Must recover before Publish returns to the business path.
 	c.record(e)
@@ -322,7 +322,7 @@ func TestRecorderPreservesEveryLatencyObservation(t *testing.T) {
 	c, reg := newRecordingCollector(t)
 	r := &countingRegistry{MetricRegistry: c.registry, GaugeFuncRegistry: c.registry.(metrics.GaugeFuncRegistry)}
 	c.registry = r
-	c.metricSet = buildMetricSet(r)
+	c.metricSet = buildMetricSet(r, metrics.DefaultWindow())
 	var wg sync.WaitGroup
 	for range 16 {
 		wg.Go(func() { recordLatencyBatch(t, c) })

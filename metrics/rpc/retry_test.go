@@ -35,6 +35,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -55,7 +56,7 @@ func newCollectorOnPath(t *testing.T, legacy bool) (*rpcCollector, *prom.Registr
 	c, reg := newRecordingCollector(t)
 	if legacy {
 		c.registry = legacyRegistry{c.registry}
-		c.metricSet = buildMetricSet(c.registry)
+		c.metricSet = buildMetricSet(c.registry, metrics.DefaultWindow())
 	}
 	return c, reg
 }
