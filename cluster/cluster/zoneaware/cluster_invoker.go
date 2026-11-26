@@ -79,7 +79,7 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 			return &result.RPCResult{
 				Err: fmt.Errorf("no registry instance in zone or "+
 					"no available providers in the registry, zone: %v, "+
-					" registries: %v", zone, invoker.GetURL()),
+					" registries: %v", zone, registryAddresses(invokers)),
 			}
 		}
 	}
@@ -99,10 +99,23 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 	}
 
 	return &result.RPCResult{
-		Err: fmt.Errorf("no provider available in %v", invokers),
+		Err: fmt.Errorf("no provider available in %v", registryAddresses(invokers)),
 	}
 }
 
 func matchParam(target, key, def string, invoker protocolbase.Invoker) bool {
 	return target == invoker.GetURL().GetParam(key, def)
+}
+
+// registryAddresses excludes URL userinfo, paths and query parameters from errors.
+func registryAddresses(invokers []protocolbase.Invoker) []string {
+	addresses := make([]string, 0, len(invokers))
+	for _, invoker := range invokers {
+		if invoker != nil {
+			if url := invoker.GetURL(); url != nil {
+				addresses = append(addresses, url.Location)
+			}
+		}
+	}
+	return addresses
 }

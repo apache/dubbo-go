@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	cluster "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -50,13 +51,14 @@ func newFailoverClusterInvoker(directory directory.Directory) protocolbase.Invok
 func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	var (
 		res       result.Result
+		retryErr  error
 		invoked   []protocolbase.Invoker
 		providers []string
 		ivk       protocolbase.Invoker
 	)
 
 	invokers := invoker.Directory.List(invocation)
-	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
+	if err := invoker.CheckInvokersWithContext(ctx, invokers, invocation); err != nil {
 		return &result.RPCResult{Err: err}
 	}
 
@@ -73,11 +75,17 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 			}
 
 			invokers = invoker.Directory.List(invocation)
-			if err := invoker.CheckInvokers(invokers, invocation); err != nil {
+			if err := invoker.CheckInvokersWithContext(ctx, invokers, invocation); err != nil {
 				return &result.RPCResult{Err: err}
 			}
+			if retryErr != nil {
+				if observer := cluster.DiagnosticsFromContext(ctx, invocation); observer != nil {
+					observer.Retry(i+1, retryErr)
+				}
+				retryErr = nil
+			}
 		}
-		ivk = invoker.DoSelect(loadBalance, invocation, invokers, invoked)
+		ivk = invoker.DoSelectWithContext(ctx, loadBalance, invocation, invokers, invoked, i+1)
 		if ivk == nil {
 			continue
 		}
@@ -95,6 +103,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		res = ivk.Invoke(attemptCtx, invocation)
 		if res.Error() != nil && !isBizError(res.Error()) {
 			providers = append(providers, ivkURL)
+			retryErr = res.Error()
 			continue
 		}
 		return res
@@ -103,6 +112,9 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invokerSvc := invoker.GetURL().Service()
 	invokerUrl := invoker.Directory.GetURL()
 	if ivk == nil {
+		if observer := cluster.DiagnosticsFromContext(ctx, invocation); observer != nil {
+			observer.NoProvider()
+		}
 		logger.Errorf("[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
 		return &result.RPCResult{
 			Err: fmt.Errorf("failed to invoke the method %s of the service %s .No provider is available because can't connect server",
