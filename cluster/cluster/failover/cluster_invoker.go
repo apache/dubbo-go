@@ -123,10 +123,11 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 	}
 
-	// The registry URL can hold credentials, so the span leaves it and the
-	// consumer address out.
-	spanErr := fmt.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d lastErr=%w",
-		methodName, invokerSvc, retries, len(providers), len(invokers), res.Error())
+	// The registry URL can hold credentials and the error text can hold remote
+	// data, so the span gets the method, service and counts only. The log line
+	// keeps the rest.
+	spanErr := fmt.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d",
+		methodName, invokerSvc, retries, len(providers), len(invokers))
 	logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
 		"[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
 		methodName, invokerSvc, retries, len(providers), len(invokers), invokerUrl, ip, constant.Version, res.Error().Error())

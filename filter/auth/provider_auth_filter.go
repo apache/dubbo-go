@@ -65,9 +65,9 @@ func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocat
 		return authenticator.Authenticate(invocation, url)
 	})
 	if err != nil {
-		// The invocation holds the request arguments and attachments, so the span
-		// gets the method name only.
-		spanErr := fmt.Errorf("[Filter][Auth] auth the request occur exception, method=%s err=%w", invocation.MethodName(), err)
+		// The invocation holds the request arguments and attachments, and an
+		// authenticator's error can quote them, so the span gets the method name only.
+		spanErr := fmt.Errorf("[Filter][Auth] auth the request occur exception, method=%s", invocation.MethodName())
 		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
 			"[Filter][Auth] auth the request occur exception, invocation=%v err=%v", invocation, err)
 		return &result.RPCResult{

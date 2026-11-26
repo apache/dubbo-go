@@ -34,6 +34,7 @@ import (
 	clsutils "dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -85,7 +86,9 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 		}
 	}
 	if remainingStr == "" {
-		logger.CtxErrorf(ctx, "[Cluster][AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string",
+		// The value comes from the provider, so the span gets the key only.
+		spanErr := fmt.Errorf("[Cluster][AdaptiveSvc] %s field type invalid, expected string", constant.AdaptiveServiceRemainingKey)
+		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr), "[Cluster][AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string",
 			constant.AdaptiveServiceRemainingKey, constant.AdaptiveServiceRemainingKey, remainingIface)
 		return res
 	}

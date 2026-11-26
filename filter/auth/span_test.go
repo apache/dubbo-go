@@ -77,7 +77,7 @@ func TestAuthFailureKeepsInvocationOutOfSpan(t *testing.T) {
 
 	spans := recorder.Ended()
 	require.Len(t, spans, 1)
-	want := "[Filter][Auth] auth the request occur exception, method=GetUser err=" + res.Error().Error()
+	want := "[Filter][Auth] auth the request occur exception, method=GetUser"
 	assert.Equal(t, want, spans[0].Status().Description)
 	events := spans[0].Events()
 	require.Len(t, events, 1)

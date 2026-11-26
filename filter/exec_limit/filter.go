@@ -114,7 +114,9 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, i
 
 	limitRate, err := strconv.ParseInt(limitRateConfig, 0, 0)
 	if err != nil {
-		logger.CtxErrorf(ctx, "[Filter][ExecLimit] the configuration of execute.limit is invalid, limitRateConfig=%s", limitRateConfig)
+		spanErr := fmt.Errorf("[Filter][ExecLimit] the configuration of execute.limit is invalid, target=%s", limitTarget)
+		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
+			"[Filter][ExecLimit] the configuration of execute.limit is invalid, limitRateConfig=%s", limitRateConfig)
 		return &result.RPCResult{}
 	}
 
