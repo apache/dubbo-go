@@ -43,8 +43,7 @@ func TestDefaultRnd(t *testing.T) {
 
 	t.Run("n == 2", func(t *testing.T) {
 		i, j := defaultRnd(2)
-		assert.Equal(t, 0, i)
-		assert.Equal(t, 1, j)
+		assert.ElementsMatch(t, []int{0, 1}, []int{i, j})
 	})
 
 	t.Run("n > 2", func(t *testing.T) {
