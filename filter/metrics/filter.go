@@ -48,7 +48,8 @@ type metricsFilter struct{}
 // Invoke publish the BeforeInvokeEvent and AfterInvokeEvent to metrics bus
 func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	var observation *rpcerror.Observation
-	if invoker.GetURL().GetParam(constant.RegistryRoleKey, "") == strconv.Itoa(common.CONSUMER) {
+	consumer := invoker.GetURL().GetParam(constant.RegistryRoleKey, "") == strconv.Itoa(common.CONSUMER)
+	if consumer {
 		ctx, observation = rpcerror.WithInvocationObservation(ctx, invocation)
 	} else {
 		ctx, observation = rpcerror.WithObservation(ctx)
@@ -59,7 +60,18 @@ func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invoc
 	observation.OnComplete(func(c rpcerror.Completion) {
 		metrics.Publish(rpc.NewCompletionEvent(before, c.At.Sub(start), c))
 	})
+	var streamClaimed func() bool
+	if consumer && base.IsStreamingCall(invocation) {
+		// A consumer stream is recorded when it ends. A provider's streaming
+		// handler already runs until the stream ends.
+		ctx, streamClaimed = base.WatchStream(ctx, invocation, func(err error) {
+			observation.FinishInvoke(err, true)
+		})
+	}
 	res := invoker.Invoke(ctx, invocation)
+	if streamClaimed != nil && streamClaimed() {
+		return res
+	}
 	var err error
 	if res != nil {
 		err = res.Error()

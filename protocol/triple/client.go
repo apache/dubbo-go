@@ -137,6 +137,9 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	version := url.GetParam(constant.VersionKey, "")
 	cliOpts = append(cliOpts, tri.WithGroup(group), tri.WithVersion(version))
 
+	// Observe the end of each client stream for the consumer filters.
+	cliOpts = append(cliOpts, tri.WithInterceptors(streamEndInterceptor{}))
+
 	// TODO(DMwangnima): support OpenTracing
 
 	// Resolve TLS first because HTTP/2 and HTTP/3 transport setup depends on it.

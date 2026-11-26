@@ -98,16 +98,27 @@ func (i *clusterInterceptor) Invoke(ctx context.Context, invoker base.Invoker, i
 	observation := &logicalSpan{span: span}
 	ctx = cluster.WithDiagnostics(ctx, invocation, observation)
 	stop := context.AfterFunc(ctx, func() { observation.finish(ctx.Err()) })
+	invokeCtx, streamClaimed := ctx, func() bool { return false }
+	if base.IsStreamingCall(invocation) {
+		// The logical span of an open stream ends with the stream.
+		invokeCtx, streamClaimed = base.WatchStream(ctx, invocation, observation.finish)
+	}
 	defer func() {
 		stop()
+		if streamClaimed() {
+			return
+		}
 		// Also release the span if a downstream invoker panics. The panic
 		// continues unchanged; no request/panic payload is added to attributes.
 		observation.finish(errors.New("cluster invocation did not complete"))
 	}()
 	// Only the per-endpoint client filter injects attachments, independently
 	// for each attempt. The logical span is propagated through context alone.
-	res := invoker.Invoke(ctx, invocation)
+	res := invoker.Invoke(invokeCtx, invocation)
 	stop()
+	if streamClaimed() {
+		return res
+	}
 	var err error
 	if res == nil {
 		err = errors.New("cluster invocation returned no result")
