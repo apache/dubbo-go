@@ -313,3 +313,21 @@ func TestCodecEndpointEmptyConfigurationScopes(t *testing.T) {
 		require.ErrorContains(t, compatibleEndpointCodec(service, listener), "configuration scope")
 	})
 }
+
+func TestCodecEndpointReceiveSetEquivalence(t *testing.T) {
+	implicit := streamURL("hessian2")
+	explicit := streamURL("hessian2")
+	explicit.SetParam("accepted-serializations", "hessian2")
+	require.NoError(t, compatibleEndpointCodec(implicit, explicit))
+	require.NoError(t, compatibleEndpointCodec(explicit, implicit))
+	duplicated := streamURL("hessian2")
+	duplicated.SetParam("accepted-serializations", "hessian2,hessian2")
+	require.NoError(t, compatibleEndpointCodec(explicit, duplicated))
+	disabled := streamURL("hessian2")
+	disabled.SetParam("accepted-serializations", "")
+	require.ErrorContains(t, compatibleEndpointCodec(implicit, disabled), "receive set")
+	extended := streamURL("hessian2")
+	extended.SetParam("accepted-serializations", "hessian2,unit-stream")
+	require.ErrorContains(t, compatibleEndpointCodec(implicit, extended), "receive set")
+	require.NoError(t, compatibleEndpointCodec(extended, extended.Clone()))
+}

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sort"
 	"sync"
 	"time"
 )
@@ -284,11 +285,38 @@ func compatibleEndpointCodec(listener, url *common.URL) error {
 	if fmt.Sprintf("%p", oldConfig) != fmt.Sprintf("%p", newConfig) {
 		return fmt.Errorf("dubbo endpoint %s has a different codec configuration scope; use a separate endpoint", url.Location)
 	}
-	if listener.GetParam("serialization", "hessian2") != url.GetParam("serialization", "hessian2") || !reflect.DeepEqual(listener.CopyParams()["accepted-serializations"], url.CopyParams()["accepted-serializations"]) {
+	if listener.GetParam(constant.SerializationKey, constant.Hessian2Serialization) != url.GetParam(constant.SerializationKey, constant.Hessian2Serialization) {
+		return fmt.Errorf("dubbo endpoint %s has a different serialization; use a separate endpoint", url.Location)
+	}
+	if !reflect.DeepEqual(effectiveReceiveSet(listener), effectiveReceiveSet(url)) {
 		return fmt.Errorf("dubbo endpoint %s has a different serialization receive set; use a separate endpoint", url.Location)
 	}
 	if listener.GetParam("codec", "dubbo") != url.GetParam("codec", "dubbo") {
 		return fmt.Errorf("dubbo endpoint %s has a different codec", url.Location)
 	}
 	return nil
+}
+
+// effectiveReceiveSet resolves the serialization IDs an endpoint actually
+// accepts. An omitted list falls back to the default provider policy, so an
+// absent list and an explicit one naming the same formats stay compatible.
+func effectiveReceiveSet(url *common.URL) []string {
+	names, explicit := extension.AcceptedSerializations(url)
+	if !explicit {
+		names = []string{constant.Hessian2Serialization, url.GetParam(constant.SerializationKey, constant.Hessian2Serialization)}
+	}
+	seen := make(map[string]struct{}, len(names))
+	set := make([]string, 0, len(names))
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		set = append(set, name)
+	}
+	sort.Strings(set)
+	return set
 }
