@@ -46,7 +46,7 @@ func TestDefaultRnd(t *testing.T) {
 	t.Run("n == 2", func(t *testing.T) {
 		// Either order must come up, or Select always prefers the same invoker.
 		seen := map[[2]int]int{}
-		for k := 0; k < 1000; k++ {
+		for range 1000 {
 			i, j := defaultRnd(2)
 			seen[[2]int{i, j}]++
 		}
@@ -58,7 +58,7 @@ func TestDefaultRnd(t *testing.T) {
 	t.Run("n > 2", func(t *testing.T) {
 		n := 5
 		seen := map[[2]int]int{}
-		for k := 0; k < 5000; k++ {
+		for range 5000 {
 			i, j := defaultRnd(n)
 			assert.True(t, i >= 0 && i < n)
 			assert.True(t, j >= 0 && j < n)
@@ -99,7 +99,7 @@ func TestSelectTwoInvokersSpreads(t *testing.T) {
 
 			const total = 2000
 			counts := map[string]int{}
-			for k := 0; k < total; k++ {
+			for range total {
 				counts[lb.Select(ivkArr, invocation).GetURL().Location]++
 			}
 			// Expected 1000 each; the band is more than 13 standard deviations wide.
@@ -405,7 +405,7 @@ func TestNewP2CLoadBalanceConcurrentFirstCall(t *testing.T) {
 	const n = 16
 	results := make([]loadbalance.LoadBalance, n)
 	var wg sync.WaitGroup
-	for k := 0; k < n; k++ {
+	for k := range n {
 		wg.Go(func() {
 			results[k] = newP2CLoadBalance(nil)
 		})
