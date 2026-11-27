@@ -56,9 +56,9 @@ type p2cLoadBalance struct {
 // This function type is designed ONLY FOR TEST purposes to inject predictable values.
 type randomPicker func(n int) (i, j int)
 
-// defaultRnd is the default implementation of randomPicker. It returns two
-// distinct indices in random order, so with two invokers either one can be
-// picked first. Select returns the first pick when it has no metrics, and the
+// defaultRnd is the default implementation of randomPicker. For n >= 2 it
+// returns two distinct indices in random order, so with two invokers either one
+// can be picked first; for n <= 1 it returns (0, 0). Select returns the first pick when it has no metrics, and the
 // second pick on a tie.
 func defaultRnd(n int) (i, j int) {
 	if n <= 1 {
@@ -72,19 +72,17 @@ func defaultRnd(n int) (i, j int) {
 	return i, j
 }
 
-// newP2CLoadBalance creates or returns the singleton P2C load balancer.
-// Uses the provided randomPicker if non-nil; otherwise defaults to defaultRnd.
-// randomPicker parameter is designed ONLY FOR TEST purposes.
-// Thread-safe via sync.Once.
+// newP2CLoadBalance returns the singleton P2C load balancer, creating it on the
+// first call with r, or defaultRnd if r is nil. Later calls ignore r. The
+// extension factory calls it on every request, so instance is only read after
+// once.Do.
 func newP2CLoadBalance(r randomPicker) loadbalance.LoadBalance {
-	if r == nil {
-		r = defaultRnd
-	}
-	if instance == nil {
-		once.Do(func() {
-			instance = &p2cLoadBalance{randomPicker: r}
-		})
-	}
+	once.Do(func() {
+		if r == nil {
+			r = defaultRnd
+		}
+		instance = &p2cLoadBalance{randomPicker: r}
+	})
 	return instance
 }
 

@@ -18,6 +18,7 @@
 package p2c
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -28,6 +29,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -121,17 +123,15 @@ func setLocalMetrics(t *testing.T, localMetrics metrics.Metrics) {
 }
 
 func TestLoadBalance(t *testing.T) {
-	// Create P2C load balancer with deterministic randomPicker for repeatable tests.
-	// Always returns fixed indices (0,1) except when n <= 1.
-	lb := newP2CLoadBalance(func(n int) (i, j int) {
+	// Build the load balancer directly with a deterministic randomPicker, so the
+	// test does not depend on whether the singleton already exists.
+	// The picker returns (0, 1) except when n <= 1.
+	lb := &p2cLoadBalance{randomPicker: func(n int) (i, j int) {
 		if n <= 1 {
 			return 0, 0
 		}
-		if n == 2 {
-			return 0, 1
-		}
 		return 0, 1
-	})
+	}}
 	invocation := protoinvoc.NewRPCInvocation("TestMethod", []any{}, nil)
 
 	t.Run("no invokers", func(t *testing.T) {
@@ -386,4 +386,34 @@ func TestLoadBalance(t *testing.T) {
 			assert.Equal(t, ivkArr[1].GetURL().String(), ivk.GetURL().String())
 		})
 	})
+}
+
+// TestNewP2CLoadBalanceConcurrentFirstCall calls the factory from several
+// goroutines at once, as concurrent first requests do. Run with -race.
+func TestNewP2CLoadBalanceConcurrentFirstCall(t *testing.T) {
+	originalInstance := instance
+	once = sync.Once{}
+	instance = nil
+	t.Cleanup(func() {
+		once = sync.Once{}
+		instance = originalInstance
+		if originalInstance != nil {
+			once.Do(func() {})
+		}
+	})
+
+	const n = 16
+	results := make([]loadbalance.LoadBalance, n)
+	var wg sync.WaitGroup
+	for k := 0; k < n; k++ {
+		wg.Go(func() {
+			results[k] = newP2CLoadBalance(nil)
+		})
+	}
+	wg.Wait()
+
+	assert.NotNil(t, results[0])
+	for _, lb := range results {
+		assert.Same(t, results[0], lb)
+	}
 }
