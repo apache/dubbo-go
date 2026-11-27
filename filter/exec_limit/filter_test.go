@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -32,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func TestFilterInvokeIgnored(t *testing.T) {
@@ -82,4 +84,19 @@ func TestFilterInvoke(t *testing.T) {
 	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
+}
+
+// TestFilterInvokeRejectedFails checks that a call over the limit fails with
+// Unavailable under the default rejected execution handler, instead of
+// returning an empty successful result.
+func TestFilterInvokeRejectedFails(t *testing.T) {
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.InterfaceKey, "greet.GreetService"),
+		common.WithParamsValue(constant.ExecuteLimitKey, "0"),
+	)
+
+	res := newFilter().Invoke(context.Background(), base.NewBaseInvoker(invokeURL), invocation.NewRPCInvocation("Greet", nil, nil))
+	require.Error(t, res.Error())
+	assert.Equal(t, tri.CodeUnavailable, tri.CodeOf(res.Error()))
 }

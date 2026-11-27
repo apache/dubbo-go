@@ -34,10 +34,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
@@ -110,4 +112,28 @@ func TestProviderFilterWithoutShutdownConfigPassThrough(t *testing.T) {
 	assert.NotPanics(t, func() {
 		providerFilter.OnResponse(context.Background(), res, base.NewBaseInvoker(baseURL), rpcInvocation)
 	})
+}
+
+// TestProviderFilterRejectsWithDefaultHandler checks that a request arriving
+// while the application is closing fails with Unavailable under the default
+// rejected execution handler, so the consumer's cluster can retry another
+// provider instead of receiving an empty successful result.
+func TestProviderFilterRejectsWithDefaultHandler(t *testing.T) {
+	baseURL := common.NewURLWithOptions(common.WithParamsValue(constant.InterfaceKey, "greet.GreetService"))
+	rpcInvocation := invocation.NewRPCInvocation("Greet", nil, nil)
+	opt := graceful_shutdown.NewOptions()
+
+	// A local filter, so the closing state does not leak into the package singleton.
+	providerFilter := &providerGracefulShutdownFilter{}
+	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
+	opt.Shutdown.Closing.Store(true)
+	opt.Shutdown.RejectRequest.Store(true)
+
+	res := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseURL), rpcInvocation)
+	require.Error(t, res.Error())
+	assert.Equal(t, tri.CodeUnavailable, tri.CodeOf(res.Error()))
+
+	res = providerFilter.OnResponse(context.Background(), res, base.NewBaseInvoker(baseURL), rpcInvocation)
+	assert.Equal(t, "true", res.Attachment(constant.GracefulShutdownClosingKey, ""))
+	assert.Equal(t, int32(0), opt.Shutdown.ProviderActiveCount.Load())
 }

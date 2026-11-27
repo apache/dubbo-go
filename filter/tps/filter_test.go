@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
@@ -96,6 +97,9 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	extension.SetRejectedExecutionHandler(constant.DefaultKey, func() filter.RejectedExecutionHandler {
 		return mockRejectedHandler
 	})
+	t.Cleanup(func() {
+		extension.SetRejectedExecutionHandler(constant.DefaultKey, handler.GetOnlyLogRejectedExecutionHandler)
+	})
 
 	tpsFilter := &tpsLimitFilter{}
 	invokeUrl := common.NewURLWithOptions(
@@ -108,4 +112,25 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 		invocation.NewRPCInvocation("MethodName", []any{"OK"}, attch))
 	require.NoError(t, invokeResult.Error())
 	assert.Nil(t, invokeResult.Result())
+}
+
+// TestTpsLimitFilterRejectedFails checks that a call rejected by the TPS limiter
+// fails with Unavailable under the default rejected execution handler.
+func TestTpsLimitFilterRejectedFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockLimiter := limiter.NewMockTpsLimiter(ctrl)
+	mockLimiter.EXPECT().IsAllowable(gomock.Any(), gomock.Any()).Return(false).Times(1)
+	extension.SetTpsLimiter("rejected-fails-test", func() filter.TpsLimiter {
+		return mockLimiter
+	})
+
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.InterfaceKey, "greet.GreetService"),
+		common.WithParamsValue(constant.TPSLimiterKey, "rejected-fails-test"))
+
+	res := (&tpsLimitFilter{}).Invoke(context.Background(), base.NewBaseInvoker(invokeURL),
+		invocation.NewRPCInvocation("Greet", nil, nil))
+	require.Error(t, res.Error())
+	assert.Equal(t, tri.CodeUnavailable, tri.CodeOf(res.Error()))
 }
