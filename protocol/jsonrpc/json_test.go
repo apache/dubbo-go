@@ -64,7 +64,7 @@ func TestJsonClientCodecRead(t *testing.T) {
 func TestServerCodecWrite(t *testing.T) {
 	codec := newServerCodec()
 	a := json.RawMessage([]byte("1"))
-	codec.req = serverRequest{Version: "1.0", Method: "GetUser", ID: &a}
+	codec.req = serverRequest{Version: Version, Method: "GetUser", ID: &a}
 	data, err := codec.Write("", &TestData{Test: "test"})
 	require.NoError(t, err)
 	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"}}\n", string(data))
