@@ -246,9 +246,10 @@ func TestClassifyError_Boundary(t *testing.T) {
 			want: ErrorTypeUnknown,
 		},
 		{
+			// An expired caller deadline is a timeout regardless of protocol (#3337).
 			name: "context deadline exceeded",
 			err:  context.DeadlineExceeded,
-			want: ErrorTypeUnknown,
+			want: ErrorTypeTimeout,
 		},
 		{
 			name: "context canceled",

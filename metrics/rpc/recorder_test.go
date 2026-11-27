@@ -49,7 +49,7 @@ func newRecordingCollector(t *testing.T) (*rpcCollector, *prom.Registry) {
 	reg := prom.NewRegistry()
 	url, _ := common.NewURL("prometheus://127.0.0.1")
 	r := metricsProm.NewPromMetricRegistry(reg, url)
-	return &rpcCollector{registry: r, metricSet: buildMetricSet(r)}, reg
+	return &rpcCollector{registry: r, metricSet: buildMetricSet(r, metrics.DefaultWindow())}, reg
 }
 func recordingEvent(t *testing.T, c *rpcCollector, role int) *metricsEvent {
 	t.Helper()
@@ -192,8 +192,9 @@ func TestRecorderLazyResultsAndExpiry(t *testing.T) {
 	end.hasResult = true
 	c.record(&end)
 	values = scalarSnapshot(t, r)
-	if len(values) != 18 {
-		t.Fatalf("success-only identity created %d scalars, want 18", len(values))
+	// 18 result scalars plus the consumer retry counter at zero.
+	if retries, ok := values["dubbo_consumer_retries_total"]; len(values) != 19 || !ok || retries != 0 {
+		t.Fatalf("success-only identity created %d scalars, want 19: %v", len(values), values)
 	}
 	if c.getSeries(before).failed.Load() != nil {
 		t.Fatal("unused failed counter bound")
@@ -203,7 +204,7 @@ func TestRecorderLazyResultsAndExpiry(t *testing.T) {
 func TestRecorderUsesCompleteIdentity(t *testing.T) {
 	c, r := newRecordingCollector(t)
 	first := recordingEvent(t, c, common.CONSUMER)
-	for _, label := range []string{"", constant.TagApplicationName, constant.TagApplicationVersion, constant.TagHostname, constant.TagIp, constant.TagInterface, constant.TagMethod, constant.TagGroup, constant.TagVersion} {
+	for _, label := range []string{"", constant.TagApplicationName, constant.TagApplicationVersion, constant.TagHostname, constant.TagIp, constant.TagInterface, constant.TagMethod, constant.TagGroup, constant.TagVersion, constant.TagProtocol} {
 		e := *first
 		e.labels = maps.Clone(first.labels)
 		if label != "" {
@@ -228,11 +229,11 @@ func assertCompleteIdentityMetrics(t *testing.T, r *prom.Registry) {
 		if f.GetName() != "dubbo_consumer_requests_total" {
 			continue
 		}
-		if len(f.Metric) != 9 {
+		if len(f.Metric) != 10 {
 			t.Fatalf("collapsed identities: %d", len(f.Metric))
 		}
 		for _, m := range f.Metric {
-			if m.GetCounter().GetValue() != 1 || len(m.Label) != 8 {
+			if m.GetCounter().GetValue() != 1 || len(m.Label) != 9 {
 				t.Fatal("identity or labels changed")
 			}
 		}
@@ -261,7 +262,7 @@ type legacyRegistry struct{ metrics.MetricRegistry }
 func TestLegacyRegistryRetainsSerializedWindowGauges(t *testing.T) {
 	c, r := newRecordingCollector(t)
 	c.registry = legacyRegistry{c.registry}
-	c.metricSet = buildMetricSet(c.registry)
+	c.metricSet = buildMetricSet(c.registry, metrics.DefaultWindow())
 	before := recordingEvent(t, c, common.CONSUMER)
 	var wg sync.WaitGroup
 	for range 16 {
@@ -290,7 +291,7 @@ func (panickingRegistry) Gauge(*metrics.MetricId) metrics.GaugeMetric {
 func TestRecordingFailureIsIsolated(t *testing.T) {
 	c, _ := newRecordingCollector(t)
 	c.registry = panickingRegistry{c.registry}
-	c.metricSet = buildMetricSet(c.registry)
+	c.metricSet = buildMetricSet(c.registry, metrics.DefaultWindow())
 	e := recordingEvent(t, c, common.CONSUMER)
 	c.record(e) // Must recover before Publish returns to the business path.
 	c.record(e)
@@ -321,7 +322,7 @@ func TestRecorderPreservesEveryLatencyObservation(t *testing.T) {
 	c, reg := newRecordingCollector(t)
 	r := &countingRegistry{MetricRegistry: c.registry, GaugeFuncRegistry: c.registry.(metrics.GaugeFuncRegistry)}
 	c.registry = r
-	c.metricSet = buildMetricSet(r)
+	c.metricSet = buildMetricSet(r, metrics.DefaultWindow())
 	var wg sync.WaitGroup
 	for range 16 {
 		wg.Go(func() { recordLatencyBatch(t, c) })

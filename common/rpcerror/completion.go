@@ -28,7 +28,9 @@ type Completion struct {
 	Err    error
 	Known  bool
 	Origin Origin
-	At     time.Time
+	// Kind is request-scoped category evidence recorded via RecordKind.
+	Kind Kind
+	At   time.Time
 }
 
 // OnComplete installs the observer before invoking the protocol.
@@ -75,6 +77,7 @@ func (o *Observation) complete(c Completion) {
 		return
 	}
 	c.Origin = o.origin
+	c.Kind = o.kind
 	if c.Origin != Codec && c.Origin != Network {
 		c.Origin = Unknown
 	}
@@ -113,7 +116,7 @@ func (o *Observation) FinishInvoke(err error, hasResult bool) {
 		}
 		return
 	}
-	c := Completion{Err: err, Known: hasResult, Origin: o.origin, At: time.Now()}
+	c := Completion{Err: err, Known: hasResult, Origin: o.origin, Kind: o.kind, At: time.Now()}
 	if c.Origin != Codec && c.Origin != Network {
 		c.Origin = Unknown
 	}

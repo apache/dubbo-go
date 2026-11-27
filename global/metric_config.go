@@ -19,17 +19,18 @@ package global
 
 // MetricsConfig This is the config struct for all metrics implementation
 type MetricsConfig struct {
-	Enable             *bool             `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Port               string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
-	Path               string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
-	Protocol           string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
-	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
-	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
-	Histogram          *HistogramConfig  `yaml:"histogram" json:"histogram" property:"histogram"`
-	EnableMetadata     *bool             `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
-	EnableRegistry     *bool             `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
-	EnableConfigCenter *bool             `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
-	Probe              *ProbeConfig      `yaml:"probe" json:"probe" property:"probe"`
+	Enable             *bool              `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Port               string             `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
+	Path               string             `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
+	Protocol           string             `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+	Prometheus         *PrometheusConfig  `yaml:"prometheus" json:"prometheus" property:"prometheus"`
+	Otlp               *OtlpMetricsConfig `yaml:"otlp" json:"otlp,omitempty" property:"otlp"`
+	Aggregation        *AggregateConfig   `yaml:"aggregation" json:"aggregation" property:"aggregation"`
+	Histogram          *HistogramConfig   `yaml:"histogram" json:"histogram" property:"histogram"`
+	EnableMetadata     *bool              `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
+	EnableRegistry     *bool              `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
+	EnableConfigCenter *bool              `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
+	Probe              *ProbeConfig       `yaml:"probe" json:"probe" property:"probe"`
 }
 
 // HistogramConfig enables cumulative RPC latency buckets independently of the
@@ -39,10 +40,35 @@ type HistogramConfig struct {
 	Buckets []float64 `default:"[0.1,0.3,0.5,1,3,5,10]" yaml:"buckets" json:"buckets,omitempty" property:"buckets"`
 }
 
+// AggregateConfig controls the sliding-window RPC metrics: QPS, the *_aggregate
+// counters, the aggregated RT and the RT quantiles.
 type AggregateConfig struct {
-	Enabled           *bool `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Enabled           *bool `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 	BucketNum         int   `default:"10" yaml:"bucket-num" json:"bucket-num,omitempty" property:"bucket-num"`
 	TimeWindowSeconds int   `default:"120" yaml:"time-window-seconds" json:"time-window-seconds,omitempty" property:"time-window-seconds"`
+}
+
+// OtlpMetricsConfig exports the metrics over OTLP, in addition to the
+// Prometheus endpoint and Pushgateway.
+type OtlpMetricsConfig struct {
+	Enabled  *bool  `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Endpoint string `default:"" yaml:"endpoint" json:"endpoint,omitempty" property:"endpoint"`     // host:port of the OTLP receiver
+	Protocol string `default:"http" yaml:"protocol" json:"protocol,omitempty" property:"protocol"` // http or grpc
+	Insecure bool   `default:"false" yaml:"insecure" json:"insecure,omitempty" property:"insecure"`
+	// seconds
+	ExportInterval int `default:"30" yaml:"export-interval" json:"export-interval,omitempty" property:"export-interval"`
+}
+
+func (c *OtlpMetricsConfig) Clone() *OtlpMetricsConfig {
+	if c == nil {
+		return nil
+	}
+	clone := *c
+	if c.Enabled != nil {
+		enabled := *c.Enabled
+		clone.Enabled = &enabled
+	}
+	return &clone
 }
 
 type PrometheusConfig struct {
@@ -75,7 +101,7 @@ type PushgatewayConfig struct {
 
 func DefaultMetricsConfig() *MetricsConfig {
 	// return a new config without setting any field means there is not any default value for initialization
-	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig(), Histogram: &HistogramConfig{}, Probe: defaultProbeConfig()}
+	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Otlp: &OtlpMetricsConfig{}, Aggregation: defaultAggregateConfig(), Histogram: &HistogramConfig{}, Probe: defaultProbeConfig()}
 }
 
 // Clone a new MetricsConfig
@@ -114,6 +140,7 @@ func (c *MetricsConfig) Clone() *MetricsConfig {
 		Path:               c.Path,
 		Protocol:           c.Protocol,
 		Prometheus:         c.Prometheus.Clone(),
+		Otlp:               c.Otlp.Clone(),
 		Aggregation:        c.Aggregation.Clone(),
 		Histogram:          c.Histogram.Clone(),
 		EnableMetadata:     newEnableMetadata,

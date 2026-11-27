@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -209,7 +210,7 @@ func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result result.R
 }
 
 var (
-	sentinelDubboConsumerFallback = getDefaultDubboFallback()
+	sentinelDubboConsumerFallback = getDefaultDubboConsumerFallback()
 	sentinelDubboProviderFallback = getDefaultDubboFallback()
 )
 
@@ -225,6 +226,18 @@ func SetDubboProviderFallback(f DubboFallback) {
 
 func getDefaultDubboFallback() DubboFallback {
 	return func(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation, blockError *base.BlockError) result.Result {
+		// Count the rejection as a limit failure without changing the error type.
+		rpcerror.RecordKind(ctx, rpcerror.KindLimit)
+		return &result.RPCResult{Err: blockError}
+	}
+}
+
+// getDefaultDubboConsumerFallback is the consumer variant of the default
+// fallback. It only labels the observation owned by this invocation, because a
+// consumer call may run with a context inherited from an enclosing request.
+func getDefaultDubboConsumerFallback() DubboFallback {
+	return func(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation, blockError *base.BlockError) result.Result {
+		rpcerror.RecordKindFor(ctx, invocation, rpcerror.KindLimit)
 		return &result.RPCResult{Err: blockError}
 	}
 }

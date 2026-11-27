@@ -128,11 +128,12 @@ func checkResponseDecodeAttribution(t *testing.T, reg *prom.Registry, mf filter.
 	if rpcerror.Of(res.Error()) != rpcerror.Unknown {
 		t.Fatalf("sidecar evidence escaped into business error: %v", res.Error())
 	}
-	codec := float64(0)
 	if trusted {
-		codec = 1
+		checkMetrics(t, reg, name, 1, 1, 1, 0)
+		return
 	}
-	checkMetrics(t, reg, name, 1, 1, codec, 0)
+	// Without attributable evidence the caller only observed its read timeout.
+	checkClassifiedMetrics(t, reg, name, 1, 1, 0, 0, "requests_timeout_total")
 }
 
 func checkConcurrentAttribution(t *testing.T, reg *prom.Registry, mf filter.Filter) {
@@ -238,7 +239,8 @@ func checkWireCallbackFailure(t *testing.T, reg *prom.Registry, mf filter.Filter
 	case <-time.After(3 * time.Second):
 		t.Fatal("missing user callback")
 	}
-	checkMetrics(t, reg, "CallbackFailure", 1, 1, 0, 0)
+	// An exception payload with status OK is thrown by the provider application.
+	checkClassifiedMetrics(t, reg, "CallbackFailure", 1, 1, 0, 0, "requests_business_failed_total")
 }
 
 func checkTripleDialFailure(t *testing.T, reg *prom.Registry, mf filter.Filter) {

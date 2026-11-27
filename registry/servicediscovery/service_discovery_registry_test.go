@@ -748,6 +748,7 @@ func setupEnvironment(_ *testing.T) (*mockServiceDiscovery, *mockServiceNameMapp
 type mockServiceDiscovery struct {
 	wg               sync.WaitGroup
 	registerCalled   bool
+	registerErr      error
 	listenerAdded    bool
 	capturedAppName  string
 	capturedInstance registry.ServiceInstance
@@ -775,6 +776,9 @@ func (m *mockServiceDiscovery) Register(inst registry.ServiceInstance) error {
 	defer m.instMu.Unlock()
 	m.registerCalled = true
 	m.capturedInstance = inst
+	if m.registerErr != nil {
+		return m.registerErr
+	}
 	if inst != nil {
 		if m.instances == nil {
 			m.instances = make(map[string]registry.ServiceInstance)
@@ -871,11 +875,15 @@ type mockServiceNameMapping struct {
 	getCalled     bool
 	removeCalled  bool
 	capturedGroup string
+	mapErr        error
 	removeErr     error
 }
 
 func (m *mockServiceNameMapping) Map(url *common.URL) error {
 	m.mapCalled = true
+	if m.mapErr != nil {
+		return m.mapErr
+	}
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	appName := url.GetParam(constant.ApplicationKey, "")
 	m.data[serviceInterface] = gxset.NewSet(appName)

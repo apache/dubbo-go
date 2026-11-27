@@ -139,10 +139,10 @@ func matchesFixtureLabels(t *testing.T, m *dto.Metric, method string) bool {
 	if labels["method"] != method || labels["application_name"] != integrationApplication {
 		return false
 	}
-	if labels["interface"] != "fixture.Service" || labels["group"] != "fixture" || labels["version"] != "1" || labels["ip"] == "" {
+	if labels["interface"] != "fixture.Service" || labels["group"] != "fixture" || labels["version"] != "1" || labels["protocol"] != "dubbo" || labels["ip"] == "" {
 		t.Fatalf("incorrect exported labels: %v", labels)
 	}
-	if len(labels) != 8 {
+	if len(labels) != 9 {
 		t.Fatalf("unexpected new label dimensions: %v", labels)
 	}
 	return true
@@ -165,12 +165,20 @@ func checkedMetricValue(t *testing.T, family *dto.MetricFamily, m *dto.Metric, s
 
 func checkMetrics(t *testing.T, reg *prom.Registry, method string, total, failed, codec, network float64) {
 	t.Helper()
+	checkClassifiedMetrics(t, reg, method, total, failed, codec, network, "requests_unknown_failed_total")
+}
+
+// checkClassifiedMetrics expects every failure that is neither codec nor
+// network to be counted in the given failure metric and nowhere else.
+func checkClassifiedMetrics(t *testing.T, reg *prom.Registry, method string, total, failed, codec, network float64, category string) {
+	t.Helper()
 	want := map[string]float64{
 		"requests_total": total, "requests_failed_total": failed,
 		"requests_failed_codec_total": codec, "requests_failed_network_total": network,
 		"requests_failed_codec_total_aggregate": codec, "requests_failed_network_total_aggregate": network,
-		"requests_processing_total": 0, "requests_unknown_failed_total": failed - codec - network,
+		"requests_processing_total": 0, "requests_unknown_failed_total": 0,
 	}
+	want[category] = failed - codec - network
 	await(t, func() bool {
 		for suffix, expected := range want {
 			if metricValue(t, reg, suffix, method) != expected {

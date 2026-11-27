@@ -33,11 +33,20 @@ attempt is not one successful metric event and is not one permanent failure.
 
 ## Classification
 
-Existing DeadlineExceeded, ResourceExhausted, PermissionDenied and BizError
-priority is retained. An unmarked Unavailable remains ServiceUnavailable.
-Other failures may use confirmed local Network or Codec evidence; plain
-Internal/InvalidArgument, error text, or a Session close alone do not prove
-either origin. Conflicting evidence remains Unknown.
+Every failed call increments `requests_failed_total` and exactly one category.
+The category is chosen in this order (see `classifyError`):
+
+1. Triple/gRPC DeadlineExceeded, ResourceExhausted, PermissionDenied and
+   BizError keep their existing priority.
+2. Confirmed local Network or Codec evidence (`rpcerror.Origin`). It is the
+   root cause, so it wins over a symptom such as the read timeout that follows
+   an undecodable response.
+3. A producer-declared kind (`rpcerror.Kind`, see
+   [Failure taxonomy](#failure-taxonomy-3337)).
+4. An unmarked Unavailable remains ServiceUnavailable.
+
+Plain Internal/InvalidArgument, error text, or a Session close alone do not
+prove any category. Conflicting evidence remains Unknown.
 
 Network evidence currently requires a `net.OpError` at the trusted Getty write
 or Triple HTTP Do boundary; cancellation/deadline context errors are excluded.
@@ -61,14 +70,189 @@ For each `{side}` in `provider`, `consumer`:
 | `dubbo_{side}_requests_failed_network_total_aggregate` | Gauge | Network failures in the existing local window |
 | `dubbo_{side}_requests_failed_codec_total_aggregate` | Gauge | Codec failures in the existing local window |
 
-These use the same application/instance/interface/method/group/version labels
-as the existing RPC metrics. There are no request-ID, Session, exception text
+These use the same labels as the existing RPC metrics (see
+[Label contract](#label-contract-3337)). There are no request-ID, Session, exception text
 or other high-cardinality labels. Total failure is incremented once alongside
 one category; Network/Codec failures do not also increment Unknown.
 
 Window Gauges reuse the current aggregation implementation. Idle-window refresh
 is a separate concern tracked by #3765, not implemented or required as a code
 dependency here. This change does not claim those windows refresh on scrape.
+
+## Metric contract (#3337)
+
+This section is the stable contract of the built-in RPC metrics: names,
+labels, failure taxonomy and the RED model built on them. Dashboards and alerts
+should rely only on what is listed here.
+
+### Label contract (#3337)
+
+Every RPC series carries exactly these labels, on both sides:
+
+| Label | Value | Cardinality |
+| --- | --- | --- |
+| `application_name` | Local application name (consumer metrics use the local, not the remote, application) | 1 per process |
+| `application_version` | Local application version | 1 per process |
+| `hostname` | Local host name | 1 per process |
+| `ip` | Local IP | 1 per process |
+| `interface` | Service interface, e.g. `org.apache.dubbo.UserService` | Bounded by code |
+| `method` | RPC method name | Bounded by code |
+| `group` | Service group, empty when unset | Bounded by config |
+| `version` | Service version, empty when unset | Bounded by config |
+| `protocol` | RPC protocol from the service URL: `dubbo`, `tri`, ... | Bounded by config |
+
+Deliberately **not** labels:
+
+- **Side.** Provider and consumer already have separate metric names
+  (`dubbo_provider_*`, `dubbo_consumer_*`), so a `side` label would only repeat
+  the name. Use `{__name__=~"dubbo_(provider|consumer)_.*"}` to select both.
+- **Error type or error code.** Each failure category has its own counter
+  (below), so `requests_failed_total` keeps a single series per call identity,
+  and categories can be added without changing its shape.
+- **Request-scoped values.** Request IDs, remote addresses, session IDs,
+  exception messages and argument values are never labels.
+
+The series count of one RPC metric is roughly
+`instances x interfaces x methods x groups x versions x protocols`.
+`interface`, `method` and `protocol` are bounded by your code and
+configuration. The real cardinality risks are (a) generic invocations whose
+method names come from untrusted input and (b) dynamically generated groups or
+versions. Avoid both, or drop those labels with Prometheus `metric_relabel_configs`.
+Series are created lazily: success-only traffic never creates failure series.
+
+### Failure taxonomy (#3337)
+
+Provider and consumer share one taxonomy. It mirrors Java Dubbo's
+`RpcException` codes as used by `MetricsSupport#getMetricsKey`.
+
+| Category | Metric suffix | Java code | Sources in dubbo-go |
+| --- | --- | --- | --- |
+| timeout | `requests_timeout_total` | `TIMEOUT_EXCEPTION`, `TIMEOUT_TERMINATE` | Triple `DeadlineExceeded`; expired `context` deadline; Getty client read timeout; Dubbo `CLIENT_TIMEOUT`/`SERVER_TIMEOUT` status |
+| limit | `requests_limit_total` | `LIMIT_EXCEEDED_EXCEPTION` | Triple `ResourceExhausted`; Sentinel default fallback (consumer side, see known limits) |
+| service_unavailable | `requests_failed_service_unavailable_total` | `FORBIDDEN_EXCEPTION`, `NO_INVOKER_AVAILABLE_AFTER_FILTER`, `METHOD_NOT_FOUND` | Triple `Unavailable`/`PermissionDenied`; destroyed invoker; closed remoting client; provider service or method not found; Dubbo `SERVICE_NOT_FOUND` status |
+| business | `requests_business_failed_total` | `BIZ_EXCEPTION` | Triple `BizError`; error returned by the provider service implementation; Dubbo exception payload with status `OK` |
+| network | `requests_failed_network_total` | `NETWORK_EXCEPTION` | Confirmed transport failure (`net.OpError` at Getty write / Triple HTTP Do); no Getty session; closed Getty client |
+| codec | `requests_failed_codec_total` | `SERIALIZATION_EXCEPTION` | Local serializer failure; Dubbo `SERIALIZATION_ERROR`/`BAD_REQUEST`/`BAD_RESPONSE` status |
+| unknown | `requests_unknown_failed_total` | `UNKNOWN_EXCEPTION` | Everything else, e.g. a provider panic, Dubbo `SERVICE_ERROR`/`SERVER_ERROR`/`CLIENT_ERROR`, a canceled context |
+
+Producers declare categories in one of two ways. Neither changes the error
+message or breaks `errors.Is`/`errors.As`:
+
+- **On the error.** `rpcerror.WithKind(err, kind)` or a sentinel built with
+  `rpcerror.NewKindError`. Use this for framework-created errors. Sentinels keep
+  their identity, so `err == base.ErrClientClosed` still works.
+- **On the request observation.** `rpcerror.RecordKind(ctx, kind)` or, on the
+  consumer side, `rpcerror.RecordKindFor(ctx, invocation, kind)`. Use this when
+  the error must reach the caller untouched. A provider's application error is
+  the main case: protocols re-encode it by its concrete type. `RecordKindFor`
+  only labels the observation bound to that invocation, so a downstream call
+  made with a provider's context cannot relabel the enclosing request.
+
+`rpcerror.Kind.String()` and `ErrorType.String()` return the same stable names,
+so tracing and logging can reuse the taxonomy.
+
+Known limits:
+
+- A dubbo-go provider replies to framework failures that happen inside the
+  service call (a missing method, a panic) with status `OK` plus an exception
+  payload. The wire cannot tell them apart from application exceptions, so the
+  consumer counts them as business. The provider counts them precisely.
+- A failure is only visible to metrics if the metrics filter wraps the filter
+  that produced it. The framework places the metrics filter with the default
+  filters: on the consumer, configured reference filters such as
+  `sentinel-consumer` run inside it, so their rejections count as limit. On the
+  provider, a configured `service.filter` such as `sentinel-provider` runs
+  outside it, so the provider does not count those rejections, and a Dubbo
+  consumer sees them as business (status `OK` plus an exception payload).
+- Failures raised by the cluster before a provider invoker is selected, such
+  as "no provider available", happen outside the per-invoker filter chain, so
+  consumer metrics do not count them. Java counts them as service_unavailable.
+
+### RED model (#3337)
+
+| Signal | Metric (`{side}` = `provider` or `consumer`) | Notes |
+| --- | --- | --- |
+| Rate | `dubbo_{side}_requests_total` (Counter) | Use `rate()`; `dubbo_{side}_qps_total` is a local sliding-window gauge |
+| Errors | `dubbo_{side}_requests_failed_total` and the category counters above | Categories sum to `requests_failed_total` |
+| Duration | `dubbo_{side}_rt_milliseconds_{sum,last,min,max,avg}`, `dubbo_{side}_rt_milliseconds_p{50,90,95,99}`, `dubbo_{side}_rt_{avg,min,max}_milliseconds_aggregate` | Quantiles are per-instance sliding-window gauges |
+| Duration (opt-in) | `dubbo_{side}_rt_milliseconds_histogram_seconds_{bucket,sum,count}` (Histogram, seconds) | Enable with `metrics.WithHistogramEnabled()` or `metrics.histogram.enabled`; aggregatable across instances |
+| In flight | `dubbo_{side}_requests_processing_total` (Gauge) | |
+
+Each `*_aggregate` gauge is the same value computed over the local sliding
+window (default 120s, 10 buckets).
+
+PromQL examples (replace `provider` with `consumer` for the caller's view):
+
+```promql
+# QPS per service
+sum by (application_name, interface) (rate(dubbo_provider_requests_total[1m]))
+
+# Success rate
+sum by (interface) (rate(dubbo_provider_requests_succeed_total[5m]))
+  / sum by (interface) (rate(dubbo_provider_requests_total[5m]))
+
+# Error rate
+sum by (interface) (rate(dubbo_provider_requests_failed_total[5m]))
+  / sum by (interface) (rate(dubbo_provider_requests_total[5m]))
+
+# Timeout / limit / service-unavailable rate
+sum by (interface) (rate(dubbo_consumer_requests_timeout_total[5m]))
+  / sum by (interface) (rate(dubbo_consumer_requests_total[5m]))
+sum by (interface) (rate(dubbo_consumer_requests_limit_total[5m]))
+  / sum by (interface) (rate(dubbo_consumer_requests_total[5m]))
+sum by (interface) (rate(dubbo_consumer_requests_failed_service_unavailable_total[5m]))
+  / sum by (interface) (rate(dubbo_consumer_requests_total[5m]))
+
+# P99 latency across instances, with histograms enabled (seconds)
+histogram_quantile(0.99, sum by (le, interface, method) (rate(dubbo_provider_rt_milliseconds_histogram_seconds_bucket[5m])))
+
+# P99 latency without histograms: the p99 gauges cannot be averaged across
+# instances; take the worst
+max by (interface, method) (dubbo_provider_rt_milliseconds_p99)
+
+# Mean latency across instances
+sum by (interface) (rate(dubbo_provider_rt_milliseconds_sum[5m]))
+  / sum by (interface) (rate(dubbo_provider_requests_total[5m]))
+
+# Failures by category. rate() drops the metric name, so query each category
+# counter separately: timeout, limit, failed_service_unavailable,
+# business_failed, failed_network, failed_codec, unknown_failed.
+# Only categories that occurred have series.
+sum by (interface) (rate(dubbo_provider_requests_business_failed_total[5m]))
+```
+
+### Compatibility (#3337)
+
+- **New `protocol` label.** It is added to every RPC series. Selectors and
+  `sum by (...)` queries keep working. Queries that join on the full label set
+  (`on(...)`/`ignoring(...)` listing every label) or recording rules that pin
+  the exact label set need the new label. Each identity gets a separate series
+  per protocol, so a service exported over both `dubbo` and `tri` now has two
+  series where it used to share one.
+- **Reclassified failures.** Failures that used to land in
+  `requests_unknown_failed_total` now move to a precise category:
+  - Dubbo timeouts and expired contexts go to timeout.
+  - Dubbo business exceptions go to business.
+  - Destroyed invokers, closed clients and missing service/method go to
+    service_unavailable.
+  - Missing Getty sessions and closed Getty clients go to network.
+  - Dubbo `SERIALIZATION_ERROR`/`BAD_REQUEST`/`BAD_RESPONSE` go to codec.
+  - Sentinel default-fallback rejections counted by the consumer go to limit.
+
+  `requests_failed_total` is unchanged.
+- **No renames.** No metric is renamed or removed. A few names still differ
+  from the [Dubbo standard metrics](https://cn.dubbo.apache.org/zh-cn/overview/reference/metrics/standard_metrics/),
+  and dubbo-go keeps its own names for compatibility:
+
+  | Java Dubbo | dubbo-go |
+  | --- | --- |
+  | `requests_succeed_aggregate` | `requests_succeed_total_aggregate` |
+  | `dubbo_consumer_requests_timeout_failed_aggregate` | `dubbo_consumer_requests_timeout_total_aggregate` |
+  | `requests_processing` | `requests_processing_total` (Java exports both) |
+
+  The opt-in latency histograms use the standard
+  `rt_milliseconds_histogram_seconds` name and carry the same labels, including
+  `protocol`.
 
 ## Callback expiry is not a business failure
 

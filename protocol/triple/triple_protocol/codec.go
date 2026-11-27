@@ -433,18 +433,21 @@ func (c *hessian2Codec) Unmarshal(binary []byte, message any) error {
 
 type msgpackCodec struct{}
 
+// The handle caches type information and is safe to share once configured.
+var msgpackHandle = new(msgpack.MsgpackHandle)
+
 func (c *msgpackCodec) Name() string {
 	return codecNameMsgPack
 }
 
 func (c *msgpackCodec) Marshal(message any) ([]byte, error) {
 	var out []byte
-	encoder := msgpack.NewEncoderBytes(&out, new(msgpack.MsgpackHandle))
+	encoder := msgpack.NewEncoderBytes(&out, msgpackHandle)
 	return out, encoder.Encode(message)
 }
 
 func (c *msgpackCodec) Unmarshal(binary []byte, message any) error {
-	decoder := msgpack.NewDecoderBytes(binary, new(msgpack.MsgpackHandle))
+	decoder := msgpack.NewDecoderBytes(binary, msgpackHandle)
 	return decoder.Decode(message)
 }
 
