@@ -123,7 +123,8 @@ func TestProviderFilterRejectsWithDefaultHandler(t *testing.T) {
 	rpcInvocation := invocation.NewRPCInvocation("Greet", nil, nil)
 	opt := graceful_shutdown.NewOptions()
 
-	providerFilter := newProviderGracefulShutdownFilter().(*providerGracefulShutdownFilter)
+	// A local filter, so the closing state does not leak into the package singleton.
+	providerFilter := &providerGracefulShutdownFilter{}
 	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
 	opt.Shutdown.Closing.Store(true)
 	opt.Shutdown.RejectRequest.Store(true)

@@ -97,6 +97,9 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	extension.SetRejectedExecutionHandler(constant.DefaultKey, func() filter.RejectedExecutionHandler {
 		return mockRejectedHandler
 	})
+	t.Cleanup(func() {
+		extension.SetRejectedExecutionHandler(constant.DefaultKey, handler.GetOnlyLogRejectedExecutionHandler)
+	})
 
 	tpsFilter := &tpsLimitFilter{}
 	invokeUrl := common.NewURLWithOptions(
@@ -112,9 +115,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 }
 
 // TestTpsLimitFilterRejectedFails checks that a call rejected by the TPS limiter
-// fails with Unavailable under the built-in "log" rejected execution handler,
-// the handler also registered as the default. Other tests here replace the
-// default handler with a mock, so this one names the handler explicitly.
+// fails with Unavailable under the default rejected execution handler.
 func TestTpsLimitFilterRejectedFails(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockLimiter := limiter.NewMockTpsLimiter(ctrl)
@@ -126,8 +127,7 @@ func TestTpsLimitFilterRejectedFails(t *testing.T) {
 	invokeURL := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.InterfaceKey, "greet.GreetService"),
-		common.WithParamsValue(constant.TPSLimiterKey, "rejected-fails-test"),
-		common.WithParamsValue(constant.TPSRejectedExecutionHandlerKey, handler.HandlerName))
+		common.WithParamsValue(constant.TPSLimiterKey, "rejected-fails-test"))
 
 	res := (&tpsLimitFilter{}).Invoke(context.Background(), base.NewBaseInvoker(invokeURL),
 		invocation.NewRPCInvocation("Greet", nil, nil))
