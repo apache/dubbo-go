@@ -378,7 +378,9 @@ func (c *ServerCodec) Write(errMsg string, x any) ([]byte, error) {
 	// In r.Error will be "" or .Error() of error returned by:
 	// - ReadBody()
 	// - called RPC method
-	resp := serverResponse{Version: Version, ID: c.req.ID, Result: x}
+	// JSON-RPC 2.0 allows only one of result and error, so an error response
+	// leaves Result unset and omits it.
+	resp := serverResponse{Version: Version, ID: c.req.ID}
 	if len(errMsg) == 0 {
 		if x == nil {
 			resp.Result = &null
