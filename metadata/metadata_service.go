@@ -175,7 +175,7 @@ func (e *serviceExporter) Export() error {
 
 func (e *serviceExporter) exportDubbo(port string) error {
 	version, _ := e.service.Version()
-	ivkURL := common.NewURLWithOptions(
+	options := []common.Option{
 		common.WithPath(constant.MetadataServiceName),
 		common.WithProtocol(constant.DefaultProtocol),
 		common.WithPort(port),
@@ -187,7 +187,16 @@ func (e *serviceExporter) exportDubbo(port string) error {
 		common.WithParamsValue(constant.BeanNameKey, constant.SimpleMetadataServiceName),
 		common.WithParamsValue(constant.MetadataTypeKey, e.opts.metadataType),
 		common.WithParamsValue(constant.SideKey, constant.SideProvider),
-	)
+	}
+	// The metadata service shares the Dubbo listener with business services, so
+	// it must adopt the endpoint framing and serialization scope.
+	if e.opts.dubboCodec != "" {
+		options = append(options, common.WithParamsValue("codec", e.opts.dubboCodec))
+	}
+	if e.opts.serializationConfigs != nil {
+		options = append(options, common.WithAttribute(extension.SerializationConfigAttribute, e.opts.serializationConfigs))
+	}
+	ivkURL := common.NewURLWithOptions(options...)
 	methods, err := common.ServiceMap.Register(ivkURL.Interface(), ivkURL.Protocol, ivkURL.Group(), ivkURL.Version(), e.service)
 	if err != nil {
 		formatErr := fmt.Errorf("the service %v needExport the protocol %v error! Error message is %v",

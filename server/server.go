@@ -375,12 +375,21 @@ func (s *Server) ServeContext(ctx context.Context) error {
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
 		return err
 	}
-	metadataOpts := metadata.NewOptions(
+	metadataOptions := []metadata.Option{
 		metadata.WithAppName(s.cfg.Application.Name),
 		metadata.WithMetadataType(s.cfg.Application.MetadataType),
 		metadata.WithPort(getMetadataPort(s.cfg)),
 		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
-	)
+	}
+	// The metadata service shares the Dubbo listener with business services, so
+	// the endpoint codec configuration must be identical on both sides.
+	if protocolConf, ok := s.cfg.Protocols[constant.DefaultProtocol]; ok && protocolConf.Codec != "" {
+		metadataOptions = append(metadataOptions, metadata.WithDubboCodec(protocolConf.Codec))
+	}
+	if s.cfg.codecConfigs != nil {
+		metadataOptions = append(metadataOptions, metadata.WithSerializationConfigs(s.cfg.codecConfigs))
+	}
+	metadataOpts := metadata.NewOptions(metadataOptions...)
 	if err := metadataOpts.Init(); err != nil {
 		return err
 	}
