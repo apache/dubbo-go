@@ -47,12 +47,14 @@ type metricsFilter struct{}
 
 // Invoke publish the BeforeInvokeEvent and AfterInvokeEvent to metrics bus
 func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
-	var observation *rpcerror.Observation
-	if invoker.GetURL().GetParam(constant.RegistryRoleKey, "") == strconv.Itoa(common.CONSUMER) {
-		ctx, observation = rpcerror.WithInvocationObservation(ctx, invocation)
-	} else {
-		ctx, observation = rpcerror.WithObservation(ctx)
-	}
+	ctx, observation, owner := rpcerror.EnsureObservation(ctx, invocation,
+		invoker.GetURL().GetParam(constant.RegistryRoleKey, "") == strconv.Itoa(common.CONSUMER))
+	finished := false
+	defer func() {
+		if owner && !finished {
+			observation.FinishInvoke(nil, false)
+		}
+	}()
 	before := rpc.NewBeforeInvokeEventWithContext(ctx, invoker, invocation)
 	metrics.Publish(before)
 	start := time.Now()
@@ -64,7 +66,10 @@ func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invoc
 	if res != nil {
 		err = res.Error()
 	}
-	observation.FinishInvoke(err, res != nil)
+	finished = true
+	if owner {
+		observation.FinishInvoke(err, res != nil)
+	}
 	return res
 }
 

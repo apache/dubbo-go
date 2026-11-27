@@ -211,7 +211,7 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 		if r.compressionPool == nil {
 			return errorf(
 				CodeInvalidArgument,
-				"gRPC protocol error: sent compressed message without Grpc-Encoding header",
+				"%w", rpcerror.Mark(errors.New("gRPC protocol error: sent compressed message without Grpc-Encoding header"), rpcerror.Codec),
 			)
 		}
 		decompressed := r.bufferPool.Get()

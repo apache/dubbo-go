@@ -25,19 +25,42 @@ import (
 // Completion is a monitoring terminal state, not an RPC result or user callback.
 // Known=false means observation expired without proving business success/failure.
 type Completion struct {
-	Err    error
-	Known  bool
-	Origin Origin
+	TraceID string
+	Err     error
+	Known   bool
+	Origin  Origin
 	// Kind is request-scoped category evidence recorded via RecordKind.
 	Kind Kind
 	At   time.Time
 }
 
-// OnComplete installs the observer before invoking the protocol.
+// OnComplete subscribes once, including after completion. Callbacks run outside
+// the mutex and a failed monitoring subscriber cannot affect business callbacks.
 func (o *Observation) OnComplete(notify func(Completion)) {
+	if o == nil || notify == nil {
+		return
+	}
 	o.mu.Lock()
-	defer o.mu.Unlock()
-	o.notify = notify
+	if o.completed != nil {
+		c := *o.completed
+		o.mu.Unlock()
+		callObserver(notify, c)
+		return
+	}
+	if !o.frozen {
+		o.notify = append(o.notify, notify)
+	}
+	o.mu.Unlock()
+}
+
+func callObserver(notify func(Completion), c Completion) {
+	defer func() { _ = recover() }()
+	notify(c)
+}
+
+func (o *Observation) publishLocked(c Completion) func(Completion) {
+	o.completed = &c
+	return o.finishLocked()
 }
 
 // BeginAsync hands final observation to a callback-based request. Expiry only
@@ -65,6 +88,9 @@ func (o *Observation) BeginAsync(ctx context.Context, timeout time.Duration) {
 
 // Complete observes a real response, without modifying the response itself.
 func (o *Observation) Complete(err error) {
+	if isNil(err) {
+		err = nil
+	}
 	if o != nil {
 		o.complete(Completion{Err: err, Known: true, At: time.Now()})
 	}
@@ -78,6 +104,7 @@ func (o *Observation) complete(c Completion) {
 	}
 	c.Origin = o.origin
 	c.Kind = o.kind
+	c.TraceID = o.traceID
 	if c.Origin != Codec && c.Origin != Network {
 		c.Origin = Unknown
 	}
@@ -86,7 +113,7 @@ func (o *Observation) complete(c Completion) {
 		o.mu.Unlock()
 		return
 	}
-	notify := o.finishLocked()
+	notify := o.publishLocked(c)
 	o.mu.Unlock()
 	if notify != nil {
 		notify(c)
@@ -97,6 +124,9 @@ func (o *Observation) complete(c Completion) {
 // send error wins over a buffered response for metrics, matching Invoke's return.
 // A successful async submission is not itself a successful completed RPC.
 func (o *Observation) FinishInvoke(err error, hasResult bool) {
+	if isNil(err) {
+		err = nil
+	}
 	o.mu.Lock()
 	if o.frozen {
 		o.mu.Unlock()
@@ -109,18 +139,18 @@ func (o *Observation) FinishInvoke(err error, hasResult bool) {
 			return
 		}
 		c := *o.pending
-		notify := o.finishLocked()
+		notify := o.publishLocked(c)
 		o.mu.Unlock()
 		if notify != nil {
 			notify(c)
 		}
 		return
 	}
-	c := Completion{Err: err, Known: hasResult, Origin: o.origin, Kind: o.kind, At: time.Now()}
+	c := Completion{Err: err, Known: hasResult, Origin: o.origin, Kind: o.kind, TraceID: o.traceID, At: time.Now()}
 	if c.Origin != Codec && c.Origin != Network {
 		c.Origin = Unknown
 	}
-	notify := o.finishLocked()
+	notify := o.publishLocked(c)
 	o.mu.Unlock()
 	if notify != nil {
 		notify(c)
@@ -130,6 +160,7 @@ func (o *Observation) FinishInvoke(err error, hasResult bool) {
 func (o *Observation) finishLocked() func(Completion) {
 	o.frozen = true
 	o.invocation = nil
+	o.identity = nil
 	o.session = nil
 	o.pending = nil
 	if o.timer != nil {
@@ -140,7 +171,11 @@ func (o *Observation) finishLocked() func(Completion) {
 		o.stopContext()
 		o.stopContext = nil
 	}
-	notify := o.notify
+	observers := o.notify
 	o.notify = nil
-	return notify
+	return func(c Completion) {
+		for _, notify := range observers {
+			callObserver(notify, c)
+		}
+	}
 }

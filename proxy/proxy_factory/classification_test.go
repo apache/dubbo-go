@@ -30,6 +30,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -119,4 +120,20 @@ func TestProxyInvokerClassifiesProviderFailures(t *testing.T) {
 		res := info.Invoke(context.Background(), invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("Missing")))
 		assert.Equal(t, rpcerror.KindServiceUnavailable, rpcerror.KindOf(res.Error()))
 	})
+}
+
+// IDL/info proxy must not turn context deadlines into CodeBizError.
+func TestInfoProxyDeadlineAttribution(t *testing.T) {
+	for _, cause := range []error{context.DeadlineExceeded, errBizFixture} {
+		info := &common.ServiceInfo{Methods: []common.MethodInfo{{Name: "Call", MethodFunc: func(context.Context, []any, any) (any, error) { return nil, cause }}}}
+		invoker := newInfoInvoker(newURL("tri", "ClassificationService"), info, nil)
+		res := invoker.Invoke(context.Background(), invocation.NewRPCInvocation("Call", nil, nil))
+		want := rpcerror.CategoryBusiness
+		if cause == context.DeadlineExceeded {
+			want = rpcerror.CategoryTimeout
+		}
+		if got := rpcerror.Classify(res.Error()); got.Category != want {
+			t.Fatalf("got %+v want %v", got, want)
+		}
+	}
 }

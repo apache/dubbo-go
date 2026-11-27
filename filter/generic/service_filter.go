@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -116,6 +117,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 		newIvc.SetAttribute(constant.GenericVariadicCallSliceKey, true)
 	}
 
+	rpcerror.RebindObservation(ctx, inv, newIvc)
 	return invoker.Invoke(ctx, newIvc)
 }
 

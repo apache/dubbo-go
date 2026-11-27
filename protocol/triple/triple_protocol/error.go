@@ -376,3 +376,6 @@ func wrapIfRSTError(err error) error {
 		return err
 	}
 }
+
+// RPCTripleCode implements the protocol-independent attribution contract.
+func (e *Error) RPCTripleCode() uint32 { return uint32(e.Code()) }

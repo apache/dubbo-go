@@ -251,9 +251,13 @@ func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocat
 		if err != nil {
 			var proError *triple_protocol.Error
 			if !errors.As(err, &proError) {
-				err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
-			} else if proError.Code() != triple_protocol.CodeBizError {
-				err = triple_protocol.NewError(proError.Code(), proError.Unwrap())
+				if errors.Is(err, context.DeadlineExceeded) {
+					err = triple_protocol.NewError(triple_protocol.CodeDeadlineExceeded, err)
+				} else {
+					err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
+				}
+			} else if triple_protocol.IsWireError(err) {
+				err = sanitizeWireTripleError(proError)
 			}
 			result.SetError(err)
 		}
@@ -262,6 +266,77 @@ func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocat
 	result.SetError(rpcerror.WithKind(fmt.Errorf("no match method for %s", name), rpcerror.KindServiceUnavailable))
 
 	return result
+}
+
+var disallowedWireErrorMeta = map[string]struct{}{
+	"accept-encoding":           {},
+	"accept-ranges":             {},
+	"age":                       {},
+	"allow":                     {},
+	"alt-svc":                   {},
+	"cache-control":             {},
+	"connection":                {},
+	"content-disposition":       {},
+	"content-encoding":          {},
+	"content-language":          {},
+	"content-length":            {},
+	"content-location":          {},
+	"content-range":             {},
+	"content-security-policy":   {},
+	"content-type":              {},
+	"date":                      {},
+	"etag":                      {},
+	"expires":                   {},
+	"keep-alive":                {},
+	"last-modified":             {},
+	"location":                  {},
+	"pragma":                    {},
+	"proxy-authenticate":        {},
+	"proxy-authorization":       {},
+	"proxy-connection":          {},
+	"server":                    {},
+	"set-cookie":                {},
+	"strict-transport-security": {},
+	"te":                        {},
+	"trailer":                   {},
+	"transfer-encoding":         {},
+	"upgrade":                   {},
+	"vary":                      {},
+	"via":                       {},
+	"www-authenticate":          {},
+	"x-content-type-options":    {},
+}
+
+func isAllowedWireErrorMeta(key string) bool {
+	lower := strings.ToLower(strings.TrimSpace(key))
+	if lower == "" || triple_protocol.IsReservedHeader(lower) {
+		return false
+	}
+	if _, denied := disallowedWireErrorMeta[lower]; denied {
+		return false
+	}
+	for _, prefix := range []string{"grpc-", "triple-", "connect-", "trailer-"} {
+		if strings.HasPrefix(lower, prefix) {
+			return false
+		}
+	}
+	return true
+}
+
+func sanitizeWireTripleError(proError *triple_protocol.Error) *triple_protocol.Error {
+	sanitized := triple_protocol.NewError(proError.Code(), proError.Unwrap())
+	for _, detail := range proError.Details() {
+		sanitized.AddDetail(detail)
+	}
+	for k, vals := range proError.Meta() {
+		if !isAllowedWireErrorMeta(k) {
+			continue
+		}
+		for _, v := range vals {
+			sanitized.Meta().Add(k, v)
+		}
+	}
+	return sanitized
 }
 
 func newInfoInvoker(url *common.URL, info *common.ServiceInfo, svc common.RPCService) base.Invoker {

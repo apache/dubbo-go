@@ -33,10 +33,14 @@ type Observation struct {
 	origin      Origin
 	kind        Kind
 	frozen      bool
+	claimed     bool
 	async       bool
 	returned    bool
 	pending     *Completion
-	notify      func(Completion)
+	notify      []func(Completion)
+	completed   *Completion
+	identity    any
+	traceID     string
 	timer       *time.Timer
 	stopContext func() bool
 }
@@ -44,6 +48,9 @@ type Observation struct {
 type observationKey struct{}
 
 func WithObservation(ctx context.Context) (context.Context, *Observation) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	o := &Observation{}
 	return context.WithValue(ctx, observationKey{}, o), o
 }
@@ -80,7 +87,9 @@ func ClaimObservation(ctx context.Context, invocation any) *Observation {
 	if o.frozen || o.invocation == nil || o.invocation != invocation {
 		return nil
 	}
+	o.claimed = true
 	o.invocation = nil
+	o.identity = nil
 	return o
 }
 
@@ -150,7 +159,7 @@ func (o *Observation) RecordKind(kind Kind) {
 	}
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	if !o.frozen && o.kind == KindUnknown {
+	if !o.frozen && o.pending == nil && o.kind == KindUnknown {
 		o.kind = kind
 	}
 }
@@ -171,7 +180,82 @@ func RecordKindFor(ctx context.Context, invocation any, kind Kind) {
 	}
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	if !o.frozen && o.invocation != nil && o.invocation == invocation && o.kind == KindUnknown {
+	if !o.frozen && o.pending == nil && o.invocation != nil && o.invocation == invocation && o.kind == KindUnknown {
 		o.kind = kind
+	}
+}
+
+// EnsureObservation shares evidence between filters on the same invocation.
+// The creator alone calls FinishInvoke after all inner filters return.
+func EnsureObservation(ctx context.Context, invocation any, consumer bool) (context.Context, *Observation, bool) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if o := ObservationFromContext(ctx); o != nil && validInvocationIdentity(invocation) {
+		o.mu.Lock()
+		reuse := !o.frozen && o.identity == invocation
+		if reuse && consumer && !o.claimed && o.invocation == nil {
+			o.invocation = invocation
+		}
+		o.mu.Unlock()
+		if reuse {
+			return ctx, o, false
+		}
+	}
+	var o *Observation
+	if consumer {
+		ctx, o = WithInvocationObservation(ctx, invocation)
+	} else {
+		ctx, o = WithObservation(ctx)
+	}
+	o.identity = invocation
+	return ctx, o, true
+}
+
+type spanOwnerKey struct{}
+
+// WithSpanOwner gives RPC instrumentation exclusive error-event ownership of
+// this span. Context loggers may still record on unrelated child spans.
+func WithSpanOwner(ctx context.Context, spanID string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, spanOwnerKey{}, spanID)
+}
+func OwnsSpan(ctx context.Context, spanID string) bool {
+	if ctx == nil {
+		return false
+	}
+	id, _ := ctx.Value(spanOwnerKey{}).(string)
+	return id != "" && id == spanID
+}
+
+// RecordTraceID shares a valid trace ID with observers outside the trace filter.
+func (o *Observation) RecordTraceID(id string) {
+	if o == nil {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if !o.frozen && o.pending == nil {
+		o.traceID = id
+	}
+}
+
+// RebindObservation transfers the identity when a generic filter translates an
+// invocation. Unrelated, claimed and frozen observations cannot be rebound.
+func RebindObservation(ctx context.Context, oldInvocation, newInvocation any) {
+	o := ObservationFromContext(ctx)
+	if o == nil || !validInvocationIdentity(oldInvocation) || !validInvocationIdentity(newInvocation) {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.frozen || o.claimed || o.identity != oldInvocation {
+		return
+	}
+	o.identity = newInvocation
+	if o.invocation == oldInvocation {
+		o.invocation = newInvocation
 	}
 }

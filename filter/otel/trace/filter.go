@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -104,15 +105,41 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithSpanKind(trace.SpanKindServer),
 		trace.WithAttributes(rpcSpanAttributes(invoker.GetURL(), methodName)...),
 	)
-	defer span.End()
 
-	res := invoker.Invoke(ctx, invocation)
-
-	if res.Error() != nil {
-		recordSpanError(span, res.Error(), errorType(res.Error()))
-	} else {
-		span.SetStatus(codes.Ok, codes.Ok.String())
+	ctx, observation, owner := rpcerror.EnsureObservation(ctx, invocation, false)
+	finished := false
+	defer func() {
+		if owner && !finished {
+			observation.FinishInvoke(nil, false)
+		}
+	}()
+	ctx = rpcerror.WithSpanOwner(ctx, span.SpanContext().SpanID().String())
+	if span.SpanContext().IsValid() {
+		observation.RecordTraceID(span.SpanContext().TraceID().String())
 	}
+	observation.OnComplete(func(c rpcerror.Completion) {
+		defer span.End()
+		if !c.Known {
+			return
+		}
+		if c.Err != nil {
+			classification := c.Classify()
+			recordSpanError(span, c.Err, classification.Category.String())
+			span.SetAttributes(attribute.String("rpc.error.origin", classification.Origin.String()))
+		} else {
+			span.SetStatus(codes.Ok, codes.Ok.String())
+		}
+	})
+	res := invoker.Invoke(ctx, invocation)
+	finished = true
+	if owner {
+		var err error
+		if res != nil {
+			err = res.Error()
+		}
+		observation.FinishInvoke(err, res != nil)
+	}
+
 	return res
 }
 
@@ -143,7 +170,6 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(rpcSpanAttributes(invoker.GetURL(), invocation.MethodName())...),
 	)
-	defer span.End()
 
 	attachments := invocation.Attachments()
 	if attachments == nil {
@@ -153,12 +179,39 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	for k, v := range attachments {
 		invocation.SetAttachment(k, v)
 	}
-	res := invoker.Invoke(ctx, invocation)
-
-	if res.Error() != nil {
-		recordSpanError(span, res.Error(), errorType(res.Error()))
-	} else {
-		span.SetStatus(codes.Ok, codes.Ok.String())
+	ctx, observation, owner := rpcerror.EnsureObservation(ctx, invocation, true)
+	finished := false
+	defer func() {
+		if owner && !finished {
+			observation.FinishInvoke(nil, false)
+		}
+	}()
+	ctx = rpcerror.WithSpanOwner(ctx, span.SpanContext().SpanID().String())
+	if span.SpanContext().IsValid() {
+		observation.RecordTraceID(span.SpanContext().TraceID().String())
 	}
+	observation.OnComplete(func(c rpcerror.Completion) {
+		defer span.End()
+		if !c.Known {
+			return
+		}
+		if c.Err != nil {
+			classification := c.Classify()
+			recordSpanError(span, c.Err, classification.Category.String())
+			span.SetAttributes(attribute.String("rpc.error.origin", classification.Origin.String()))
+		} else {
+			span.SetStatus(codes.Ok, codes.Ok.String())
+		}
+	})
+	res := invoker.Invoke(ctx, invocation)
+	finished = true
+	if owner {
+		var err error
+		if res != nil {
+			err = res.Error()
+		}
+		observation.FinishInvoke(err, res != nil)
+	}
+
 	return res
 }

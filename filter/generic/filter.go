@@ -34,6 +34,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -130,6 +131,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
 
+		rpcerror.RebindObservation(ctx, inv, newIvc)
 		return invoker.Invoke(base.TransferRetryAttempt(ctx, inv, newIvc), newIvc)
 	} else if isMakingAGenericCall(invoker, inv) {
 		// Arguments format: [methodName string, types []string, args []hessian.Object]
@@ -157,6 +159,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
 
+		rpcerror.RebindObservation(ctx, inv, newIvc)
 		return invoker.Invoke(base.TransferRetryAttempt(ctx, inv, newIvc), newIvc)
 	}
 	return invoker.Invoke(ctx, inv)

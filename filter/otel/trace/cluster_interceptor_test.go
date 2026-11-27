@@ -204,7 +204,7 @@ func TestClusterLogicalRetryLoopback(t *testing.T) {
 		require.Equal(t, "Call", attempt.Name) // Existing client naming is preserved.
 	}
 	require.Equal(t, codes.Error, attempts[0].Status.Code)
-	require.Equal(t, "network_failure", spanValue(attempts[0], "error.type").AsString())
+	require.Equal(t, "network", spanValue(attempts[0], "error.type").AsString())
 	require.Len(t, spanEvents(attempts[0], "exception"), 1)
 	require.Equal(t, codes.Ok, attempts[1].Status.Code)
 	require.Equal(t, attempts[1].SpanContext.SpanID(), serverSpan.Parent.SpanID())
@@ -857,7 +857,7 @@ func TestTraceErrorTypes(t *testing.T) {
 		{nil, "unknown"}, {cause, "unknown"},
 		{fmt.Errorf("wrapped: %w", context.DeadlineExceeded), "timeout"},
 		{context.Canceled, "unknown"},
-		{tri.NewError(tri.CodeBizError, context.Canceled), "business_failed"},
+		{tri.NewError(tri.CodeBizError, context.Canceled), "business"},
 		{tri.NewError(tri.CodeResourceExhausted, context.Canceled), "limit"},
 		{tri.NewError(tri.CodeUnavailable, context.Canceled), "service_unavailable"},
 		{tri.NewError(tri.CodeInternal, context.DeadlineExceeded), "timeout"},
@@ -867,9 +867,9 @@ func TestTraceErrorTypes(t *testing.T) {
 		{tri.NewError(tri.CodeResourceExhausted, rpcerror.Mark(cause, rpcerror.Codec)), "limit"},
 		{tri.NewError(tri.CodePermissionDenied, rpcerror.Mark(cause, rpcerror.Network)), "service_unavailable"},
 		{tri.NewError(tri.CodeUnavailable, cause), "service_unavailable"},
-		{tri.NewError(tri.CodeBizError, rpcerror.Mark(cause, rpcerror.Network)), "business_failed"},
-		{rpcerror.Mark(cause, rpcerror.Network), "network_failure"},
-		{tri.NewError(tri.CodeUnavailable, rpcerror.Mark(cause, rpcerror.Network)), "network_failure"},
+		{tri.NewError(tri.CodeBizError, rpcerror.Mark(cause, rpcerror.Network)), "business"},
+		{rpcerror.Mark(cause, rpcerror.Network), "network"},
+		{tri.NewError(tri.CodeUnavailable, rpcerror.Mark(cause, rpcerror.Network)), "network"},
 		{rpcerror.Mark(cause, rpcerror.Codec), "codec"},
 		{tri.NewError(tri.CodeInternal, cause), "unknown"},
 		{errors.Join(rpcerror.Mark(cause, rpcerror.Network), rpcerror.Mark(cause, rpcerror.Codec)), "unknown"},

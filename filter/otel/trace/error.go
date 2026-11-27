@@ -18,7 +18,6 @@
 package trace
 
 import (
-	"context"
 	"errors"
 	"net/url"
 	"regexp"
@@ -35,40 +34,11 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
-// errorType mirrors metrics/rpc's precedence without depending on metrics or
-// guessing local failure origins from error text. Protocol statuses take
-// precedence over wrapped context errors and confirmed local origins.
+// errorType delegates to the shared cross-signal RPC error classifier.
 func errorType(err error) string {
-	code := tri.CodeOf(err)
-	switch code {
-	case tri.CodeDeadlineExceeded:
-		return "timeout"
-	case tri.CodeResourceExhausted:
-		return "limit"
-	case tri.CodeUnavailable, tri.CodePermissionDenied:
-		if code == tri.CodePermissionDenied || rpcerror.Of(err) == rpcerror.Unknown {
-			return "service_unavailable"
-		}
-	case tri.CodeBizError:
-		return "business_failed"
-	}
-	if errors.Is(err, context.DeadlineExceeded) {
-		return "timeout"
-	}
-	if errors.Is(err, context.Canceled) {
-		return "unknown"
-	}
-	switch rpcerror.Of(err) {
-	case rpcerror.Network:
-		return "network_failure"
-	case rpcerror.Codec:
-		return "codec"
-	default:
-		return "unknown"
-	}
+	return rpcerror.Classify(err).Category.String()
 }
 
 // Error URLs are exported as origin-only summaries. Dropping the entire path,
