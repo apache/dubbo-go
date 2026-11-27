@@ -117,7 +117,11 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, i
 		spanErr := fmt.Errorf("[Filter][ExecLimit] the configuration of execute.limit is invalid, target=%s", limitTarget)
 		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
 			"[Filter][ExecLimit] the configuration of execute.limit is invalid, limitRateConfig=%s", limitRateConfig)
-		return &result.RPCResult{}
+		// Fail the call with an error that names the configuration, as Dubbo Java
+		// does when it cannot parse the limit, instead of an empty result.
+		return &result.RPCResult{
+			Err: fmt.Errorf("the configuration of execute.limit is invalid, target=%s value=%q", limitTarget, limitRateConfig),
+		}
 	}
 
 	if limitRate < 0 {
