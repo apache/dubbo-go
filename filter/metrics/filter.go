@@ -53,7 +53,7 @@ func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invoc
 	} else {
 		ctx, observation = rpcerror.WithObservation(ctx)
 	}
-	before := rpc.NewBeforeInvokeEvent(invoker, invocation)
+	before := rpc.NewBeforeInvokeEventWithContext(ctx, invoker, invocation)
 	metrics.Publish(before)
 	start := time.Now()
 	observation.OnComplete(func(c rpcerror.Completion) {

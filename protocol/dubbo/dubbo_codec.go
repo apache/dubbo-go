@@ -35,6 +35,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	invct "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -349,8 +350,11 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		if pkg.Err != nil {
 			rpcResult.Err = pkg.Err
 		} else if pkg.Body.(*impl.ResponsePayload).Exception != nil {
+			// Keep the decoded exception as is: sync results and async callbacks
+			// may assert its concrete type. The category travels separately.
 			rpcResult.Err = pkg.Body.(*impl.ResponsePayload).Exception
 			response.Error = rpcResult.Err
+			response.Kind = responseExceptionKind(response.Status)
 		}
 		rpcResult.Attrs = pkg.Body.(*impl.ResponsePayload).Attachments
 		rpcResult.Rest = pkg.Body.(*impl.ResponsePayload).RspObj
@@ -387,4 +391,34 @@ func (c *DubboCodec) newPackage(data *bytes.Buffer) *impl.DubboPackage {
 		return impl.NewDubboPackage(data)
 	}
 	return impl.NewDubboPackageWithSerializers(data, c.serializers)
+}
+
+// responseExceptionKind returns the failure kind declared by the status of a
+// Dubbo response that carries an exception. The kind is reported to metrics
+// through remoting.Response.Kind, so the decoded exception itself is unchanged.
+//
+// The mapping follows the Dubbo response status semantics:
+//   - OK with an exception payload (RESPONSE_WITH_EXCEPTION) is thrown by the
+//     provider application: business.
+//   - CLIENT_TIMEOUT / SERVER_TIMEOUT: timeout.
+//   - SERVICE_NOT_FOUND: service unavailable.
+//   - SERIALIZATION_ERROR, BAD_REQUEST / BAD_RESPONSE: the peer failed to
+//     (de)serialize: codec. Java reports SERIALIZATION_ERROR as
+//     RpcException.SERIALIZATION_EXCEPTION.
+//   - SERVICE_ERROR, SERVER_ERROR, CLIENT_ERROR and unknown statuses stay
+//     unclassified, because Java providers also report framework failures such
+//     as a missing exporter as SERVICE_ERROR.
+func responseExceptionKind(status uint8) rpcerror.Kind {
+	switch status {
+	case impl.Response_OK:
+		return rpcerror.KindBusiness
+	case impl.Response_CLIENT_TIMEOUT, impl.Response_SERVER_TIMEOUT:
+		return rpcerror.KindTimeout
+	case impl.Response_SERVICE_NOT_FOUND:
+		return rpcerror.KindServiceUnavailable
+	case impl.Response_SERIALIZATION_ERROR, impl.Response_BAD_REQUEST, impl.Response_BAD_RESPONSE:
+		return rpcerror.KindCodec
+	default:
+		return rpcerror.KindUnknown
+	}
 }

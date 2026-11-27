@@ -18,6 +18,7 @@
 package rpc
 
 import (
+	"context"
 	"time"
 )
 
@@ -36,9 +37,11 @@ type metricsEvent struct {
 	costTime  time.Duration
 	role      string
 	labels    map[string]string
+	retry     bool // a consumer attempt that retries a failed attempt of the same call
 	err       error
 	hasResult bool
 	origin    rpcerror.Origin
+	kind      rpcerror.Kind
 }
 
 // Type returns the type of the event, it is used for metrics bus to dispatch the event to rpc collector
@@ -55,11 +58,18 @@ const (
 )
 
 func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
+	return NewBeforeInvokeEventWithContext(context.Background(), invoker, invocation)
+}
+
+// NewBeforeInvokeEventWithContext also records whether a cluster invoker
+// marked this attempt of invocation as a retry in ctx.
+func NewBeforeInvokeEventWithContext(ctx context.Context, invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
 	return &metricsEvent{
 		collector: activeCollector.Load(),
 		name:      BeforeInvoke,
 		role:      getRole(invoker.GetURL()),
 		labels:    buildLabels(invoker.GetURL(), invocation),
+		retry:     base.IsRetryAttempt(ctx, invocation),
 	}
 }
 
@@ -71,7 +81,7 @@ func NewCompletionEvent(before metrics.MetricsEvent, duration time.Duration, c r
 	if !c.Known {
 		name = ObservationExpired
 	}
-	return &metricsEvent{collector: start.collector, name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin}
+	return &metricsEvent{collector: start.collector, name: name, costTime: duration, role: start.role, labels: start.labels, retry: start.retry, err: c.Err, hasResult: c.Known, origin: c.Origin, kind: c.Kind}
 }
 
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {

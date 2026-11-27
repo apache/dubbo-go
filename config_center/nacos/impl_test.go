@@ -29,6 +29,9 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"go.uber.org/mock/gomock"
 )
 
@@ -264,4 +267,23 @@ func Test_nacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestGetRuleWithEmptyKeyDoesNotQueryNacos covers a config center used only for
+// dynamic rules, with data-id left unset: the empty key is reported as absent
+// instead of being sent to Nacos, which rejects it.
+func TestGetRuleWithEmptyKeyDoesNotQueryNacos(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl) // no GetConfig expectation: any call fails the test
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+	n := newnNacosDynamicConfiguration(&fields{client: nc})
+
+	content, err := n.GetRule("")
+	require.NoError(t, err)
+	assert.Empty(t, content)
+
+	content, err = n.GetProperties("", config_center.WithGroup("dubbo"))
+	require.NoError(t, err)
+	assert.Empty(t, content)
 }

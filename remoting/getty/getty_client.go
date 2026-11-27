@@ -48,9 +48,11 @@ import (
 )
 
 var (
-	errSessionNotExist   = errors.New("session not exist")
-	errClientClosed      = errors.New("client closed")
-	errClientReadTimeout = errors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
+	// Transport-level failures: no usable session, or the getty client is closed.
+	errSessionNotExist = rpcerror.Mark(errors.New("session not exist"), rpcerror.Network)
+	errClientClosed    = rpcerror.Mark(errors.New("client closed"), rpcerror.Network)
+	// No response arrived within the request timeout.
+	errClientReadTimeout = rpcerror.NewKindError(rpcerror.KindTimeout, "maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf = GetDefaultClientConfig()
 
@@ -238,6 +240,16 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 }
 
 // RequestContext sends a request and stops waiting when ctx is canceled.
+//
+// If ctx is already canceled on entry, this function returns immediately
+// without removing a pending response the caller may already have
+// registered. Callers that register first must check ctx themselves or
+// clean up that entry. ExchangeClient does the check before
+// AddPendingResponse, so a canceled ctx on the production path does not
+// leak. Mid-flight cancellation after a successful send is cleaned up
+// here: the pending waiter is marked canceled and removed so a late
+// response is logged at Debug rather than Error, and the shared session
+// is left open for reuse.
 func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
 	if ctx == nil {
 		ctx = context.Background()
@@ -284,7 +296,13 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
+		response.Observation.RecordKind(response.Kind)
 	case <-ctx.Done():
+		// Drop the pending waiter, but keep the shared session. Caller
+		// cancellation is not a transport failure; a later request may
+		// reuse this connection. The read-timeout branch still closes
+		// the session because that path can no longer trust it.
+		remoting.RemoveCancelledPendingResponse(remoting.SequenceType(request.ID))
 		return perrors.WithStack(ctx.Err())
 	}
 

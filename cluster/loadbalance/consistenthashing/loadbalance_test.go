@@ -19,6 +19,7 @@ package consistenthashing
 
 import (
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 )
@@ -156,4 +157,57 @@ func (s *consistentHashLoadBalanceSuite) TestConcurrentSelect() {
 		}(i)
 	}
 	wg.Wait()
+}
+
+// TestSelectAfterProviderReplaced replaces one provider with another, which keeps the number of
+// invokers the same. Every key must then go to an invoker in the current list.
+func (s *consistentHashLoadBalanceSuite) TestSelectAfterProviderReplaced() {
+	url, err := common.NewURL("dubbo://192.168.1.0:8083/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.Require().NoError(err)
+	replacement := base.NewBaseInvoker(url)
+
+	previous := []base.Invoker{s.invoker1, s.invoker2, s.invoker3}
+	for i := range 64 {
+		s.lb.Select(previous, invocation.NewRPCInvocation("echo", []any{fmt.Sprint(i), "p"}, nil))
+	}
+	current := []base.Invoker{replacement, s.invoker2, s.invoker3}
+	for i := range 64 {
+		invoker := s.lb.Select(current, invocation.NewRPCInvocation("echo", []any{fmt.Sprint(i), "p"}, nil))
+		s.Truef(slices.Contains(current, invoker), "key %d went to %s, which is not in the invoker list",
+			i, invoker.GetURL().Location)
+	}
+}
+
+// TestSelectFromEqualSizedSubsets alternates between two disjoint invoker lists of the same size,
+// as a router does when it gives different requests different providers.
+func (s *consistentHashLoadBalanceSuite) TestSelectFromEqualSizedSubsets() {
+	url, err := common.NewURL("dubbo://192.168.1.0:8083/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.Require().NoError(err)
+	first := []base.Invoker{s.invoker1, s.invoker3}
+	second := []base.Invoker{s.invoker2, base.NewBaseInvoker(url)}
+
+	for i := range 64 {
+		for _, invokers := range [][]base.Invoker{first, second} {
+			invoker := s.lb.Select(invokers, invocation.NewRPCInvocation("echo", []any{fmt.Sprint(i), "p"}, nil))
+			s.Truef(slices.Contains(invokers, invoker), "key %d went to %s, which is not in the invoker list",
+				i, invoker.GetURL().Location)
+		}
+	}
+}
+
+// TestSelectKeepsRingForSameInvokers checks that an unchanged invoker list reuses the cached ring.
+func (s *consistentHashLoadBalanceSuite) TestSelectKeepsRingForSameInvokers() {
+	invokers := []base.Invoker{s.invoker1, s.invoker2, s.invoker3}
+	inv := invocation.NewRPCInvocation("echo", []any{"name", "password"}, nil)
+	first := s.lb.Select(invokers, inv)
+	key := s.invoker1.GetURL().ServiceKey() + ".echo"
+	selectorsMu.RLock()
+	cached := selectors[key]
+	selectorsMu.RUnlock()
+
+	again := s.lb.Select(slices.Clone(invokers), inv)
+	selectorsMu.RLock()
+	defer selectorsMu.RUnlock()
+	s.Same(cached, selectors[key])
+	s.Same(first, again)
 }

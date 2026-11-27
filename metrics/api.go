@@ -38,6 +38,55 @@ const (
 	DefaultTimeWindowSeconds = 120
 )
 
+// Window is the sliding window used by aggregate metrics: TimeWindowSeconds
+// split into BucketNum buckets.
+type Window struct {
+	BucketNum         int
+	TimeWindowSeconds int
+}
+
+// DefaultWindow returns the window used when none is configured.
+func DefaultWindow() Window {
+	return Window{BucketNum: DefaultBucketNum, TimeWindowSeconds: DefaultTimeWindowSeconds}
+}
+
+// WindowOption sets the sliding window of an aggregate metric vector.
+type WindowOption func(*Window)
+
+// OrDefault returns w with each non-positive field replaced by the default,
+// and with BucketNum capped at TimeWindowSeconds so that each bucket covers at
+// least one second.
+func (w Window) OrDefault() Window {
+	if w.BucketNum <= 0 {
+		w.BucketNum = DefaultBucketNum
+	}
+	if w.TimeWindowSeconds <= 0 {
+		w.TimeWindowSeconds = DefaultTimeWindowSeconds
+	}
+	if w.BucketNum > w.TimeWindowSeconds {
+		w.BucketNum = w.TimeWindowSeconds
+	}
+	return w
+}
+
+// WithWindow uses the given sliding window instead of DefaultWindow.
+// Non-positive values keep the default.
+func WithWindow(w Window) WindowOption {
+	return func(target *Window) {
+		*target = w
+	}
+}
+
+// windowOf applies opts to DefaultWindow and normalizes the result, so that no
+// option can produce an unusable window.
+func windowOf(opts []WindowOption) Window {
+	w := DefaultWindow()
+	for _, opt := range opts {
+		opt(&w)
+	}
+	return w.OrDefault()
+}
+
 var (
 	registries = make(map[string]func(*common.URL) MetricRegistry)
 	collectors = make([]CollectorFunc, 0)
@@ -300,12 +349,13 @@ type QpsMetricVec interface {
 	Record(labels map[string]string)
 }
 
-func NewQpsMetricVec(metricRegistry MetricRegistry, metricKey *MetricKey) QpsMetricVec {
+func NewQpsMetricVec(metricRegistry MetricRegistry, metricKey *MetricKey, opts ...WindowOption) QpsMetricVec {
 	return &DefaultQpsMetricVec{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
 		mux:            sync.RWMutex{},
 		cache:          make(map[string]*aggregate.TimeWindowCounter),
+		window:         windowOf(opts),
 	}
 }
 
@@ -317,6 +367,7 @@ type DefaultQpsMetricVec struct {
 	metricKey      *MetricKey
 	mux            sync.RWMutex
 	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
+	window         Window
 }
 
 func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
@@ -331,7 +382,7 @@ func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
 		d.mux.Lock()
 		twc, ok = d.cache[key]
 		if !ok {
-			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
+			twc = aggregate.NewTimeWindowCounter(d.window.BucketNum, int64(d.window.TimeWindowSeconds))
 			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
 				r.GaugeFunc(NewMetricIdByLabels(d.metricKey, labels), twc.QPS)
 			}
@@ -350,12 +401,13 @@ type AggregateCounterVec interface {
 	Inc(labels map[string]string)
 }
 
-func NewAggregateCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey) AggregateCounterVec {
+func NewAggregateCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey, opts ...WindowOption) AggregateCounterVec {
 	return &DefaultAggregateCounterVec{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
 		mux:            sync.RWMutex{},
 		cache:          make(map[string]*aggregate.TimeWindowCounter),
+		window:         windowOf(opts),
 	}
 }
 
@@ -367,6 +419,7 @@ type DefaultAggregateCounterVec struct {
 	metricKey      *MetricKey
 	mux            sync.RWMutex
 	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
+	window         Window
 }
 
 func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
@@ -381,7 +434,7 @@ func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
 		d.mux.Lock()
 		twc, ok = d.cache[key]
 		if !ok {
-			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
+			twc = aggregate.NewTimeWindowCounter(d.window.BucketNum, int64(d.window.TimeWindowSeconds))
 			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
 				r.GaugeFunc(NewMetricIdByLabels(d.metricKey, labels), twc.Count)
 			}
@@ -400,13 +453,14 @@ type QuantileMetricVec interface {
 	Record(labels map[string]string, v float64)
 }
 
-func NewQuantileMetricVec(metricRegistry MetricRegistry, metricKeys []*MetricKey, quantiles []float64) QuantileMetricVec {
+func NewQuantileMetricVec(metricRegistry MetricRegistry, metricKeys []*MetricKey, quantiles []float64, opts ...WindowOption) QuantileMetricVec {
 	return &DefaultQuantileMetricVec{
 		metricRegistry: metricRegistry,
 		metricKeys:     metricKeys,
 		mux:            sync.RWMutex{},
 		cache:          make(map[string]*aggregate.TimeWindowQuantile),
 		quantiles:      quantiles,
+		window:         windowOf(opts),
 	}
 }
 
@@ -419,6 +473,7 @@ type DefaultQuantileMetricVec struct {
 	mux            sync.RWMutex
 	cache          map[string]*aggregate.TimeWindowQuantile // key: metrics labels, value: TimeWindowQuantile
 	quantiles      []float64
+	window         Window
 }
 
 func (d *DefaultQuantileMetricVec) Record(labels map[string]string, v float64) {
@@ -433,7 +488,7 @@ func (d *DefaultQuantileMetricVec) Record(labels map[string]string, v float64) {
 		d.mux.Lock()
 		twq, ok = d.cache[key]
 		if !ok {
-			twq = aggregate.NewTimeWindowQuantile(DefaultCompression, DefaultBucketNum, DefaultTimeWindowSeconds)
+			twq = aggregate.NewTimeWindowQuantile(DefaultCompression, d.window.BucketNum, int64(d.window.TimeWindowSeconds))
 			if r, ok := d.metricRegistry.(GaugeFuncRegistry); ok {
 				for i, q := range d.quantiles {
 					r.GaugeFunc(NewMetricIdByLabels(d.metricKeys[i], labels), func() float64 { return twq.Quantile(q) })

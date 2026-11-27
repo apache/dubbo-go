@@ -91,6 +91,23 @@ func TestDefaultServiceInstance_ToURLsWithEndpoints(t *testing.T) {
 		urls := instance.ToURLs(serviceInfo)
 		assert.Len(t, urls, 1)
 		assert.Equal(t, "20880", urls[0].Port)
+		assert.Empty(t, urls[0].GetParam(constant.InstanceTimestampKey, ""))
+	})
+
+	t.Run("carry instance registration timestamp", func(t *testing.T) {
+		instance := &DefaultServiceInstance{
+			Host: "127.0.0.1",
+			Port: 20880,
+			Metadata: map[string]string{
+				constant.ServiceInstanceEndpoints: `[{"port":3000,"protocol":"tri"}]`,
+				constant.TimestampKey:             "1795000009000",
+			},
+		}
+		urls := instance.ToURLs(serviceInfo)
+		assert.Len(t, urls, 1)
+		assert.Equal(t, "1795000009000", urls[0].GetParam(constant.InstanceTimestampKey, ""))
+		assert.Equal(t, serviceURL.GetParam(constant.TimestampKey, ""), urls[0].GetParam(constant.TimestampKey, ""),
+			"the export timestamp from MetadataInfo is left unchanged")
 	})
 }
 

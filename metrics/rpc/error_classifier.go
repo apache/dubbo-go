@@ -28,8 +28,9 @@ import (
 // module can aggregate them independently (e.g. count business failures vs.
 // network failures separately). Each category maps to a failure layer —
 // network, codec, or protocol — except business failures, which are
-// application-level. Classification combines compatible Triple/gRPC statuses
-// with confirmed local failure origins (see [classifyError]).
+// application-level. Classification combines compatible Triple/gRPC statuses,
+// producer-declared kinds (rpcerror.Kind) and confirmed local failure origins
+// (see [classifyError]). The same taxonomy is shared by provider and consumer.
 type ErrorType uint8
 
 const (
@@ -73,15 +74,53 @@ const (
 	ErrorTypeCodec ErrorType = 6
 )
 
-// classifyError preserves Timeout/Limit/PermissionDenied/Business priority.
-// Unmarked Unavailable remains ServiceUnavailable. Other errors can use a
-// confirmed local Network/Codec origin, including Dubbo errors without a Triple
-// status. Unmarked or conflicting evidence falls back to Unknown.
+// String returns the stable, low-cardinality name of the error type. The
+// names match rpcerror.Kind names and the failure metric suffixes.
+func (t ErrorType) String() string {
+	switch t {
+	case ErrorTypeTimeout:
+		return "timeout"
+	case ErrorTypeLimit:
+		return "limit"
+	case ErrorTypeServiceUnavailable:
+		return "service_unavailable"
+	case ErrorTypeBusinessFailed:
+		return "business"
+	case ErrorTypeNetworkFailure:
+		return "network"
+	case ErrorTypeCodec:
+		return "codec"
+	default:
+		return "unknown"
+	}
+}
+
+// classifyEvent combines the returned error with request-scoped evidence that
+// was collected without altering the error seen by the caller: the local
+// transport origin and the kind recorded on the observation.
+func classifyEvent(e *metricsEvent) ErrorType {
+	return classifyError(rpcerror.WithKind(rpcerror.Mark(e.err, e.origin), e.kind))
+}
+
+// classifyError maps an RPC error to one failure category, protocol-agnostically
+// and in this order:
+//
+//  1. Triple/gRPC statuses Timeout, Limit, PermissionDenied and Business keep
+//     their priority, so existing Triple classification is unchanged.
+//  2. A confirmed local Network/Codec origin (rpcerror.Of). It is evidence of
+//     the root cause, so it wins over a symptom such as the read timeout that
+//     follows an undecodable response.
+//  3. A kind declared by the producer (rpcerror.KindOf), e.g. a Dubbo response
+//     status, a client read timeout, an expired context deadline, a closed
+//     client or a provider application error.
+//  4. An unmarked Triple Unavailable status is ServiceUnavailable.
+//
+// Unmarked or conflicting evidence falls back to Unknown. Error messages are
+// never parsed.
 func classifyError(err error) ErrorType {
 	if err == nil {
 		return ErrorTypeUnknown
 	}
-	// Dubbo wire status classification remains separate from local origins.
 	code := triple_protocol.CodeOf(err)
 
 	switch code {
@@ -89,10 +128,8 @@ func classifyError(err error) ErrorType {
 		return ErrorTypeTimeout
 	case triple_protocol.CodeResourceExhausted:
 		return ErrorTypeLimit
-	case triple_protocol.CodeUnavailable, triple_protocol.CodePermissionDenied:
-		if code == triple_protocol.CodePermissionDenied || rpcerror.Of(err) == rpcerror.Unknown {
-			return ErrorTypeServiceUnavailable
-		}
+	case triple_protocol.CodePermissionDenied:
+		return ErrorTypeServiceUnavailable
 	case triple_protocol.CodeBizError:
 		return ErrorTypeBusinessFailed
 	}
@@ -101,7 +138,21 @@ func classifyError(err error) ErrorType {
 		return ErrorTypeNetworkFailure
 	case rpcerror.Codec:
 		return ErrorTypeCodec
-	default:
-		return ErrorTypeUnknown
 	}
+	switch rpcerror.KindOf(err) {
+	case rpcerror.KindTimeout:
+		return ErrorTypeTimeout
+	case rpcerror.KindLimit:
+		return ErrorTypeLimit
+	case rpcerror.KindServiceUnavailable:
+		return ErrorTypeServiceUnavailable
+	case rpcerror.KindBusiness:
+		return ErrorTypeBusinessFailed
+	case rpcerror.KindCodec:
+		return ErrorTypeCodec
+	}
+	if code == triple_protocol.CodeUnavailable {
+		return ErrorTypeServiceUnavailable
+	}
+	return ErrorTypeUnknown
 }

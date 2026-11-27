@@ -25,7 +25,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
@@ -33,14 +32,14 @@ import (
 // A struct key preserves every existing label without delimiter collisions or
 // JSON encoding on each measurement. Labels are captured before RPC execution.
 type seriesKey struct {
-	role, application, applicationVersion, hostname, ip, service, method, group, version string
+	role, application, applicationVersion, hostname, ip, service, method, group, version, protocol string
 }
 
 func keyOf(e *metricsEvent) seriesKey {
 	l := e.labels
 	return seriesKey{e.role, l[constant.TagApplicationName], l[constant.TagApplicationVersion],
 		l[constant.TagHostname], l[constant.TagIp], l[constant.TagInterface], l[constant.TagMethod],
-		l[constant.TagGroup], l[constant.TagVersion]}
+		l[constant.TagGroup], l[constant.TagVersion], l[constant.TagProtocol]}
 }
 
 type counterPair struct {
@@ -48,7 +47,12 @@ type counterPair struct {
 	window  *aggregate.TimeWindowCounter
 }
 
-func (p *counterPair) inc() { p.counter.Inc(); p.window.Inc() }
+func (p *counterPair) inc() {
+	p.counter.Inc()
+	if p.window != nil {
+		p.window.Inc()
+	}
+}
 
 type completionMetrics struct {
 	completed    *counterPair
@@ -71,10 +75,12 @@ type rpcSeries struct {
 	succeeded         atomic.Pointer[counterPair]
 	failed            atomic.Pointer[counterPair]
 	failures          [7]atomic.Pointer[counterPair]
+	retries           atomic.Pointer[metrics.CounterMetric]
 	histogramRegistry metrics.HistogramProvider
 	histogramOpts     *metrics.HistogramOpts
 	histogramID       *metrics.MetricId
 	histogram         atomic.Pointer[histogramMetric]
+	aggregation       aggregationSettings
 }
 
 func (c *rpcCollector) getSeries(e *metricsEvent) *rpcSeries {
@@ -93,14 +99,18 @@ func (c *rpcCollector) getSeries(e *metricsEvent) *rpcSeries {
 	}
 	s := &rpcSeries{registry: c.registry, gauges: c.registry.(metrics.GaugeFuncRegistry),
 		definitions: common.keys, prefix: "dubbo_" + e.role + "_", labels: maps.Clone(e.labels),
-		qps: aggregate.NewTimeWindowCounter(metrics.DefaultBucketNum, metrics.DefaultTimeWindowSeconds)}
+		aggregation: aggregationSettings{disabled: c.aggregation.disabled, window: c.aggregation.window.OrDefault()}}
 	if c.histogramRegistry != nil {
 		s.histogramRegistry = c.histogramRegistry
 		s.histogramOpts = c.histogramOpts
 		s.histogramID = rpcHistogramID(e.role, s.labels)
 	}
 	s.processing = s.registry.Gauge(s.id("requests_processing_total"))
-	s.gauges.GaugeFunc(s.id("qps_total"), s.qps.QPS)
+	if !s.aggregation.disabled {
+		w := s.aggregation.window
+		s.qps = aggregate.NewTimeWindowCounter(w.BucketNum, int64(w.TimeWindowSeconds))
+		s.gauges.GaugeFunc(s.id("qps_total"), s.qps.QPS)
+	}
 	// Publish only a fully bound series. On initialization failure, later calls
 	// may retry; the error is isolated by the collector's record boundary.
 	c.series.Store(key, s)
@@ -111,8 +121,12 @@ func (s *rpcSeries) id(suffix string) *metrics.MetricId {
 	return metrics.NewMetricIdByLabels(s.definitions[s.prefix+suffix], s.labels)
 }
 func (s *rpcSeries) newCounter(suffix string) *counterPair {
-	p := &counterPair{counter: s.registry.Counter(s.id(suffix)), window: aggregate.NewTimeWindowCounter(metrics.DefaultBucketNum, metrics.DefaultTimeWindowSeconds)}
-	s.gauges.GaugeFunc(s.id(suffix+"_aggregate"), p.window.Count)
+	p := &counterPair{counter: s.registry.Counter(s.id(suffix))}
+	if !s.aggregation.disabled {
+		w := s.aggregation.window
+		p.window = aggregate.NewTimeWindowCounter(w.BucketNum, int64(w.TimeWindowSeconds))
+		s.gauges.GaugeFunc(s.id(suffix+"_aggregate"), p.window.Count)
+	}
 	return p
 }
 func (s *rpcSeries) counter(slot *atomic.Pointer[counterPair], suffix string) *counterPair {
@@ -138,15 +152,35 @@ func (s *rpcSeries) completed() *completionMetrics {
 		return m
 	}
 	m := &completionMetrics{completed: s.newCounter("requests_total"),
-		rt:        s.registry.Rt(s.id("rt_milliseconds"), &metrics.RtOpts{}),
-		rtWindow:  s.registry.Rt(s.id("rt"), &metrics.RtOpts{Aggregate: true, BucketNum: metrics.DefaultBucketNum, TimeWindowSeconds: metrics.DefaultTimeWindowSeconds}),
-		quantiles: aggregate.NewTimeWindowQuantile(metrics.DefaultCompression, metrics.DefaultBucketNum, metrics.DefaultTimeWindowSeconds)}
-	for i, q := range []float64{.5, .9, .95, .99} {
-		suffix := []string{"rt_milliseconds_p50", "rt_milliseconds_p90", "rt_milliseconds_p95", "rt_milliseconds_p99"}[i]
-		s.gauges.GaugeFunc(s.id(suffix), func() float64 { return m.quantiles.Quantile(q) })
+		rt: s.registry.Rt(s.id("rt_milliseconds"), &metrics.RtOpts{})}
+	if !s.aggregation.disabled {
+		w := s.aggregation.window
+		m.rtWindow = s.registry.Rt(s.id("rt"), &metrics.RtOpts{Aggregate: true, BucketNum: w.BucketNum, TimeWindowSeconds: int64(w.TimeWindowSeconds)})
+		m.quantiles = aggregate.NewTimeWindowQuantile(metrics.DefaultCompression, w.BucketNum, int64(w.TimeWindowSeconds))
+		for i, q := range []float64{.5, .9, .95, .99} {
+			suffix := []string{"rt_milliseconds_p50", "rt_milliseconds_p90", "rt_milliseconds_p95", "rt_milliseconds_p99"}[i]
+			s.gauges.GaugeFunc(s.id(suffix), func() float64 { return m.quantiles.Quantile(q) })
+		}
 	}
 	s.completion.Store(m)
 	return m
+}
+
+// retriesCounter returns the consumer retry counter, created at zero with
+// requests_total so that it can be subtracted from it. It has no sliding-window
+// variant.
+func (s *rpcSeries) retriesCounter() metrics.CounterMetric {
+	if p := s.retries.Load(); p != nil {
+		return *p
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if p := s.retries.Load(); p != nil {
+		return *p
+	}
+	counter := s.registry.Counter(s.id("retries_total"))
+	s.retries.Store(&counter)
+	return counter
 }
 
 var failureSuffixes = [...]string{"requests_unknown_failed_total", "requests_timeout_total",
@@ -156,27 +190,37 @@ var failureSuffixes = [...]string{"requests_unknown_failed_total", "requests_tim
 func (s *rpcSeries) record(e *metricsEvent) {
 	switch e.name {
 	case BeforeInvoke:
-		s.qps.Inc()
+		if s.qps != nil {
+			s.qps.Inc()
+		}
 		s.processing.Inc()
 	case ObservationExpired:
 		s.processing.Dec()
 	case AfterInvoke:
 		m := s.completed()
 		m.completed.inc()
+		if e.role == constant.SideConsumer {
+			retries := s.retriesCounter()
+			if e.retry {
+				retries.Inc()
+			}
+		}
 		s.processing.Dec()
 		if e.hasResult {
 			if e.err == nil {
 				s.counter(&s.succeeded, "requests_succeed_total").inc()
 			} else {
 				s.counter(&s.failed, "requests_failed_total").inc()
-				kind := classifyError(rpcerror.Mark(e.err, e.origin))
+				kind := classifyEvent(e)
 				s.counter(&s.failures[kind], failureSuffixes[kind]).inc()
 			}
 		}
 		cost := float64(e.costTime.Milliseconds())
 		m.rt.Observe(cost)
-		m.rtWindow.Observe(cost)
-		m.quantiles.Add(cost)
+		if m.rtWindow != nil {
+			m.rtWindow.Observe(cost)
+			m.quantiles.Add(cost)
+		}
 		// Record optional histograms last so a broken registry cannot interrupt
 		// the existing counters, processing gauge or RT observations.
 		if s.histogramRegistry != nil {

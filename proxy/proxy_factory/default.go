@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -109,7 +110,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	svc := common.ServiceMap.GetServiceByServiceKey(proto, url.ServiceKey())
 	if svc == nil {
 		logger.Errorf("[Proxy] cannot find service [%s] in %s", path, proto)
-		result.SetError(fmt.Errorf("cannot find service [%s] in %s", path, proto))
+		result.SetError(rpcerror.WithKind(fmt.Errorf("cannot find service [%s] in %s", path, proto), rpcerror.KindServiceUnavailable))
 		return result
 	}
 
@@ -117,7 +118,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	method := svc.Method()[methodName]
 	if method == nil {
 		logger.Errorf("[Proxy] cannot find method [%s] of service [%s] in %s", methodName, path, proto)
-		result.SetError(fmt.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto))
+		result.SetError(rpcerror.WithKind(fmt.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto), rpcerror.KindServiceUnavailable))
 		return result
 	}
 
@@ -165,7 +166,16 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 
 	if retErr != nil {
-		result.SetError(retErr.(error))
+		err := retErr.(error)
+		// The service implementation returned this error: a business failure,
+		// unless the error already carries a category (e.g. an expired context
+		// deadline is a timeout). It is recorded on the request observation
+		// instead of being wrapped, because protocols re-encode provider
+		// exceptions by concrete type.
+		if rpcerror.KindOf(err) == rpcerror.KindUnknown {
+			rpcerror.RecordKind(ctx, rpcerror.KindBusiness)
+		}
+		result.SetError(err)
 		return result
 	}
 	if replyv.IsValid() && (replyv.Kind() != reflect.Pointer || replyv.Kind() == reflect.Pointer && replyv.Elem().IsValid()) {
@@ -249,7 +259,7 @@ func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocat
 		}
 		return result
 	}
-	result.SetError(fmt.Errorf("no match method for %s", name))
+	result.SetError(rpcerror.WithKind(fmt.Errorf("no match method for %s", name), rpcerror.KindServiceUnavailable))
 
 	return result
 }
