@@ -71,20 +71,58 @@ var grpcSerializations = struct {
 	items map[string]installedSerialization
 }{items: make(map[string]installedSerialization)}
 
+const (
+	consumerSide = "consumer"
+
+	// consumerSerializationAttribute records the subtype selected by the local
+	// consumer configuration. Discovery merges provider parameters into the
+	// reference URL, so reading them after discovery would let a provider replace
+	// the client's choice.
+	consumerSerializationAttribute = "grpc.serialization.consumer"
+)
+
 // PrepareCodec uses grpc-go's process-wide subtype registry. Factories receive
 // no endpoint/side identity: one subtype must mean the same format process-wide.
 func (gp *GrpcProtocol) PrepareCodec(url *common.URL, side string) error {
 	grpcserialization.Freeze()
+	if side == consumerSide {
+		if _, ok := consumerSerialization(url); ok {
+			return nil
+		}
+	}
+	name, err := bindCodec(url)
+	if err != nil {
+		return err
+	}
+	if side == consumerSide {
+		url.SetAttribute(consumerSerializationAttribute, name)
+	}
+	return nil
+}
+
+// consumerSerialization returns the subtype chosen for this reference before
+// discovery merged the provider URL into it.
+func consumerSerialization(url *common.URL) (string, bool) {
+	raw, ok := url.GetAttribute(consumerSerializationAttribute)
+	if !ok {
+		return "", false
+	}
+	name, ok := raw.(string)
+	return name, ok && name != ""
+}
+
+// bindCodec resolves the serialization of url and returns the subtype name.
+func bindCodec(url *common.URL) (string, error) {
 	name := url.GetParam("serialization", "proto")
 	if name == "protobuf" {
 		name = "proto"
 	}
 	reg, ok := extension.LookupSerialization("grpc", name)
 	if !ok {
-		return fmt.Errorf("unsupported grpc serialization %q", name)
+		return "", fmt.Errorf("unsupported grpc serialization %q", name)
 	}
 	if name == "proto" || name == "json" {
-		return nil
+		return name, nil
 	}
 	var config any
 	if raw, ok := url.GetAttribute(extension.SerializationConfigAttribute); ok {
@@ -102,21 +140,21 @@ func (gp *GrpcProtocol) PrepareCodec(url *common.URL, side string) error {
 	defer grpcSerializations.Unlock()
 	if installed, ok := grpcSerializations.items[name]; ok {
 		if !reflect.DeepEqual(installed.config, config) || !reflect.DeepEqual(installed.parameters, parameters) {
-			return fmt.Errorf("grpc subtype %q already uses different configuration", name)
+			return "", fmt.Errorf("grpc subtype %q already uses different configuration", name)
 		}
-		return nil
+		return name, nil
 	}
 	adapter := grpcserialization.Lookup(name)
 	if adapter == nil {
-		return fmt.Errorf("grpc subtype %q is already registered outside the serialization SPI", name)
+		return "", fmt.Errorf("grpc subtype %q is already registered outside the serialization SPI", name)
 	}
 	codec, err := extension.BuildSerialization(reg, serialization.Options{Protocol: "grpc", Config: config, Parameters: parameters})
 	if err != nil {
-		return err
+		return "", err
 	}
 	// Bind the adapter reserved during descriptor registration. This does not
 	// mutate grpc-go's global registry while existing RPCs read it.
 	adapter.Bind(codec)
 	grpcSerializations.items[name] = installedSerialization{config: config, parameters: parameters, codec: codec}
-	return nil
+	return name, nil
 }

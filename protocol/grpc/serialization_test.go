@@ -53,7 +53,9 @@ func (c testGRPCCodec) Marshal(v any) ([]byte, error)   { c.calls.Add(1); return
 func (c testGRPCCodec) Unmarshal(b []byte, v any) error { c.calls.Add(1); return json.Unmarshal(b, v) }
 
 var grpcTestCalls, grpcTestConstructions, grpcPublicCalls atomic.Int64
+var grpcChoiceCalls atomic.Int64
 var grpcTestOptions serialization.Options
+var grpcMergedOptions serialization.Options
 var grpcRetryOptions serialization.Options
 var grpcRetryCount atomic.Int64
 var errGRPCFactoryFailure = errors.New("grpc factory failed")
@@ -87,6 +89,13 @@ func init() {
 	}})
 	extension.MustRegisterSerialization(serialization.Registration{Protocol: "grpc", Name: "codec-grpc-during-rpc", Mode: serialization.MessageMode, WireName: "codec-grpc-during-rpc", New: func(serialization.Options) (serialization.Codec, error) {
 		return codecGRPCProbe{name: "codec-grpc-during-rpc", calls: &atomic.Int64{}}, nil
+	}})
+	extension.MustRegisterSerialization(serialization.Registration{Protocol: "grpc", Name: "codec-grpc-consumer-choice", Mode: serialization.MessageMode, WireName: "codec-grpc-consumer-choice", New: func(serialization.Options) (serialization.Codec, error) {
+		return codecGRPCProbe{name: "codec-grpc-consumer-choice", calls: &grpcChoiceCalls}, nil
+	}})
+	extension.MustRegisterSerialization(serialization.Registration{Protocol: "grpc", Name: "codec-grpc-merged-config", Mode: serialization.MessageMode, WireName: "codec-grpc-merged-config", ConfigPrefix: "codec-grpc-merged", New: func(o serialization.Options) (serialization.Codec, error) {
+		grpcMergedOptions = o
+		return codecGRPCProbe{name: "codec-grpc-merged-config", calls: &atomic.Int64{}}, nil
 	}})
 }
 
@@ -201,6 +210,64 @@ func TestCodecPublicGRPCClientDefaultSubtype(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, healthpb.HealthCheckResponse_SERVING, response.Status)
 	require.EqualValues(t, 4, grpcPublicCalls.Load())
+}
+
+func TestGRPCConsumerSubtypeSurvivesDiscoveryMerge(t *testing.T) {
+	const name = "codec-grpc-consumer-choice"
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	server := grpcgo.NewServer()
+	healthServer := health.NewServer()
+	healthServer.SetServingStatus("codec", healthpb.HealthCheckResponse_SERVING)
+	healthpb.RegisterHealthServer(server, healthServer)
+	go server.Serve(listener)
+	defer server.Stop()
+	local := common.NewURLWithOptions(common.WithProtocol("grpc"), common.WithParamsValue("serialization", name))
+	require.NoError(t, extension.PrepareCodecURL(local, "consumer"))
+	provider, err := common.NewURL("grpc://"+listener.Addr().String()+"/grpc.health.v1.Health", common.WithParamsValue("serialization", "proto"))
+	require.NoError(t, err)
+	merged := provider.MergeURL(local)
+	require.Equal(t, "proto", merged.GetParam("serialization", ""))
+	merged.SetAttribute(constant.RpcServiceKey, codecHealthStub{})
+	before := grpcChoiceCalls.Load()
+	client, err := NewClient(merged)
+	require.NoError(t, err)
+	defer client.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	response, err := healthpb.NewHealthClient(client.ClientConn).Check(ctx, &healthpb.HealthCheckRequest{Service: "codec"})
+	require.NoError(t, err)
+	require.Equal(t, healthpb.HealthCheckResponse_SERVING, response.Status)
+	require.Greater(t, grpcChoiceCalls.Load(), before)
+}
+
+func TestGRPCConsumerConfigSurvivesProviderMerge(t *testing.T) {
+	const name = "codec-grpc-merged-config"
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	server := grpcgo.NewServer()
+	healthServer := health.NewServer()
+	healthServer.SetServingStatus("codec", healthpb.HealthCheckResponse_SERVING)
+	healthpb.RegisterHealthServer(server, healthServer)
+	go server.Serve(listener)
+	defer server.Stop()
+	local := common.NewURLWithOptions(common.WithProtocol("grpc"), common.WithParamsValue("serialization", name), common.WithParamsValue("codec-grpc-merged.tag", "consumer"))
+	require.NoError(t, extension.PrepareCodecURL(local, "consumer"))
+	require.Equal(t, "consumer", grpcMergedOptions.Parameters["codec-grpc-merged.tag"])
+	provider, err := common.NewURL("grpc://"+listener.Addr().String()+"/grpc.health.v1.Health", common.WithParamsValue("serialization", name), common.WithParamsValue("codec-grpc-merged.tag", "provider"))
+	require.NoError(t, err)
+	merged := provider.MergeURL(local)
+	require.Equal(t, "provider", merged.GetParam("codec-grpc-merged.tag", ""))
+	merged.SetAttribute(constant.RpcServiceKey, codecHealthStub{})
+	client, err := NewClient(merged)
+	require.NoError(t, err)
+	defer client.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	response, err := healthpb.NewHealthClient(client.ClientConn).Check(ctx, &healthpb.HealthCheckRequest{Service: "codec"})
+	require.NoError(t, err)
+	require.Equal(t, healthpb.HealthCheckResponse_SERVING, response.Status)
+	require.Equal(t, "consumer", grpcMergedOptions.Parameters["codec-grpc-merged.tag"])
 }
 
 // Configuring another subtype must not write grpc-go's registry while an

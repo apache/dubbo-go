@@ -68,10 +68,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	if err := GetProtocol().(*GrpcProtocol).PrepareCodec(url, "consumer"); err != nil {
 		return nil, err
 	}
-	subtype := url.GetParam("serialization", clientConf.ContentSubType)
-	if subtype == "protobuf" {
-		subtype = "proto"
-	}
+	subtype := clientSubtype(url)
 
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
@@ -151,6 +148,20 @@ func NewClient(url *common.URL) (*Client, error) {
 		ClientConn: conn,
 		invoker:    reflect.ValueOf(invoker),
 	}, nil
+}
+
+// clientSubtype returns the subtype selected for this reference. The choice made
+// from the local configuration before discovery wins; merged provider parameters
+// only apply to callers that build a client without a reference.
+func clientSubtype(url *common.URL) string {
+	if name, ok := consumerSerialization(url); ok {
+		return name
+	}
+	name := url.GetParam("serialization", clientConf.ContentSubType)
+	if name == "protobuf" {
+		name = "proto"
+	}
+	return name
 }
 
 func clientInit(url *common.URL) {
