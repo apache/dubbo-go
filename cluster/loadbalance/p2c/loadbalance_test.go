@@ -42,18 +42,72 @@ func TestDefaultRnd(t *testing.T) {
 	})
 
 	t.Run("n == 2", func(t *testing.T) {
-		i, j := defaultRnd(2)
-		assert.Equal(t, 0, i)
-		assert.Equal(t, 1, j)
+		// Either order must come up, or Select always prefers the same invoker.
+		seen := map[[2]int]int{}
+		for k := 0; k < 1000; k++ {
+			i, j := defaultRnd(2)
+			seen[[2]int{i, j}]++
+		}
+		assert.Len(t, seen, 2)
+		assert.Positive(t, seen[[2]int{0, 1}])
+		assert.Positive(t, seen[[2]int{1, 0}])
 	})
 
 	t.Run("n > 2", func(t *testing.T) {
 		n := 5
-		i, j := defaultRnd(n)
-		assert.True(t, i >= 0 && i < n)
-		assert.True(t, j >= 0 && j < n)
-		assert.NotEqual(t, i, j)
+		seen := map[[2]int]int{}
+		for k := 0; k < 5000; k++ {
+			i, j := defaultRnd(n)
+			assert.True(t, i >= 0 && i < n)
+			assert.True(t, j >= 0 && j < n)
+			assert.NotEqual(t, i, j)
+			seen[[2]int{i, j}]++
+		}
+		// Every ordered pair of distinct indices comes up.
+		assert.Len(t, seen, n*(n-1))
 	})
+}
+
+// TestSelectTwoInvokersSpreads selects with the default random picker and checks
+// that both of two invokers get a fair share when p2c has no metrics to compare
+// or the metrics are equal.
+func TestSelectTwoInvokersSpreads(t *testing.T) {
+	lb := &p2cLoadBalance{randomPicker: defaultRnd}
+	invocation := protoinvoc.NewRPCInvocation("TestMethod", []any{}, nil)
+	url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+	url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	ivkArr := []base.Invoker{base.NewBaseInvoker(url0), base.NewBaseInvoker(url1)}
+
+	for _, tc := range []struct {
+		name      string
+		remaining any
+		err       error
+	}{
+		{name: "no metrics", err: metrics.ErrMetricsNotFound},
+		{name: "equal metrics", remaining: uint64(10)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			m := metrics.NewMockMetrics(ctrl)
+			setLocalMetrics(t, m)
+			m.EXPECT().
+				GetMethodMetrics(gomock.Any(), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+				AnyTimes().
+				Return(tc.remaining, tc.err)
+
+			const total = 2000
+			counts := map[string]int{}
+			for k := 0; k < total; k++ {
+				counts[lb.Select(ivkArr, invocation).GetURL().Location]++
+			}
+			// Expected 1000 each; the band is more than 13 standard deviations wide.
+			for _, ivk := range ivkArr {
+				got := counts[ivk.GetURL().Location]
+				assert.Greater(t, got, total*35/100, "invoker %s", ivk.GetURL().Location)
+				assert.Less(t, got, total*65/100, "invoker %s", ivk.GetURL().Location)
+			}
+		})
+	}
 }
 
 func setLocalMetrics(t *testing.T, localMetrics metrics.Metrics) {

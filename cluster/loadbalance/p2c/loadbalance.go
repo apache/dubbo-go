@@ -19,9 +19,8 @@ package p2c
 
 import (
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
-	"time"
 )
 
 import (
@@ -57,29 +56,18 @@ type p2cLoadBalance struct {
 // This function type is designed ONLY FOR TEST purposes to inject predictable values.
 type randomPicker func(n int) (i, j int)
 
-var rndPool = sync.Pool{
-	New: func() any {
-		return rand.New(rand.NewSource(time.Now().Unix()))
-	},
-}
-
-// defaultRnd is the default implementation of randomPicker.
-// It handles edge cases for n <= 2 and ensures two distinct random indices for n > 2.
+// defaultRnd is the default implementation of randomPicker. It returns two
+// distinct indices in random order, so with two invokers either one can be
+// picked first. Select returns the first pick when it has no metrics, and the
+// second pick on a tie.
 func defaultRnd(n int) (i, j int) {
 	if n <= 1 {
 		return 0, 0
 	}
-	if n == 2 {
-		return 0, 1
-	}
-
-	rnd := rndPool.Get().(*rand.Rand)
-	defer rndPool.Put(rnd)
-
-	i = rnd.Intn(n) // NOSONAR
-	j = rnd.Intn(n) // NOSONAR
-	for i == j {
-		j = rnd.Intn(n) // NOSONAR
+	i = rand.IntN(n)     // NOSONAR
+	j = rand.IntN(n - 1) // NOSONAR
+	if j >= i {
+		j++
 	}
 	return i, j
 }
