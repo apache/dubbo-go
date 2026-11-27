@@ -107,6 +107,34 @@ func TestSharedListenerCodecOwnership(t *testing.T) {
 	require.Equal(t, 1, first.closes, "listener snapshot owns exactly one close")
 }
 
+func TestPreparedCodecRevivesRetiredBinding(t *testing.T) {
+	const protocol = "unit-prepared-revive"
+	var instances []*closeFactoryCodec
+	require.NoError(t, RegisterCodec(CodecRegistration{Protocol: protocol, Name: protocol, New: func(*common.URL) (Codec, error) {
+		c := &closeFactoryCodec{}
+		instances = append(instances, c)
+		return c, nil
+	}}))
+	url := common.NewURLWithOptions(common.WithProtocol(protocol))
+	require.NoError(t, PrepareCodec(url))
+	first, err := NewCodec(url)
+	require.NoError(t, err)
+	require.NoError(t, ReleaseCodec(url))
+	require.Equal(t, 1, instances[0].closes)
+	require.NoError(t, PrepareCodec(url))
+	second, err := NewCodec(url)
+	require.NoError(t, err)
+	require.Len(t, instances, 2)
+	require.NotSame(t, first, second)
+	require.Zero(t, instances[1].closes)
+	require.NoError(t, ReleaseCodec(url))
+	third, err := NewCodec(url)
+	require.NoError(t, err)
+	require.Len(t, instances, 3)
+	require.NotSame(t, second, third)
+	require.Zero(t, instances[2].closes)
+}
+
 func TestClientCodecLeasesAndLocalRecreation(t *testing.T) {
 	const protocol = "unit-client-lease"
 	var instances []*closeFactoryCodec

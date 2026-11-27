@@ -89,6 +89,9 @@ func NewCodec(url *common.URL) (Codec, error) {
 		if binding, ok := raw.(*codecBinding); ok {
 			binding.mu.Lock()
 			defer binding.mu.Unlock()
+			if err := binding.renewLocked(); err != nil {
+				return nil, err
+			}
 			return binding.codec, nil
 		}
 	}
@@ -127,11 +130,17 @@ func NewCodec(url *common.URL) (Codec, error) {
 	}
 	return c, nil
 }
+
+// PrepareCodec creates the endpoint binding on first use and rebuilds a retired
+// binding in place, so an endpoint created after ReleaseCodec never inherits a
+// closed codec.
 func PrepareCodec(url *common.URL) error {
 	if url != nil {
 		if raw, ok := url.GetAttribute(CodecAttribute); ok {
-			if _, valid := raw.(*codecBinding); valid {
-				return nil
+			if binding, valid := raw.(*codecBinding); valid {
+				binding.mu.Lock()
+				defer binding.mu.Unlock()
+				return binding.renewLocked()
 			}
 		}
 	}
@@ -200,6 +209,26 @@ func ReleaseCodec(url *common.URL) error {
 	return nil
 }
 
+// renewLocked rebuilds a retired binding from its construction snapshot. The
+// binding identity is preserved so every URL sharing the endpoint observes the
+// new codec generation. Callers must hold b.mu.
+func (b *codecBinding) renewLocked() error {
+	if !b.retired {
+		return nil
+	}
+	if b.source == nil {
+		return fmt.Errorf("remoting: released codec has no construction snapshot")
+	}
+	codec, err := NewCodec(b.source.Clone())
+	if err != nil {
+		return err
+	}
+	b.codec = codec
+	b.owner = &codecOwner{codec: codec}
+	b.retired = false
+	return nil
+}
+
 // codecOwner is called while holding the binding lock. Each generation has its
 // own close guard, so final release can drain independently of rediscovery.
 func (b *codecBinding) codecOwner() *codecOwner {
@@ -226,19 +255,9 @@ func AcquireCodec(url *common.URL) (Codec, func() error, error) {
 	raw, _ := url.GetAttribute(CodecAttribute)
 	binding := raw.(*codecBinding)
 	binding.mu.Lock()
-	if binding.retired {
-		if binding.source == nil {
-			binding.mu.Unlock()
-			return nil, nil, fmt.Errorf("remoting: released codec has no construction snapshot")
-		}
-		codec, err := NewCodec(binding.source.Clone())
-		if err != nil {
-			binding.mu.Unlock()
-			return nil, nil, err
-		}
-		binding.codec = codec
-		binding.owner = &codecOwner{codec: codec}
-		binding.retired = false
+	if err := binding.renewLocked(); err != nil {
+		binding.mu.Unlock()
+		return nil, nil, err
 	}
 	binding.users++
 	owner := binding.codecOwner()
