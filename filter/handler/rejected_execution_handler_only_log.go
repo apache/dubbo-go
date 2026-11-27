@@ -18,6 +18,7 @@
 package handler
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -32,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 const (
@@ -52,8 +54,9 @@ var (
 
 // OnlyLogRejectedExecutionHandler implements the RejectedExecutionHandler
 /**
- * This implementation only logs the invocation info.
- * it always return en error inside the result.
+ * This implementation logs the invocation info and fails the invocation.
+ * It always returns an error inside the result, so the caller fails instead of
+ * receiving an empty successful result.
  * "UserProvider":
  *   registry: "hangzhouzk"
  *   protocol : "dubbo"
@@ -67,12 +70,24 @@ var (
  */
 type OnlyLogRejectedExecutionHandler struct{}
 
-// RejectedExecution will do nothing, it only log the invocation.
+// RejectedExecution logs the rejection and returns a result holding an
+// Unavailable error. Dubbo Java maps a rejected call (LIMIT_EXCEEDED_EXCEPTION)
+// to the Triple status UNAVAILABLE, and the consumer's cluster can retry another
+// provider. The error names the service and method only, since the URL can hold
+// credentials and the error is sent to the consumer.
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url *common.URL,
-	_ base.Invocation) result.Result {
+	invocation base.Invocation) result.Result {
 
 	logger.Errorf("[Filter][Handler] the invocation was rejected, url=%s", url.String())
-	return &result.RPCResult{}
+
+	service, method := url.Service(), ""
+	if invocation != nil {
+		method = invocation.MethodName()
+	}
+	return &result.RPCResult{
+		Err: tri.NewError(tri.CodeUnavailable,
+			fmt.Errorf("the invocation was rejected by the provider, service=%s method=%s", service, method)),
+	}
 }
 
 // GetOnlyLogRejectedExecutionHandler will return the instance of OnlyLogRejectedExecutionHandler
