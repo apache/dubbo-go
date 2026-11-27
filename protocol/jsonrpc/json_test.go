@@ -65,13 +65,27 @@ func TestServerCodecWrite(t *testing.T) {
 	codec := newServerCodec()
 	a := json.RawMessage([]byte("1"))
 	codec.req = serverRequest{Version: "1.0", Method: "GetUser", ID: &a}
-	data, err := codec.Write("error", &TestData{Test: "test"})
+	data, err := codec.Write("", &TestData{Test: "test"})
 	require.NoError(t, err)
-	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"}}\n", string(data))
+
+	data, err = codec.Write("", nil)
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":null}\n", string(data))
+
+	// An error response holds error only, whatever value is passed with it.
+	data, err = codec.Write("error", &TestData{Test: "test"})
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
 
 	data, err = codec.Write("{\"code\":-32000,\"message\":\"error\"}", &TestData{Test: "test"})
 	require.NoError(t, err)
-	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+
+	// The server writes an invoker error with invalidRequest as the value.
+	data, err = codec.Write("error", invalidRequest)
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
 }
 
 func TestServerCodecRead(t *testing.T) {
