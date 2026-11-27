@@ -70,14 +70,14 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 		key    string
 		target string
 	}{
-		{name: "service level", key: constant.ExecuteLimitKey, target: "target=hello1 "},
-		{name: "method level", key: "methods.hello1." + constant.ExecuteLimitKey, target: "target=hello1#hello1 "},
+		{name: "service level", key: constant.ExecuteLimitKey, target: "greet.GreetService"},
+		{name: "method level", key: "methods.Greet." + constant.ExecuteLimitKey, target: "greet.GreetService#Greet"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			invoc := invocation.NewRPCInvocation("hello1", []any{"OK"}, make(map[string]any))
+			invoc := invocation.NewRPCInvocation("Greet", []any{"OK"}, make(map[string]any))
 			invokeURL := common.NewURLWithOptions(
 				common.WithParams(url.Values{}),
-				common.WithParamsValue(constant.InterfaceKey, "hello1"),
+				common.WithParamsValue(constant.InterfaceKey, "greet.GreetService"),
 				common.WithParamsValue(tc.key, "13a"),
 			)
 			invoker := &countingInvoker{BaseInvoker: base.NewBaseInvoker(invokeURL)}
@@ -85,9 +85,8 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 			res := newFilter().Invoke(context.Background(), invoker, invoc)
 
 			require.Error(t, res.Error())
-			assert.Contains(t, res.Error().Error(), "execute.limit is invalid")
-			assert.Contains(t, res.Error().Error(), tc.target)
-			assert.Contains(t, res.Error().Error(), `value="13a"`)
+			assert.Equal(t, "the configuration of execute.limit is invalid, target="+tc.target, res.Error().Error())
+			assert.NotContains(t, res.Error().Error(), "13a", "the configured value stays out of the consumer error")
 			assert.Zero(t, invoker.calls)
 		})
 	}
