@@ -200,25 +200,33 @@ func TestDubboMetadataAndBusinessShareEndpoint(t *testing.T) {
 	t.Cleanup(func() { extension.GetProtocol("dubbo").Destroy() })
 	port := freePort(t)
 	group := "codec-metadata-" + strconv.Itoa(port)
-	if err := metadata.NewOptions(metadata.WithAppName(group), metadata.WithPort(port), metadata.WithMetadataProtocol("dubbo")).Init(); err != nil {
+	if err := metadata.NewOptions(
+		metadata.WithAppName(group),
+		metadata.WithPort(port),
+		metadata.WithMetadataProtocol("dubbo"),
+		metadata.WithDubboCodec("test-framing"),
+	).Init(); err != nil {
 		t.Fatal(err)
 	}
 	metadataURL, err := metadata.GetMetadataService().GetMetadataServiceURL()
 	if err != nil || metadataURL == nil || metadataURL.Port != strconv.Itoa(port) {
 		t.Fatalf("metadata service URL=%v error=%v", metadataURL, err)
 	}
+	if metadataURL.GetParam("codec", "") != "test-framing" {
+		t.Fatalf("metadata service codec=%q, want the shared endpoint framing", metadataURL.GetParam("codec", ""))
+	}
 	ready(t, port)
 
-	srv, err := server.NewServer(server.WithServerProtocol(protocol.WithDubbo(), protocol.WithPort(port)))
+	srv, err := server.NewServer(server.WithServerProtocol(protocol.WithDubbo(), protocol.WithCodec("test-framing"), protocol.WithPort(port)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = srv.RegisterService(&Echo{}, server.WithGroup(group), server.WithNotRegister()); err != nil {
+	if err = srv.RegisterService(&Echo{}, server.WithGroup(group), server.WithAcceptedSerializations("hessian2"), server.WithNotRegister()); err != nil {
 		t.Fatal(err)
 	}
 	export(t, srv)
 
-	cli, err := client.NewClient(client.WithClientURL("dubbo://127.0.0.1:"+strconv.Itoa(port)), client.WithClientProtocolDubbo())
+	cli, err := client.NewClient(client.WithClientURL("dubbo://127.0.0.1:"+strconv.Itoa(port)), client.WithClientProtocolDubbo(), client.WithClientProtocol(protocol.WithDubbo(), protocol.WithCodec("test-framing")))
 	if err != nil {
 		t.Fatal(err)
 	}
