@@ -20,6 +20,7 @@ package generic
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -34,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -83,11 +85,14 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 		for _, arg := range oldArgs {
 			typ, err := g.GetType(arg)
 			if err != nil {
-				logger.Errorf("[Filter][Generic] failed to get type, err=%v", err)
+				// The error can quote the arguments, so the span gets the method only.
+				spanErr := fmt.Errorf("[Filter][Generic] failed to get type, method=%s", mtdName)
+				logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr), "[Filter][Generic] failed to get type, err=%v", err)
 			}
 			obj, err := g.Generalize(arg)
 			if err != nil {
-				logger.Errorf("[Filter][Generic] generalization failed, err=%v", err)
+				spanErr := fmt.Errorf("[Filter][Generic] generalization failed, method=%s", mtdName)
+				logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr), "[Filter][Generic] generalization failed, err=%v", err)
 				return invoker.Invoke(ctx, inv)
 			}
 			types = append(types, typ)

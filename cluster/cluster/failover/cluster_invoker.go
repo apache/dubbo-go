@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -115,14 +116,20 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		if observer := cluster.DiagnosticsFromContext(ctx, invocation); observer != nil {
 			observer.NoProvider()
 		}
-		logger.Errorf("[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
+		logger.CtxErrorf(ctx, "[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
 		return &result.RPCResult{
 			Err: fmt.Errorf("failed to invoke the method %s of the service %s .No provider is available because can't connect server",
 				methodName, invokerSvc),
 		}
 	}
 
-	logger.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
+	// The registry URL can hold credentials and the error text can hold remote
+	// data, so the span gets the method, service and counts only. The log line
+	// keeps the rest.
+	spanErr := fmt.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d",
+		methodName, invokerSvc, retries, len(providers), len(invokers))
+	logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
+		"[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
 		methodName, invokerSvc, retries, len(providers), len(invokers), invokerUrl, ip, constant.Version, res.Error().Error())
 
 	return res

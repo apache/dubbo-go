@@ -20,6 +20,7 @@ package failsafe
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 import (
@@ -31,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -81,7 +83,10 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 	res = ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
 		// ignore
-		logger.Errorf("[Cluster][Failsafe] ignore exception, err=%v", res.Error().Error())
+		// The error text can hold remote data, so the span gets the method and
+		// service only. The log line keeps the error.
+		spanErr := fmt.Errorf("[Cluster][Failsafe] ignore exception, method=%s service=%s", methodName, url.Service())
+		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr), "[Cluster][Failsafe] ignore exception, err=%v", res.Error().Error())
 		return &result.RPCResult{}
 	}
 	return res
