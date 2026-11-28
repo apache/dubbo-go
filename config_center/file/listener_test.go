@@ -47,7 +47,10 @@ func TestCacheListenerCallbacks(t *testing.T) {
 		t.Fatalf("write file error %v", err)
 	}
 
-	cl := NewCacheListener(dir)
+	cl, err := NewCacheListener(dir)
+	if err != nil {
+		t.Fatalf("create watcher error %v", err)
+	}
 
 	rec := &recListener{ch: make(chan *config_center.ConfigChangeEvent, 4)}
 	cl.AddListener(filePath, rec)
@@ -64,10 +67,24 @@ func TestCacheListenerCallbacks(t *testing.T) {
 	if err := cl.Close(); err != nil {
 		t.Fatalf("close watcher error %v", err)
 	}
+	if err := cl.Close(); err != nil {
+		t.Fatalf("close watcher twice error %v", err)
+	}
 	if err := os.Remove(filePath); err != nil {
 		t.Fatalf("remove file error %v", err)
 	}
 	assertNoEvent(t, rec.ch, 200*time.Millisecond)
+}
+
+func TestCacheListenerCloseNilSafe(t *testing.T) {
+	var cl *CacheListener
+	if err := cl.Close(); err != nil {
+		t.Fatalf("close nil listener error %v", err)
+	}
+
+	if err := (&CacheListener{}).Close(); err != nil {
+		t.Fatalf("close listener without watcher error %v", err)
+	}
 }
 
 func TestDrainEvents(t *testing.T) {
