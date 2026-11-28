@@ -156,6 +156,12 @@ func (l *LogrusCtxLogger) recordErrorToSpanIfPresent(ctx context.Context, templa
 		return
 	}
 
+	if err := logger.SpanErrorFromContext(ctx); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return
+	}
+
 	msg := fmt.Sprintf(template, args...)
 	span.SetStatus(codes.Error, msg)
 	span.RecordError(errors.New(msg))

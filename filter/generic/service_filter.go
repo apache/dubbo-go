@@ -78,7 +78,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 		return &result.RPCResult{Err: fmt.Errorf("$invoke: arg[2] must be []hessian.Object, got %T", inv.Arguments()[2])}
 	}
 
-	logger.Debugf("[Filter][Generic] received a generic invocation, methodName=%s types=%v args=%v", mtdName, types, args)
+	logger.CtxDebugf(ctx, "[Filter][Generic] received a generic invocation, methodName=%s types=%v args=%v", mtdName, types, args)
 
 	// get the type of the argument
 	ivkURL := invoker.GetURL()

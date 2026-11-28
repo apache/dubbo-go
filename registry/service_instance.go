@@ -174,25 +174,32 @@ func (d *DefaultServiceInstance) ToURLs(service *info.ServiceInfo) []*common.URL
 	if len(d.endpoints) > 0 {
 		for _, endpoint := range d.endpoints {
 			if endpoint.Protocol == service.Protocol {
-				url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
-					common.WithIp(d.Host), common.WithPort(strconv.Itoa(endpoint.Port)),
-					common.WithPath(service.Name), common.WithInterface(service.Name),
-					common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
-					common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}),
-					common.WithWeight(d.GetWeight()))
-				urls = append(urls, url)
+				urls = append(urls, d.serviceURL(service, endpoint.Port))
 			}
 		}
 	} else {
-		url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
-			common.WithIp(d.Host), common.WithPort(strconv.Itoa(d.Port)),
-			common.WithPath(service.Name), common.WithInterface(service.Name),
-			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
-			common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}),
-			common.WithWeight(d.GetWeight()))
-		urls = append(urls, url)
+		urls = append(urls, d.serviceURL(service, d.Port))
 	}
 	return urls
+}
+
+// serviceURL builds the URL of one service on this instance. Service params
+// come from MetadataInfo, which is shared by every instance with the same
+// revision and survives a restart, so the instance's own registration
+// timestamp is added to tell a restarted instance apart from the old one.
+func (d *DefaultServiceInstance) serviceURL(service *info.ServiceInfo, port int) *common.URL {
+	opts := []common.Option{
+		common.WithProtocol(service.Protocol),
+		common.WithIp(d.Host), common.WithPort(strconv.Itoa(port)),
+		common.WithPath(service.Name), common.WithInterface(service.Name),
+		common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
+		common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}),
+		common.WithWeight(d.GetWeight()),
+	}
+	if ts := d.Metadata[constant.TimestampKey]; ts != "" {
+		opts = append(opts, common.WithParamsValue(constant.InstanceTimestampKey, ts))
+	}
+	return common.NewURLWithOptions(opts...)
 }
 
 // GetEndPoints get end points from metadata

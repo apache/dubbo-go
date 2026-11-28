@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 )
 
@@ -30,6 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -37,6 +40,10 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 func TestZapCtxLogger_CtxInfof_WithTrace(t *testing.T) {
@@ -292,4 +299,32 @@ func TestZapCtxLogger_RecordErrorToSpan_Disabled(t *testing.T) {
 	// Check span events should be empty
 	events := recordedSpan.Events()
 	assert.Empty(t, events)
+}
+
+func TestZapCtxLogger_RecordErrorToSpan_SpanError(t *testing.T) {
+	var buf bytes.Buffer
+	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{MessageKey: "msg"})
+	core := zapcore.NewCore(encoder, zapcore.AddSync(&buf), zapcore.ErrorLevel)
+	ctxLogger := NewZapCtxLogger(&dubbogoLogger.DubboLogger{Logger: zap.New(core).Sugar()}, true)
+
+	spanRecorder := tracetest.NewSpanRecorder()
+	ctx, span := trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder)).Tracer("test").Start(context.Background(), "test-span")
+	ctxLogger.CtxErrorf(logger.WithSpanError(ctx, errors.New("rejected, method=Greet")),
+		"rejected, url=%s", "tri://user:secret@127.0.0.1:20000/Greet")
+	ctxLogger.CtxError(logger.WithSpanError(ctx, errors.New("rejected again")), "url=tri://user:secret@127.0.0.1:20000/Greet")
+	span.End()
+
+	assert.Contains(t, buf.String(), "rejected, url=tri://user:secret@127.0.0.1:20000/Greet", "the log line keeps the full message")
+
+	spans := spanRecorder.Ended()
+	require.Len(t, spans, 1)
+	assert.Equal(t, "rejected again", spans[0].Status().Description)
+	events := spans[0].Events()
+	require.Len(t, events, 2)
+	for i, want := range []string{"rejected, method=Greet", "rejected again"} {
+		assert.Contains(t, events[i].Attributes, attribute.String("exception.message", want))
+		for _, attr := range events[i].Attributes {
+			assert.NotContains(t, attr.Value.Emit(), "secret")
+		}
+	}
 }

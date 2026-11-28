@@ -65,7 +65,7 @@ func (t *TimeWindowCounter) QPS() float64 {
 	defer t.mux.RUnlock()
 
 	values := t.window.values(time.Now().UnixMilli())
-	seconds := int64(len(values)) * t.window.paneIntervalInMs / 1000
+	seconds := float64(int64(len(values))*t.window.paneIntervalInMs) / 1000
 	if seconds == 0 {
 		return 0
 	}
@@ -73,7 +73,7 @@ func (t *TimeWindowCounter) QPS() float64 {
 	for _, v := range values {
 		total += v.(*counter).value
 	}
-	return total / float64(seconds)
+	return total / seconds
 }
 
 // Add adds a step to the counter.

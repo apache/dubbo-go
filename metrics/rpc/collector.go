@@ -63,10 +63,30 @@ type rpcCollector struct {
 	reportFailure     sync.Once
 	histogramRegistry metrics.HistogramProvider
 	histogramOpts     *metrics.HistogramOpts
+	aggregation       aggregationSettings
+}
+
+// aggregationSettings controls the sliding-window metrics: QPS, the *_aggregate
+// counters, the aggregated RT and the RT quantiles. The zero value keeps them on
+// with the default window.
+type aggregationSettings struct {
+	disabled bool
+	window   metrics.Window
+}
+
+func aggregationSettingsOf(url *common.URL) aggregationSettings {
+	return aggregationSettings{
+		disabled: !url.GetParamBool(constant.AggregationEnabledKey, true),
+		window: metrics.Window{
+			BucketNum:         url.GetParamByIntValue(constant.AggregationBucketNumKey, metrics.DefaultBucketNum),
+			TimeWindowSeconds: url.GetParamByIntValue(constant.AggregationTimeWindowSecondsKey, metrics.DefaultTimeWindowSeconds),
+		}.OrDefault(),
+	}
 }
 
 func newRPCCollector(registry metrics.MetricRegistry, url *common.URL) *rpcCollector {
-	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
+	aggregation := aggregationSettingsOf(url)
+	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry, aggregation.window), aggregation: aggregation}
 	if url.GetParamBool(constant.HistogramEnabledKey, false) {
 		if configurable, ok := registry.(metrics.HistogramProvider); ok {
 			c.histogramRegistry = configurable
@@ -134,6 +154,15 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 	}
 	labels := event.labels
 	c.incRequestsTotal(role, labels)
+	if role == constant.SideConsumer {
+		if event.retry {
+			c.metricSet.consumer.retriesTotal.Inc(labels)
+		} else {
+			// Export the counter with requests_total, before the first retry, so
+			// that it can be subtracted from requests_total.
+			c.metricSet.consumer.retriesTotal.Add(labels, 0)
+		}
+	}
 	c.decRequestsProcessingTotal(role, labels)
 	if event.hasResult {
 		if event.err == nil {
@@ -151,6 +180,9 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 }
 
 func (c *rpcCollector) recordQps(role string, labels map[string]string) {
+	if c.aggregation.disabled {
+		return
+	}
 	switch role {
 	case constant.SideProvider:
 		c.metricSet.provider.qpsTotal.Record(labels)
@@ -163,10 +195,10 @@ func (c *rpcCollector) incRequestsTotal(role string, labels map[string]string) {
 	switch role {
 	case constant.SideProvider:
 		c.metricSet.provider.requestsTotal.Inc(labels)
-		c.metricSet.provider.requestsTotalAggregate.Inc(labels)
+		c.incAggregate(c.metricSet.provider.requestsTotalAggregate, labels)
 	case constant.SideConsumer:
 		c.metricSet.consumer.requestsTotal.Inc(labels)
-		c.metricSet.consumer.requestsTotalAggregate.Inc(labels)
+		c.incAggregate(c.metricSet.consumer.requestsTotalAggregate, labels)
 	}
 }
 
@@ -192,10 +224,10 @@ func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]st
 	switch role {
 	case constant.SideProvider:
 		c.metricSet.provider.requestsSucceedTotal.Inc(labels)
-		c.metricSet.provider.requestsSucceedTotalAggregate.Inc(labels)
+		c.incAggregate(c.metricSet.provider.requestsSucceedTotalAggregate, labels)
 	case constant.SideConsumer:
 		c.metricSet.consumer.requestsSucceedTotal.Inc(labels)
-		c.metricSet.consumer.requestsSucceedTotalAggregate.Inc(labels)
+		c.incAggregate(c.metricSet.consumer.requestsSucceedTotalAggregate, labels)
 	}
 }
 
@@ -203,10 +235,10 @@ func (c *rpcCollector) incRequestsFailedTotal(role string, labels map[string]str
 	switch role {
 	case constant.SideProvider:
 		c.metricSet.provider.requestsFailedTotal.Inc(labels)
-		c.metricSet.provider.requestsFailedTotalAggregate.Inc(labels)
+		c.incAggregate(c.metricSet.provider.requestsFailedTotalAggregate, labels)
 	case constant.SideConsumer:
 		c.metricSet.consumer.requestsFailedTotal.Inc(labels)
-		c.metricSet.consumer.requestsFailedTotalAggregate.Inc(labels)
+		c.incAggregate(c.metricSet.consumer.requestsFailedTotalAggregate, labels)
 	}
 }
 
@@ -225,37 +257,47 @@ func (c *rpcCollector) incRequestsFailedByType(role string, labels map[string]st
 	switch errType {
 	case ErrorTypeNetworkFailure:
 		ms.requestsNetworkFailedTotal.Inc(labels)
-		ms.requestsNetworkFailedTotalAggregate.Inc(labels)
+		c.incAggregate(ms.requestsNetworkFailedTotalAggregate, labels)
 	case ErrorTypeCodec:
 		ms.requestsCodecFailedTotal.Inc(labels)
-		ms.requestsCodecFailedTotalAggregate.Inc(labels)
+		c.incAggregate(ms.requestsCodecFailedTotalAggregate, labels)
 	case ErrorTypeTimeout:
 		ms.requestsTimeoutTotal.Inc(labels)
-		ms.requestsTimeoutTotalAggregate.Inc(labels)
+		c.incAggregate(ms.requestsTimeoutTotalAggregate, labels)
 	case ErrorTypeLimit:
 		ms.requestsLimitTotal.Inc(labels)
-		ms.requestsLimitTotalAggregate.Inc(labels)
+		c.incAggregate(ms.requestsLimitTotalAggregate, labels)
 	case ErrorTypeServiceUnavailable:
 		ms.requestsServiceUnavailableTotal.Inc(labels)
-		ms.requestsServiceUnavailableTotalAggregate.Inc(labels)
+		c.incAggregate(ms.requestsServiceUnavailableTotalAggregate, labels)
 	case ErrorTypeBusinessFailed:
 		ms.requestsBusinessFailedTotal.Inc(labels)
-		ms.requestsBusinessFailedTotalAggregate.Inc(labels)
+		c.incAggregate(ms.requestsBusinessFailedTotalAggregate, labels)
 	default:
 		ms.requestsUnknownFailedTotal.Inc(labels)
-		ms.requestsUnknownFailedTotalAggregate.Inc(labels)
+		c.incAggregate(ms.requestsUnknownFailedTotalAggregate, labels)
 	}
 }
 
 func (c *rpcCollector) reportRTMilliseconds(role string, labels map[string]string, cost int64) {
+	var common *rpcCommonMetrics
 	switch role {
 	case constant.SideProvider:
-		c.metricSet.provider.rtMilliseconds.Record(labels, float64(cost))
-		c.metricSet.provider.rtMillisecondsAggregate.Record(labels, float64(cost))
-		c.metricSet.provider.rtMillisecondsQuantiles.Record(labels, float64(cost))
+		common = &c.metricSet.provider.rpcCommonMetrics
 	case constant.SideConsumer:
-		c.metricSet.consumer.rtMilliseconds.Record(labels, float64(cost))
-		c.metricSet.consumer.rtMillisecondsAggregate.Record(labels, float64(cost))
-		c.metricSet.consumer.rtMillisecondsQuantiles.Record(labels, float64(cost))
+		common = &c.metricSet.consumer.rpcCommonMetrics
+	default:
+		return
+	}
+	common.rtMilliseconds.Record(labels, float64(cost))
+	if !c.aggregation.disabled {
+		common.rtMillisecondsAggregate.Record(labels, float64(cost))
+		common.rtMillisecondsQuantiles.Record(labels, float64(cost))
+	}
+}
+
+func (c *rpcCollector) incAggregate(vec metrics.AggregateCounterVec, labels map[string]string) {
+	if !c.aggregation.disabled {
+		vec.Inc(labels)
 	}
 }

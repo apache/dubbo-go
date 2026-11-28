@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsProm "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -125,7 +126,7 @@ func TestCompletionKindReachesCounters(t *testing.T) {
 			reg := prom.NewRegistry()
 			url, _ := common.NewURL("tri://127.0.0.1:20000/Fixture?application=fixture&registry.role=" + strconv.Itoa(role))
 			registry := metricsProm.NewPromMetricRegistry(reg, url)
-			c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
+			c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry, metrics.DefaultWindow())}
 			before := NewBeforeInvokeEvent(base.NewBaseInvoker(url), invocation.NewRPCInvocation("Call", nil, nil))
 			c.beforeInvokeHandler(before.(*metricsEvent))
 			completion := rpcerror.Completion{Err: errors.New("biz"), Known: true, Kind: rpcerror.KindBusiness, At: time.Now()}

@@ -91,14 +91,17 @@ func MergeObservabilityFilters(defaults, explicit, traceFilter string, metrics *
 				addTracing = false
 			}
 		}
-		if addTracing {
-			defaults += "," + traceFilter
-		}
+	}
+	if addTracing && traceFilter == constant.OTELServerTraceKey {
+		// Provider filters run inside the server span, including their logs.
+		defaults = traceFilter + "," + defaults
+	} else if addTracing && exemplars {
+		defaults += "," + traceFilter
 	}
 	if addMetrics {
 		defaults += "," + constant.MetricsFilterKey
 	}
-	if addTracing && !exemplars {
+	if addTracing && !exemplars && traceFilter != constant.OTELServerTraceKey {
 		defaults += "," + traceFilter
 	}
 	if explicit == "" {

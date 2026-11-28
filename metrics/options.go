@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -89,13 +90,23 @@ func WithHistogramBuckets(buckets []float64) Option {
 	}
 }
 
-// WithAggregationEnabled enables metrics aggregation, such as the
-// time-window based aggregation for counters and rt metrics.
+// WithAggregationEnabled enables the sliding-window RPC metrics: QPS, the
+// *_aggregate counters, the aggregated RT and the RT quantiles.
 //
-// Aggregation is disabled by default (applied at instance initialization).
+// Aggregation is enabled by default (applied at instance initialization).
 func WithAggregationEnabled() Option {
 	return func(opts *Options) {
 		enabled := true
+		opts.Metrics.Aggregation.Enabled = &enabled
+	}
+}
+
+// WithAggregationDisabled disables the sliding-window RPC metrics enabled by
+// default. The cumulative counters and RT metrics are not affected. Dashboards
+// that query QPS, *_aggregate metrics or RT quantiles show no data without them.
+func WithAggregationDisabled() Option {
+	return func(opts *Options) {
+		enabled := false
 		opts.Metrics.Aggregation.Enabled = &enabled
 	}
 }
@@ -207,6 +218,53 @@ func WithPrometheusGatewayPassword(password string) Option {
 func WithPrometheusGatewayInterval(interval time.Duration) Option {
 	return func(opts *Options) {
 		opts.Metrics.Prometheus.Pushgateway.PushInterval = int(interval.Seconds())
+	}
+}
+
+// WithOtlpExporterEnabled exports the metrics over OTLP every export
+// interval, in addition to the Prometheus endpoint and Pushgateway. Metric
+// names and labels are the same as on the Prometheus endpoint.
+//
+// The OTLP exporter is disabled by default (applied at instance initialization).
+func WithOtlpExporterEnabled() Option {
+	return func(opts *Options) {
+		enabled := true
+		opts.Metrics.Otlp.Enabled = &enabled
+	}
+}
+
+// WithOtlpEndpoint sets the host:port of the OTLP receiver, e.g. an
+// OpenTelemetry Collector at "otel-collector:4318" for HTTP or
+// "otel-collector:4317" for gRPC.
+//
+// The option has no default value and must be set when the OTLP exporter is enabled.
+func WithOtlpEndpoint(endpoint string) Option {
+	return func(opts *Options) {
+		opts.Metrics.Otlp.Endpoint = endpoint
+	}
+}
+
+// WithOtlpGrpc exports the metrics over OTLP/gRPC instead of OTLP/HTTP.
+func WithOtlpGrpc() Option {
+	return func(opts *Options) {
+		opts.Metrics.Otlp.Protocol = constant.OtlpMetricsProtocolGrpc
+	}
+}
+
+// WithOtlpInsecure disables TLS for the connection to the OTLP receiver.
+func WithOtlpInsecure() Option {
+	return func(opts *Options) {
+		opts.Metrics.Otlp.Insecure = true
+	}
+}
+
+// WithOtlpExportInterval sets the interval at which metrics are exported
+// over OTLP.
+//
+// The default (30 seconds) is applied at instance initialization.
+func WithOtlpExportInterval(interval time.Duration) Option {
+	return func(opts *Options) {
+		opts.Metrics.Otlp.ExportInterval = int(interval.Seconds())
 	}
 }
 

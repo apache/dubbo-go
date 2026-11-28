@@ -56,6 +56,16 @@ func TestTimeWindowCounterQPS(t *testing.T) {
 	})
 }
 
+func TestTimeWindowCounterQPSWithSubsecondPanes(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		counter := NewTimeWindowCounter(4, 2) // 500ms panes
+		counter.Inc()
+		if got := counter.QPS(); got != 2 {
+			t.Fatalf("QPS = %v, want 2", got)
+		}
+	})
+}
+
 func TestTimeWindowCounterCount(t1 *testing.T) {
 	tests := []struct {
 		name       string

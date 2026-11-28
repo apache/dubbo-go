@@ -19,7 +19,9 @@
 package base
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"slices"
 	"sync"
 )
@@ -31,6 +33,7 @@ import (
 )
 
 import (
+	cluster "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -95,9 +98,18 @@ func (invoker *BaseClusterInvoker) setStickyInvoker(v base.Invoker) {
 func (invoker *BaseClusterInvoker) CheckInvokers(invokers []base.Invoker, invocation base.Invocation) error {
 	if len(invokers) == 0 {
 		ip := common.GetLocalIp()
+		url := invoker.Directory.GetURL()
+		var service, registry string
+		if url != nil {
+			serviceURL := url
+			if url.SubURL != nil {
+				serviceURL = url.SubURL
+			}
+			service, registry = serviceURL.ServiceKey(), url.Location
+		}
 		return fmt.Errorf("failed to invoke the method %v. No provider available for the service %v from "+
 			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered",
-			invocation.MethodName(), invoker.Directory.GetURL().SubURL.Key(), invoker.Directory.GetURL().String(), ip, constant.Version)
+			invocation.MethodName(), service, registry, ip, constant.Version)
 	}
 	return nil
 }
@@ -211,4 +223,29 @@ func getOtherInvokers(invokers []base.Invoker, invoker base.Invoker) []base.Invo
 		}
 	}
 	return otherInvokers
+}
+
+// CheckInvokersWithContext reports routing failures to the current consumer
+// observer while preserving CheckInvokers for existing cluster implementations.
+func (invoker *BaseClusterInvoker) CheckInvokersWithContext(ctx context.Context, invokers []base.Invoker, invocation base.Invocation) error {
+	err := invoker.CheckInvokers(invokers, invocation)
+	if err != nil {
+		if observer := cluster.DiagnosticsFromContext(ctx, invocation); observer != nil {
+			observer.NoProvider()
+		}
+	}
+	return err
+}
+
+// DoSelectWithContext records the final peer after sticky/reselection logic.
+func (invoker *BaseClusterInvoker) DoSelectWithContext(ctx context.Context, lb loadbalance.LoadBalance, invocation base.Invocation, invokers, invoked []base.Invoker, attempt int) base.Invoker {
+	selected := invoker.DoSelect(lb, invocation, invokers, invoked)
+	if observer := cluster.DiagnosticsFromContext(ctx, invocation); observer != nil && selected != nil {
+		if url := selected.GetURL(); url != nil {
+			name := url.GetMethodParam(invocation.ActualMethodName(), constant.LoadbalanceKey,
+				url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadBalance))
+			observer.Select(attempt, name, net.JoinHostPort(url.Ip, url.Port))
+		}
+	}
+	return selected
 }

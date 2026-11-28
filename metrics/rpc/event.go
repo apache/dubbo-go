@@ -37,6 +37,7 @@ type metricsEvent struct {
 	costTime  time.Duration
 	role      string
 	labels    map[string]string
+	retry     bool // a consumer attempt that retries a failed attempt of the same call
 	err       error
 	exemplar  *rpcexemplar.IDs
 	name      metricsName
@@ -59,22 +60,29 @@ const (
 )
 
 func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
-	return newBeforeInvokeEvent(invoker, invocation)
+	return NewBeforeInvokeEventWithContext(context.Background(), invoker, invocation)
 }
 
 // NewBeforeInvokeEventWithExemplar snapshots the local RPC span for completion.
 func NewBeforeInvokeEventWithExemplar(ctx context.Context, invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
-	event := newBeforeInvokeEvent(invoker, invocation)
+	event := newBeforeInvokeEvent(ctx, invoker, invocation)
 	event.exemplar = rpcexemplar.ForInvocation(ctx, invocation, event.role)
 	return event
 }
 
-func newBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) *metricsEvent {
+// NewBeforeInvokeEventWithContext also records whether a cluster invoker
+// marked this attempt of invocation as a retry in ctx.
+func NewBeforeInvokeEventWithContext(ctx context.Context, invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
+	return newBeforeInvokeEvent(ctx, invoker, invocation)
+}
+
+func newBeforeInvokeEvent(ctx context.Context, invoker base.Invoker, invocation base.Invocation) *metricsEvent {
 	return &metricsEvent{
 		collector: activeCollector.Load(),
 		name:      BeforeInvoke,
 		role:      getRole(invoker.GetURL()),
 		labels:    buildLabels(invoker.GetURL(), invocation),
+		retry:     base.IsRetryAttempt(ctx, invocation),
 	}
 }
 
@@ -82,7 +90,7 @@ func newBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) *met
 // not retain or read a mutable invocation, result, URL, or session.
 func NewCompletionEvent(before metrics.MetricsEvent, duration time.Duration, c rpcerror.Completion) metrics.MetricsEvent {
 	start := before.(*metricsEvent)
-	event := &metricsEvent{collector: start.collector, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin, kind: c.Kind}
+	event := &metricsEvent{collector: start.collector, costTime: duration, role: start.role, labels: start.labels, retry: start.retry, err: c.Err, hasResult: c.Known, origin: c.Origin, kind: c.Kind}
 	if c.Known {
 		event.name = AfterInvoke
 		event.exemplar = start.exemplar

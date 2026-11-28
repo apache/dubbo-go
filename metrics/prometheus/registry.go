@@ -199,6 +199,9 @@ func (p *promMetricRegistry) Export() {
 	if p.url.GetParamBool(constant.PrometheusPushgatewayEnabledKey, false) {
 		p.exportPushgateway()
 	}
+	if p.url.GetParamBool(constant.OtlpMetricsEnabledKey, false) {
+		p.exportOtlp()
+	}
 }
 
 func (p *promMetricRegistry) httpHandler() http.Handler {

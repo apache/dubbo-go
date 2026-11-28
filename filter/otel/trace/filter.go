@@ -99,11 +99,14 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithInstrumentationVersion(constant.Version),
 	)
 
+	// The filter runs before the generic service filter resolves a $invoke
+	// call, so name the span and set rpc.method from the actual method.
+	methodName := invocation.ActualMethodName()
 	ctx, span := tracer.Start(
 		trace.ContextWithRemoteSpanContext(ctx, spanCtx),
-		invocation.ActualMethodName(),
+		methodName,
 		trace.WithSpanKind(trace.SpanKindServer),
-		trace.WithAttributes(rpcSpanAttributes(invoker.GetURL(), invocation.MethodName())...),
+		trace.WithAttributes(rpcSpanAttributes(invoker.GetURL(), methodName)...),
 	)
 	defer span.End()
 
@@ -115,7 +118,7 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	res := invoker.Invoke(ctx, invocation)
 
 	if res.Error() != nil {
-		span.SetStatus(codes.Error, res.Error().Error())
+		recordSpanError(span, res.Error(), errorType(res.Error()))
 	} else {
 		span.SetStatus(codes.Ok, codes.Ok.String())
 	}
@@ -168,7 +171,7 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	res := invoker.Invoke(ctx, invocation)
 
 	if res.Error() != nil {
-		span.SetStatus(codes.Error, res.Error().Error())
+		recordSpanError(span, res.Error(), errorType(res.Error()))
 	} else {
 		span.SetStatus(codes.Ok, codes.Ok.String())
 	}

@@ -20,6 +20,7 @@ package failback
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -39,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -172,7 +174,11 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-		logger.Errorf("[Cluster][Failback] check invokers failed, method=%s service=%s err=%v",
+		// The error text can hold remote data, so the span gets the method and
+		// service only. The log line keeps the error.
+		spanErr := fmt.Errorf("[Cluster][Failback] check invokers failed, method=%s service=%s",
+			invocation.MethodName(), invoker.GetURL().Service())
+		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr), "[Cluster][Failback] check invokers failed, method=%s service=%s err=%v",
 			invocation.MethodName(), invoker.GetURL().Service(), err)
 		return &result.RPCResult{}
 	}
@@ -198,7 +204,10 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)
 		invoker.enqueueInitialRetry(ctx, timerTask)
 
-		logger.Errorf("[Cluster][Failback] invoke failed, method=%s service=%s err=%v",
+		// The error text can hold remote data, so the span gets the method and
+		// service only. The log line keeps the error.
+		spanErr := fmt.Errorf("[Cluster][Failback] invoke failed, method=%s service=%s", methodName, url.Service())
+		logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr), "[Cluster][Failback] invoke failed, method=%s service=%s err=%v",
 			methodName, url.Service(), res.Error().Error())
 		// ignore
 		return &result.RPCResult{}
@@ -252,12 +261,12 @@ func (invoker *failbackClusterInvoker) enqueueInitialRetry(ctx context.Context, 
 	}
 
 	if invoker.taskList.Len() >= invoker.failbackTasks {
-		logger.Warnf("[Cluster][Failback] task list full, len=%d", invoker.taskList.Len())
+		logger.CtxWarnf(ctx, "[Cluster][Failback] task list full, len=%d", invoker.taskList.Len())
 		return
 	}
 
 	if err := invoker.taskList.Put(retryTask); err != nil {
-		logger.Warnf("[Cluster][Failback] put initial task failed, err=%v", err)
+		logger.CtxWarnf(ctx, "[Cluster][Failback] put initial task failed, err=%v", err)
 	}
 }
 

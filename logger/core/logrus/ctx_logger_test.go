@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 )
 
@@ -32,10 +33,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 func TestLogrusCtxLogger_CtxInfof_WithTrace(t *testing.T) {
@@ -270,4 +277,28 @@ func TestLogrusCtxLogger_RecordErrorToSpan_Disabled(t *testing.T) {
 	// Check span events should be empty
 	events := recordedSpan.Events()
 	assert.Empty(t, events)
+}
+
+func TestLogrusCtxLogger_RecordErrorToSpan_SpanError(t *testing.T) {
+	var buf bytes.Buffer
+	lg := logrus.New()
+	lg.SetOutput(&buf)
+	lg.SetFormatter(&logrus.JSONFormatter{})
+	ctxLogger := NewLogrusCtxLogger(&dubbogoLogger.DubboLogger{Logger: lg}, true)
+
+	spanRecorder := tracetest.NewSpanRecorder()
+	ctx, span := trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder)).Tracer("test").Start(context.Background(), "test-span")
+	ctxLogger.CtxErrorf(logger.WithSpanError(ctx, errors.New("rejected, method=Greet")),
+		"rejected, url=%s", "tri://user:secret@127.0.0.1:20000/Greet")
+	span.End()
+
+	assert.Contains(t, buf.String(), "rejected, url=tri://user:secret@127.0.0.1:20000/Greet", "the log line keeps the full message")
+
+	spans := spanRecorder.Ended()
+	require.Len(t, spans, 1)
+	assert.Equal(t, codes.Error, spans[0].Status().Code)
+	assert.Equal(t, "rejected, method=Greet", spans[0].Status().Description)
+	events := spans[0].Events()
+	require.Len(t, events, 1)
+	assert.Contains(t, events[0].Attributes, attribute.String("exception.message", "rejected, method=Greet"))
 }

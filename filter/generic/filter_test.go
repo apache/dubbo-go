@@ -80,12 +80,14 @@ func TestFilter_Invoke(t *testing.T) {
 	normalInvocation := invocation.NewRPCInvocation("Hello", []any{"arg1"}, make(map[string]any))
 
 	ctx, ids := genericExemplarContext(t, normalInvocation, trace.SpanKindClient)
+	ctx = base.WithRetryAttempt(ctx, normalInvocation)
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(2)
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Not(normalInvocation)).DoAndReturn(
 		func(ctx context.Context, invocation base.Invocation) result.Result {
 			assert.Equal(t, &ids, rpcexemplar.ForInvocation(ctx, invocation, constant.SideConsumer))
+			assert.True(t, base.IsRetryAttempt(ctx, invocation))
 			assert.Nil(t, rpcexemplar.ForInvocation(ctx, normalInvocation, constant.SideConsumer))
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
@@ -98,6 +100,31 @@ func TestFilter_Invoke(t *testing.T) {
 
 	r := filter.Invoke(ctx, mockInvoker, normalInvocation)
 	assert.NotNil(t, r)
+}
+
+// TestFilter_InvokeKeepsRetryAttempt keeps a retried call counted as a retry
+// when the filter forwards a translated invocation, in both branches.
+func TestFilter_InvokeKeepsRetryAttempt(t *testing.T) {
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault))
+	for name, inv := range map[string]*invocation.RPCInvocation{
+		"typed method":   invocation.NewRPCInvocation("Hello", []any{"arg1"}, make(map[string]any)),
+		"generic method": invocation.NewRPCInvocation(constant.Generic, []any{"hello", []string{"java.lang.String"}, []hessian.Object{"arg1"}}, make(map[string]any)),
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockInvoker := mock.NewMockInvoker(ctrl)
+			mockInvoker.EXPECT().GetURL().Return(invokeUrl).AnyTimes()
+			mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Not(inv)).DoAndReturn(
+				func(ctx context.Context, forwarded base.Invocation) result.Result {
+					assert.True(t, base.IsRetryAttempt(ctx, forwarded))
+					return &result.RPCResult{}
+				})
+
+			(&genericFilter{}).Invoke(base.WithRetryAttempt(context.Background(), inv), mockInvoker, inv)
+		})
+	}
 }
 
 // test isMakingAGenericCall branch
@@ -117,12 +144,14 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	}, make(map[string]any))
 
 	ctx, ids := genericExemplarContext(t, genericInvocation, trace.SpanKindClient)
+	ctx = base.WithRetryAttempt(ctx, genericInvocation)
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(3)
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, invocation base.Invocation) result.Result {
 			assert.Equal(t, &ids, rpcexemplar.ForInvocation(ctx, invocation, constant.SideConsumer))
+			assert.True(t, base.IsRetryAttempt(ctx, invocation))
 			assert.Nil(t, rpcexemplar.ForInvocation(ctx, genericInvocation, constant.SideConsumer))
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()

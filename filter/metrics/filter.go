@@ -57,7 +57,7 @@ func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invoc
 	if mf.captureExemplars {
 		before = rpc.NewBeforeInvokeEventWithExemplar(ctx, invoker, invocation)
 	} else {
-		before = rpc.NewBeforeInvokeEvent(invoker, invocation)
+		before = rpc.NewBeforeInvokeEventWithContext(ctx, invoker, invocation)
 	}
 	metrics.Publish(before)
 	start := time.Now()

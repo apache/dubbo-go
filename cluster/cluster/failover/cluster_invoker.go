@@ -28,10 +28,12 @@ import (
 )
 
 import (
+	cluster "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -50,13 +52,14 @@ func newFailoverClusterInvoker(directory directory.Directory) protocolbase.Invok
 func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	var (
 		res       result.Result
+		retryErr  error
 		invoked   []protocolbase.Invoker
 		providers []string
 		ivk       protocolbase.Invoker
 	)
 
 	invokers := invoker.Directory.List(invocation)
-	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
+	if err := invoker.CheckInvokersWithContext(ctx, invokers, invocation); err != nil {
 		return &result.RPCResult{Err: err}
 	}
 
@@ -73,20 +76,35 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 			}
 
 			invokers = invoker.Directory.List(invocation)
-			if err := invoker.CheckInvokers(invokers, invocation); err != nil {
+			if err := invoker.CheckInvokersWithContext(ctx, invokers, invocation); err != nil {
 				return &result.RPCResult{Err: err}
 			}
+			if retryErr != nil {
+				if observer := cluster.DiagnosticsFromContext(ctx, invocation); observer != nil {
+					observer.Retry(i+1, retryErr)
+				}
+				retryErr = nil
+			}
 		}
-		ivk = invoker.DoSelect(loadBalance, invocation, invokers, invoked)
+		ivk = invoker.DoSelectWithContext(ctx, loadBalance, invocation, invokers, invoked, i+1)
 		if ivk == nil {
 			continue
 		}
 		invoked = append(invoked, ivk)
+		// The metrics filter counts an attempt of the invocation marked in its
+		// context as a retry. Attempts of the same invocation inside an enclosing
+		// retry, such as a group failover inside a multi-group failover, inherit
+		// the mark; other RPCs started with this context do not match it.
+		attemptCtx := ctx
+		if len(invoked) > 1 {
+			attemptCtx = protocolbase.WithRetryAttempt(ctx, invocation)
+		}
 		// DO INVOKE
 		ivkURL := ivk.GetURL().Key()
-		res = ivk.Invoke(ctx, invocation)
+		res = ivk.Invoke(attemptCtx, invocation)
 		if res.Error() != nil && !isBizError(res.Error()) {
 			providers = append(providers, ivkURL)
+			retryErr = res.Error()
 			continue
 		}
 		return res
@@ -95,14 +113,23 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invokerSvc := invoker.GetURL().Service()
 	invokerUrl := invoker.Directory.GetURL()
 	if ivk == nil {
-		logger.Errorf("[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
+		if observer := cluster.DiagnosticsFromContext(ctx, invocation); observer != nil {
+			observer.NoProvider()
+		}
+		logger.CtxErrorf(ctx, "[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
 		return &result.RPCResult{
 			Err: fmt.Errorf("failed to invoke the method %s of the service %s .No provider is available because can't connect server",
 				methodName, invokerSvc),
 		}
 	}
 
-	logger.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
+	// The registry URL can hold credentials and the error text can hold remote
+	// data, so the span gets the method, service and counts only. The log line
+	// keeps the rest.
+	spanErr := fmt.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d",
+		methodName, invokerSvc, retries, len(providers), len(invokers))
+	logger.CtxErrorf(dubboLogger.WithSpanError(ctx, spanErr),
+		"[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
 		methodName, invokerSvc, retries, len(providers), len(invokers), invokerUrl, ip, constant.Version, res.Error().Error())
 
 	return res

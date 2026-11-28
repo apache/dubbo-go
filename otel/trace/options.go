@@ -52,6 +52,11 @@ func WithStdoutExporter() Option {
 	}
 }
 
+// WithJaegerExporter exports spans with the jaeger exporter.
+//
+// Deprecated: the OpenTelemetry jaeger exporter module is no longer maintained.
+// Jaeger accepts OTLP, so use WithOtlpHttpExporter or WithOtlpGrpcExporter with
+// Jaeger's OTLP endpoint instead.
 func WithJaegerExporter() Option {
 	return func(opts *Options) {
 		opts.Otel.TracingConfig.Exporter = "jaeger"
