@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal/grpcserialization"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -59,9 +60,15 @@ type Client struct {
 
 // NewClient creates a new gRPC client.
 func NewClient(url *common.URL) (*Client, error) {
+	grpcserialization.Freeze()
 	clientConfInitOnce.Do(func() {
 		clientInit(url)
 	})
+
+	if err := GetProtocol().(*GrpcProtocol).PrepareCodec(url, "consumer"); err != nil {
+		return nil, err
+	}
+	subtype := clientSubtype(url)
 
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
@@ -85,7 +92,7 @@ func NewClient(url *common.URL) (*Client, error) {
 		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
-			grpc.CallContentSubtype(clientConf.ContentSubType),
+			grpc.CallContentSubtype(subtype),
 			grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 			grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
 		),
@@ -141,6 +148,20 @@ func NewClient(url *common.URL) (*Client, error) {
 		ClientConn: conn,
 		invoker:    reflect.ValueOf(invoker),
 	}, nil
+}
+
+// clientSubtype returns the subtype selected for this reference. The choice made
+// from the local configuration before discovery wins; merged provider parameters
+// only apply to callers that build a client without a reference.
+func clientSubtype(url *common.URL) string {
+	if name, ok := consumerSerialization(url); ok {
+		return name
+	}
+	name := url.GetParam("serialization", clientConf.ContentSubType)
+	if name == "protobuf" {
+		name = "proto"
+	}
+	return name
 }
 
 func clientInit(url *common.URL) {

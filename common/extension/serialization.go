@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/internal/grpcserialization"
 	"dubbo.apache.org/dubbo-go/v3/serialization"
 )
 
@@ -46,6 +47,8 @@ func serializationKey(protocol, name string) string {
 	return protocol + "/" + name
 }
 
+// RegisterSerialization registers a factory descriptor. Independent gRPC
+// descriptors must be registered during init, before starting any RPCs.
 func RegisterSerialization(reg serialization.Registration) error {
 	serializationRegistrationMu.Lock()
 	defer serializationRegistrationMu.Unlock()
@@ -92,6 +95,14 @@ func RegisterSerialization(reg serialization.Registration) error {
 		return fmt.Errorf("serialization %s: Dubbo ID on another protocol", reg.Name)
 	}
 
+	if _, exists := serializations.Get(serializationKey(reg.Protocol, reg.Name)); exists {
+		return fmt.Errorf("serialization %s/%s already registered", reg.Protocol, reg.Name)
+	}
+	if reg.Protocol == "grpc" && reg.Name != "proto" && reg.Name != "json" {
+		if err := grpcserialization.Register(reg.Name); err != nil {
+			return err
+		}
+	}
 	if !serializations.RegisterIfAbsent(serializationKey(reg.Protocol, reg.Name), reg) {
 		return fmt.Errorf("serialization %s/%s already registered", reg.Protocol, reg.Name)
 	}

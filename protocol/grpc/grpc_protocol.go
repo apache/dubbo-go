@@ -89,6 +89,10 @@ func NewGRPCProtocol() *GrpcProtocol {
 // Export gRPC service for remote invocation
 func (gp *GrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
+	if err := gp.PrepareCodec(url, "provider"); err != nil {
+		logger.Errorf("[GRPC] codec initialization failed: %v", err)
+		return nil
+	}
 	serviceKey := url.ServiceKey()
 	exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
 	gp.SetExporterMap(serviceKey, exporter)
