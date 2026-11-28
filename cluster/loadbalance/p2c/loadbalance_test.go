@@ -18,6 +18,7 @@
 package p2c
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -28,6 +29,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -42,18 +44,72 @@ func TestDefaultRnd(t *testing.T) {
 	})
 
 	t.Run("n == 2", func(t *testing.T) {
-		i, j := defaultRnd(2)
-		assert.Equal(t, 0, i)
-		assert.Equal(t, 1, j)
+		// Either order must come up, or Select always prefers the same invoker.
+		seen := map[[2]int]int{}
+		for range 1000 {
+			i, j := defaultRnd(2)
+			seen[[2]int{i, j}]++
+		}
+		assert.Len(t, seen, 2)
+		assert.Positive(t, seen[[2]int{0, 1}])
+		assert.Positive(t, seen[[2]int{1, 0}])
 	})
 
 	t.Run("n > 2", func(t *testing.T) {
 		n := 5
-		i, j := defaultRnd(n)
-		assert.True(t, i >= 0 && i < n)
-		assert.True(t, j >= 0 && j < n)
-		assert.NotEqual(t, i, j)
+		seen := map[[2]int]int{}
+		for range 5000 {
+			i, j := defaultRnd(n)
+			assert.True(t, i >= 0 && i < n)
+			assert.True(t, j >= 0 && j < n)
+			assert.NotEqual(t, i, j)
+			seen[[2]int{i, j}]++
+		}
+		// Every ordered pair of distinct indices comes up.
+		assert.Len(t, seen, n*(n-1))
 	})
+}
+
+// TestSelectTwoInvokersSpreads selects with the default random picker and checks
+// that both of two invokers get a fair share when p2c has no metrics to compare
+// or the metrics are equal.
+func TestSelectTwoInvokersSpreads(t *testing.T) {
+	lb := &p2cLoadBalance{randomPicker: defaultRnd}
+	invocation := protoinvoc.NewRPCInvocation("TestMethod", []any{}, nil)
+	url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+	url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	ivkArr := []base.Invoker{base.NewBaseInvoker(url0), base.NewBaseInvoker(url1)}
+
+	for _, tc := range []struct {
+		name      string
+		remaining any
+		err       error
+	}{
+		{name: "no metrics", err: metrics.ErrMetricsNotFound},
+		{name: "equal metrics", remaining: uint64(10)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			m := metrics.NewMockMetrics(ctrl)
+			setLocalMetrics(t, m)
+			m.EXPECT().
+				GetMethodMetrics(gomock.Any(), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+				AnyTimes().
+				Return(tc.remaining, tc.err)
+
+			const total = 2000
+			counts := map[string]int{}
+			for range total {
+				counts[lb.Select(ivkArr, invocation).GetURL().Location]++
+			}
+			// Expected 1000 each; the band is more than 13 standard deviations wide.
+			for _, ivk := range ivkArr {
+				got := counts[ivk.GetURL().Location]
+				assert.Greater(t, got, total*35/100, "invoker %s", ivk.GetURL().Location)
+				assert.Less(t, got, total*65/100, "invoker %s", ivk.GetURL().Location)
+			}
+		})
+	}
 }
 
 func setLocalMetrics(t *testing.T, localMetrics metrics.Metrics) {
@@ -67,17 +123,15 @@ func setLocalMetrics(t *testing.T, localMetrics metrics.Metrics) {
 }
 
 func TestLoadBalance(t *testing.T) {
-	// Create P2C load balancer with deterministic randomPicker for repeatable tests.
-	// Always returns fixed indices (0,1) except when n <= 1.
-	lb := newP2CLoadBalance(func(n int) (i, j int) {
+	// Build the load balancer directly with a deterministic randomPicker, so the
+	// test does not depend on whether the singleton already exists.
+	// The picker returns (0, 1) except when n <= 1.
+	lb := &p2cLoadBalance{randomPicker: func(n int) (i, j int) {
 		if n <= 1 {
 			return 0, 0
 		}
-		if n == 2 {
-			return 0, 1
-		}
 		return 0, 1
-	})
+	}}
 	invocation := protoinvoc.NewRPCInvocation("TestMethod", []any{}, nil)
 
 	t.Run("no invokers", func(t *testing.T) {
@@ -332,4 +386,34 @@ func TestLoadBalance(t *testing.T) {
 			assert.Equal(t, ivkArr[1].GetURL().String(), ivk.GetURL().String())
 		})
 	})
+}
+
+// TestNewP2CLoadBalanceConcurrentFirstCall calls the factory from several
+// goroutines at once, as concurrent first requests do. Run with -race.
+func TestNewP2CLoadBalanceConcurrentFirstCall(t *testing.T) {
+	originalInstance := instance
+	once = sync.Once{}
+	instance = nil
+	t.Cleanup(func() {
+		once = sync.Once{}
+		instance = originalInstance
+		if originalInstance != nil {
+			once.Do(func() {})
+		}
+	})
+
+	const n = 16
+	results := make([]loadbalance.LoadBalance, n)
+	var wg sync.WaitGroup
+	for k := range n {
+		wg.Go(func() {
+			results[k] = newP2CLoadBalance(nil)
+		})
+	}
+	wg.Wait()
+
+	assert.NotNil(t, results[0])
+	for _, lb := range results {
+		assert.Same(t, results[0], lb)
+	}
 }
