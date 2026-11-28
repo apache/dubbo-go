@@ -22,6 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,18 +39,62 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsprom "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
+
+func TestRPCCollectorExemplarStartup(t *testing.T) {
+	const childMode = "DUBBO_RPC_EXEMPLAR_STARTUP"
+	mode := os.Getenv(childMode)
+	if mode == "" {
+		for _, mode := range []string{"enabled", "exemplars-disabled", "histograms-disabled", "unsupported-registry"} {
+			t.Run(mode, func(t *testing.T) {
+				// Metrics.Init runs once per process.
+				args := []string{"-test.run=^TestRPCCollectorExemplarStartup$", "-test.count=1"}
+				if dir := os.Getenv("GOCOVERDIR"); dir != "" && testing.CoverMode() != "" {
+					// Merge the child process coverage into the parent test report.
+					args = append(args, "-test.gocoverdir="+dir)
+				}
+				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+				defer cancel()
+				cmd := exec.CommandContext(ctx, os.Args[0], args...)
+				cmd.Env = append(os.Environ(), childMode+"="+mode)
+				output, err := cmd.CombinedOutput()
+				require.NoError(t, err, "%s", output)
+			})
+		}
+		return
+	}
+
+	require.False(t, rpcexemplar.Enabled())
+	url := histogramTestURL(common.CONSUMER)
+	url.SetParam(constant.HistogramEnabledKey, strconv.FormatBool(mode != "histograms-disabled"))
+	url.SetParam(constant.HistogramExemplarsKey, strconv.FormatBool(mode != "exemplars-disabled"))
+	metrics.SetRegistry(url.Protocol, func(config *common.URL) metrics.MetricRegistry {
+		registry := metricsprom.NewPromMetricRegistry(prom.NewRegistry(), config)
+		if mode == "unsupported-registry" {
+			return &legacyHistogramRegistry{MetricRegistry: registry}
+		}
+		return registry
+	})
+	metrics.Init(url)
+	require.NotNil(t, activeCollector.Load())
+	assert.Equal(t, mode == "enabled", rpcexemplar.Enabled())
+}
 
 func TestRPCHistogramOpts(t *testing.T) {
 	defaults := []float64{0.1, 0.3, 0.5, 1, 3, 5, 10}
@@ -352,17 +398,34 @@ func assertHistogramIdentities(t *testing.T, family *dto.MetricFamily, identitie
 }
 
 func TestRPCHistogramObservationTerminals(t *testing.T) {
-	for _, expire := range []bool{false, true} {
-		t.Run(fmt.Sprintf("expired=%t", expire), func(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		exemplars bool
+		expire    bool
+	}{
+		{"completed with exemplar", true, false},
+		{"completed without exemplar support", false, false},
+		{"expired", true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			reg := prom.NewRegistry()
 			url := histogramTestURL(common.CONSUMER)
+			url.SetParam(constant.HistogramExemplarsKey, strconv.FormatBool(tc.exemplars))
 			p := metricsprom.NewPromMetricRegistry(reg, url)
 			c := newRPCCollector(p, url)
-			before := recordingEvent(t, c, common.CONSUMER)
-			c.record(before)
-			assertNoHistogramSamples(t, reg)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+			tracer := sdktrace.NewTracerProvider().Tracer("test")
+			ctx, span := tracer.Start(ctx, "Call", trace.WithSpanKind(trace.SpanKindClient))
+			defer span.End()
+			inv := invocation.NewRPCInvocation("Call", nil, nil)
+			ctx, release := rpcexemplar.WithSpan(ctx, inv, span, trace.SpanKindClient)
+			t.Cleanup(release)
+			before := NewBeforeInvokeEventWithExemplar(ctx, base.NewBaseInvoker(url), inv).(*metricsEvent)
+			before.collector = c
+			require.NotNil(t, before.exemplar)
+			c.record(before)
+			assertNoHistogramSamples(t, reg)
 			_, observation := rpcerror.WithObservation(ctx)
 			done := make(chan struct{})
 			observation.OnComplete(func(completion rpcerror.Completion) {
@@ -371,7 +434,9 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			})
 			observation.BeginAsync(ctx, time.Minute)
 			observation.FinishInvoke(nil, true)
-			if expire {
+			release() // The latency callback runs after the tracing filter returns.
+			span.End()
+			if tc.expire {
 				cancel()
 			} else {
 				observation.Complete(nil)
@@ -384,7 +449,7 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			observation.Complete(nil)
 			observation.Complete(errors.New("late failure"))
 			assert.Zero(t, scalarSnapshot(t, reg)["dubbo_consumer_requests_processing_total"])
-			if expire {
+			if tc.expire {
 				assertNoHistogramSamples(t, reg)
 				assert.Zero(t, scalarSnapshot(t, reg)["dubbo_consumer_requests_total"])
 				return
@@ -392,6 +457,20 @@ func TestRPCHistogramObservationTerminals(t *testing.T) {
 			h := metricFamily(t, reg, consumerRTHistogram.Name).Metric[0].GetHistogram()
 			require.Equal(t, uint64(1), h.GetSampleCount())
 			require.InDelta(t, 0.0005, h.GetSampleSum(), 1e-12)
+			exemplar := h.GetBucket()[0].GetExemplar()
+			if tc.exemplars {
+				require.NotNil(t, exemplar)
+				labels := make(map[string]string)
+				for _, label := range exemplar.GetLabel() {
+					labels[label.GetName()] = label.GetValue()
+				}
+				require.Equal(t, map[string]string{
+					"trace_id": span.SpanContext().TraceID().String(),
+					"span_id":  span.SpanContext().SpanID().String(),
+				}, labels)
+			} else {
+				require.Nil(t, exemplar)
+			}
 		})
 	}
 }

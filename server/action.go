@@ -408,18 +408,7 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	if svcOpts.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
 	}
-	if metrics.Enable != nil && *metrics.Enable {
-		filters += fmt.Sprintf(",%s", constant.MetricsFilterKey)
-	}
-	if tracing.Enable != nil && *tracing.Enable {
-		// First, as in Dubbo Java, so the other provider filters run inside the
-		// server span and their logs can carry its trace.
-		filters = constant.OTELServerTraceKey + "," + filters
-	}
-	// Provider URLs are consumed directly by protocolwrapper. Normalize the
-	// suppression markers here because provider filter chains do not pass through
-	// the consumer-side MergeValue path that removes them.
-	filters = commonCfg.MergeValue(filters, "", "")
+	filters = commonCfg.MergeObservabilityFilters(filters, "", constant.OTELServerTraceKey, metrics, tracing)
 	if svcOpts.internal {
 		filters = withoutProviderObservabilityFilters(filters)
 	}

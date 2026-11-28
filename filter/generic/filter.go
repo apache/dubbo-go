@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sync"
 )
 
 import (
@@ -35,15 +34,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
-)
-
-var (
-	genericOnce sync.Once
-	instance    *genericFilter
 )
 
 func init() {
@@ -51,15 +46,12 @@ func init() {
 }
 
 // genericFilter ensures the structs are converted to maps, this filter is for consumer
-type genericFilter struct{}
+type genericFilter struct {
+	captureExemplars bool
+}
 
 func newGenericFilter() filter.Filter {
-	if instance == nil {
-		genericOnce.Do(func() {
-			instance = &genericFilter{}
-		})
-	}
-	return instance
+	return &genericFilter{captureExemplars: rpcexemplar.Enabled()}
 }
 
 // Invoke turns the parameters to map for generic method
@@ -130,7 +122,11 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
 
-		return invoker.Invoke(base.TransferRetryAttempt(ctx, inv, newIvc), newIvc)
+		ctx = base.TransferRetryAttempt(ctx, inv, newIvc)
+		if f.captureExemplars {
+			ctx = rpcexemplar.Rebind(ctx, inv, newIvc)
+		}
+		return invoker.Invoke(ctx, newIvc)
 	} else if isMakingAGenericCall(invoker, inv) {
 		// Arguments format: [methodName string, types []string, args []hessian.Object]
 		oldArgs := inv.Arguments()
@@ -157,7 +153,11 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
 
-		return invoker.Invoke(base.TransferRetryAttempt(ctx, inv, newIvc), newIvc)
+		ctx = base.TransferRetryAttempt(ctx, inv, newIvc)
+		if f.captureExemplars {
+			ctx = rpcexemplar.Rebind(ctx, inv, newIvc)
+		}
+		return invoker.Invoke(ctx, newIvc)
 	}
 	return invoker.Invoke(ctx, inv)
 }

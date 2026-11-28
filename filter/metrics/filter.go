@@ -29,21 +29,21 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/metrics/rpc"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// must initialize before using the filter and after loading configuration
-var metricFilterInstance *metricsFilter
-
 func init() {
 	extension.SetFilter(constant.MetricsFilterKey, newFilter)
 }
 
 // metricsFilter will report RPC metrics to the metrics bus and implements the filter.Filter interface
-type metricsFilter struct{}
+type metricsFilter struct {
+	captureExemplars bool
+}
 
 // Invoke publish the BeforeInvokeEvent and AfterInvokeEvent to metrics bus
 func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
@@ -54,7 +54,12 @@ func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invoc
 	} else {
 		ctx, observation = rpcerror.WithObservation(ctx)
 	}
-	before := rpc.NewBeforeInvokeEventWithContext(ctx, invoker, invocation)
+	var before metrics.MetricsEvent
+	if mf.captureExemplars {
+		before = rpc.NewBeforeInvokeEventWithExemplar(ctx, invoker, invocation)
+	} else {
+		before = rpc.NewBeforeInvokeEventWithContext(ctx, invoker, invocation)
+	}
 	metrics.Publish(before)
 	start := time.Now()
 	observation.OnComplete(func(c rpcerror.Completion) {
@@ -85,13 +90,6 @@ func (mf *metricsFilter) OnResponse(ctx context.Context, res result.Result, invo
 	return res
 }
 
-// newFilter creates a new metricsFilter instance.
-//
-// It's lazy initialization,
-// and make sure that the configuration had been loaded before invoking this method.
 func newFilter() filter.Filter {
-	if metricFilterInstance == nil {
-		metricFilterInstance = &metricsFilter{}
-	}
-	return metricFilterInstance
+	return &metricsFilter{captureExemplars: rpcexemplar.Enabled()}
 }

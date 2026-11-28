@@ -23,7 +23,6 @@ import (
 	"reflect"
 	"slices"
 	"strings"
-	"sync"
 )
 
 import (
@@ -38,15 +37,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	dubboHessian "dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
-)
-
-var (
-	serviceGenericOnce sync.Once
-	serviceGeneric     *genericServiceFilter
 )
 
 func init() {
@@ -54,15 +49,12 @@ func init() {
 }
 
 // genericServiceFilter is for Server
-type genericServiceFilter struct{}
+type genericServiceFilter struct {
+	captureExemplars bool
+}
 
 func newGenericServiceFilter() filter.Filter {
-	if serviceGeneric == nil {
-		serviceGenericOnce.Do(func() {
-			serviceGeneric = &genericServiceFilter{}
-		})
-	}
-	return serviceGeneric
+	return &genericServiceFilter{captureExemplars: rpcexemplar.Enabled()}
 }
 func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
 	if !inv.IsGenericInvocation() {
@@ -116,6 +108,9 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 		newIvc.SetAttribute(constant.GenericVariadicCallSliceKey, true)
 	}
 
+	if f.captureExemplars {
+		ctx = rpcexemplar.Rebind(ctx, inv, newIvc)
+	}
 	return invoker.Invoke(ctx, newIvc)
 }
 

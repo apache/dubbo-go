@@ -208,3 +208,54 @@ func TestEnsureApplicationAttribute(t *testing.T) {
 		assert.Equal(t, constant.DefaultDubboApp, application.Name)
 	})
 }
+
+func TestMergeObservabilityFilters(t *testing.T) {
+	enabled := true
+	config := global.DefaultMetricsConfig()
+	config.Enable = &enabled
+	config.Histogram.Enabled = &enabled
+	tracing := &global.OtelTraceConfig{Enable: &enabled}
+	for _, scenario := range []struct {
+		name      string
+		exemplars bool
+		explicit  string
+		want      string
+	}{
+		{"legacy", false, "", "custom,metrics,otelClientTrace"},
+		{"automatic", true, "", "custom,otelClientTrace,metrics"},
+		{"explicit order", true, "metrics,otelClientTrace", "custom,metrics,otelClientTrace"},
+		{"explicit position", true, "metrics,default,otelClientTrace", "metrics,custom,otelClientTrace"},
+		{"explicit trace", true, "otelClientTrace,other", "custom,otelClientTrace,metrics,other"},
+		{"explicit metrics before default", true, "metrics,other,default", "otelClientTrace,metrics,other,custom"},
+		{"suppress tracer", true, "-otelClientTrace", "custom,metrics"},
+		{"suppress metrics", true, "otelClientTrace,-metrics", "custom,otelClientTrace"},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			config.Histogram.Exemplars = scenario.exemplars
+			assert.Equal(t, scenario.want, MergeObservabilityFilters("custom", scenario.explicit, constant.OTELClientTraceKey, config, tracing))
+		})
+	}
+}
+
+func TestMergeObservabilityFiltersProvider(t *testing.T) {
+	enabled := true
+	metrics := global.DefaultMetricsConfig()
+	metrics.Enable = &enabled
+	metrics.Histogram.Enabled = &enabled
+	tracing := &global.OtelTraceConfig{Enable: &enabled}
+
+	for _, scenario := range []struct {
+		name, configured, want string
+		exemplars              bool
+	}{
+		{"tracing wraps provider filters", "custom", "otelServerTrace,custom,metrics", false},
+		{"exemplars keep tracing first", "custom", "otelServerTrace,custom,metrics", true},
+		{"explicit order is preserved", "metrics,otelServerTrace", "metrics,otelServerTrace", true},
+		{"tracing can be suppressed", "custom,-otelServerTrace", "custom,metrics", true},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			metrics.Histogram.Exemplars = scenario.exemplars
+			assert.Equal(t, scenario.want, MergeObservabilityFilters(scenario.configured, "", constant.OTELServerTraceKey, metrics, tracing))
+		})
+	}
+}

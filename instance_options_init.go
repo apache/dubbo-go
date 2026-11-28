@@ -276,6 +276,7 @@ func metricsURL(rc *InstanceOptions) *common.URL {
 	u.SetParam(constant.ConfigCenterEnabledKey, strconv.FormatBool(*mc.EnableConfigCenter))
 	if mc.Histogram != nil {
 		u.SetParam(constant.HistogramEnabledKey, strconv.FormatBool(*mc.Histogram.Enabled))
+		u.SetParam(constant.HistogramExemplarsKey, strconv.FormatBool(mc.Histogram.Exemplars))
 		bounds := make([]string, len(mc.Histogram.Buckets))
 		for i, bound := range mc.Histogram.Buckets {
 			bounds[i] = strconv.FormatFloat(bound, 'g', -1, 64)

@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"go.uber.org/mock/gomock"
 )
 
@@ -38,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
+	"dubbo.apache.org/dubbo-go/v3/internal/rpcexemplar"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
@@ -87,7 +90,7 @@ func (s *MockHelloService) NestedStringVariadic(args ...[]string) ([][]string, e
 }
 
 func TestServiceFilter_Invoke(t *testing.T) {
-	filter := &genericServiceFilter{}
+	filter := newGenericServiceFilter()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -318,7 +321,7 @@ func TestServiceFilter_InvokeRejectsMalformedArgs(t *testing.T) {
 }
 
 func TestServiceFilter_InvokeWithEmptyGenericModeUsesDefault(t *testing.T) {
-	filter := &genericServiceFilter{}
+	filter := &genericServiceFilter{captureExemplars: true}
 	service := &MockHelloService{}
 	ivkURL := common.NewURLWithOptions(
 		common.WithProtocol("test-empty-generic"),
@@ -345,20 +348,24 @@ func TestServiceFilter_InvokeWithEmptyGenericModeUsesDefault(t *testing.T) {
 			constant.GenericKey: "",
 		})
 
+	ctx, ids := genericExemplarContext(t, inv, trace.SpanKindServer)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(ivkURL).AnyTimes()
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, outgoing base.Invocation) result.Result {
+		func(ctx context.Context, outgoing base.Invocation) result.Result {
+			assert.Equal(t, &ids, rpcexemplar.ForInvocation(ctx, outgoing, constant.SideProvider))
+			assert.Nil(t, rpcexemplar.ForInvocation(ctx, inv, constant.SideProvider))
 			assert.Equal(t, "Hello", outgoing.MethodName())
 			assert.Equal(t, "world", outgoing.Arguments()[0])
 			return &result.RPCResult{Rest: "hello, world"}
 		},
 	)
 
-	res := filter.Invoke(context.Background(), mockInvoker, inv)
+	res := filter.Invoke(ctx, mockInvoker, inv)
 
 	require.NoError(t, res.Error())
 	assert.Equal(t, "hello, world", res.Result())

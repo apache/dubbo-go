@@ -57,11 +57,23 @@ func rpcHistogramOpts(raw string) *metrics.HistogramOpts {
 	return opts
 }
 
-func (c *rpcCollector) reportRTHistogram(role string, labels map[string]string, seconds float64) {
-	if c.histogramRegistry == nil || (role != constant.SideConsumer && role != constant.SideProvider) {
+func (c *rpcCollector) reportRTHistogram(event *metricsEvent) {
+	if c.histogramRegistry == nil || (event.role != constant.SideConsumer && event.role != constant.SideProvider) {
 		return
 	}
-	c.histogramRegistry.HistogramWithOptions(rpcHistogramID(role, labels), c.histogramOpts).Observe(seconds)
+	histogram := c.histogramRegistry.HistogramWithOptions(rpcHistogramID(event.role, event.labels), c.histogramOpts)
+	event.observeHistogram(histogram)
+}
+
+func (e *metricsEvent) observeHistogram(histogram metrics.ObservableMetric) {
+	seconds := e.costTime.Seconds()
+	if e.exemplar != nil {
+		if observer, ok := histogram.(metrics.ExemplarObserver); ok {
+			observer.ObserveWithExemplar(seconds, e.exemplar.TraceID.String(), e.exemplar.SpanID.String())
+			return
+		}
+	}
+	histogram.Observe(seconds)
 }
 
 func rpcHistogramID(role string, labels map[string]string) *metrics.MetricId {

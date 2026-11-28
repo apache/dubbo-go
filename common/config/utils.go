@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -73,6 +74,64 @@ func Verify(s any) error {
 		return errors.New(strings.Join(slice, ","))
 	}
 	return nil
+}
+
+// MergeObservabilityFilters resolves the configured chain and inserts automatic
+// filters while preserving the order of explicitly configured filters.
+func MergeObservabilityFilters(defaults, explicit, traceFilter string, metrics *global.MetricsConfig, tracing *global.OtelTraceConfig) string {
+	addMetrics := metrics.Enable != nil && *metrics.Enable
+	addTracing := tracing.Enable != nil && *tracing.Enable
+	exemplars := metrics.RPCExemplarsEnabled()
+	if exemplars {
+		for name := range strings.SplitSeq(defaults+","+explicit, ",") {
+			switch strings.TrimSpace(name) {
+			case constant.MetricsFilterKey:
+				addMetrics = false
+			case traceFilter:
+				addTracing = false
+			}
+		}
+	}
+	if addTracing && traceFilter == constant.OTELServerTraceKey {
+		// Provider filters run inside the server span, including their logs.
+		defaults = traceFilter + "," + defaults
+	} else if addTracing && exemplars {
+		defaults += "," + traceFilter
+	}
+	if addMetrics {
+		defaults += "," + constant.MetricsFilterKey
+	}
+	if addTracing && !exemplars && traceFilter != constant.OTELServerTraceKey {
+		defaults += "," + traceFilter
+	}
+	if explicit == "" {
+		explicit, defaults = defaults, ""
+	}
+	chain := MergeValue(explicit, "", defaults)
+	if !exemplars || addTracing == addMetrics {
+		return chain
+	}
+	return orderAutomaticObservabilityFilter(chain, traceFilter, addTracing)
+}
+
+func orderAutomaticObservabilityFilter(chain, traceFilter string, addTracing bool) string {
+	filters := strings.Split(chain, ",")
+	traceIndex := slices.IndexFunc(filters, func(filter string) bool { return strings.TrimSpace(filter) == traceFilter })
+	metricsIndex := slices.IndexFunc(filters, func(filter string) bool { return strings.TrimSpace(filter) == constant.MetricsFilterKey })
+	if metricsIndex < 0 || traceIndex <= metricsIndex {
+		return chain
+	}
+	// Only move the automatic filter after expanding the default placeholder.
+	if addTracing {
+		name := filters[traceIndex]
+		copy(filters[metricsIndex+1:traceIndex+1], filters[metricsIndex:traceIndex])
+		filters[metricsIndex] = name
+	} else {
+		name := filters[metricsIndex]
+		copy(filters[metricsIndex:traceIndex], filters[metricsIndex+1:traceIndex+1])
+		filters[traceIndex] = name
+	}
+	return strings.Join(filters, ",")
 }
 
 func MergeValue(str1, str2, def string) string {
