@@ -19,6 +19,7 @@ package iwrr
 
 import (
 	"math/rand"
+	"slices"
 	"sync"
 	"time"
 )
@@ -29,8 +30,8 @@ import (
 )
 
 type iwrrEntry struct {
-	weight  int64
-	invoker base.Invoker
+	weight int64
+	index  int
 
 	next *iwrrEntry
 }
@@ -70,57 +71,104 @@ func (item *iwrrQueue) empty() bool {
 	return item.head == nil
 }
 
-// InterleavedweightedRoundRobin struct
+// interleavedweightedRoundRobin picks from a fixed list of invokers.
 type interleavedweightedRoundRobin struct {
-	current *iwrrQueue
-	next    *iwrrQueue
-	step    int64
-	mu      sync.Mutex
+	invokers  []base.Invoker
+	scheduler iwrrScheduler
 }
 
 func NewInterleavedweightedRoundRobin(invokers []base.Invoker, invocation base.Invocation) *interleavedweightedRoundRobin {
-	iwrrp := new(interleavedweightedRoundRobin)
-	iwrrp.current = NewIwrrQueue()
-	iwrrp.next = NewIwrrQueue()
+	picker := &interleavedweightedRoundRobin{invokers: slices.Clone(invokers)}
+	picker.scheduler.update(len(invokers), picker.invokerAt, invocation)
+	return picker
+}
 
-	size := uint64(len(invokers))
-	offset := rand.Uint64() % size //NOSONAR
-	step := int64(0)
-	now := time.Now().Unix()
-	for idx := range size {
-		invoker := invokers[(idx+offset)%size]
-		weight := loadbalance.GetWeightAt(invoker, invocation, now)
-		step = gcdInt(step, weight)
-		iwrrp.current.push(&iwrrEntry{
-			invoker: invoker,
-			weight:  weight,
-		})
-	}
-	iwrrp.step = step
-
-	return iwrrp
+func (iwrr *interleavedweightedRoundRobin) invokerAt(index int) base.Invoker {
+	return iwrr.invokers[index]
 }
 
 func (iwrr *interleavedweightedRoundRobin) Pick(invocation base.Invocation) base.Invoker {
-	iwrr.mu.Lock()
-	defer iwrr.mu.Unlock()
+	return iwrr.scheduler.pick(len(iwrr.invokers), iwrr.invokerAt, invocation)
+}
 
-	if iwrr.current.empty() {
-		iwrr.current, iwrr.next = iwrr.next, iwrr.current
+// The scheduler stores positions in the candidate list so cached state does
+// not hold invokers that may have been replaced since the previous selection.
+type iwrrScheduler struct {
+	mu            sync.Mutex
+	current, next iwrrQueue
+	step          int64
+	weights       []int64
+	entries       []iwrrEntry
+}
+
+func (s *iwrrScheduler) pick(count int, invokerAt func(int) base.Invoker, invocation base.Invocation) base.Invoker {
+	if count == 0 {
+		return nil
 	}
 
-	entry := iwrr.current.pop()
-	entry.weight -= iwrr.step
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
+	s.update(count, invokerAt, invocation)
+	if s.current.empty() {
+		s.current, s.next = s.next, s.current
+	}
+
+	entry := s.current.pop()
+	entry.weight -= s.step
 	if entry.weight > 0 {
-		iwrr.current.push(entry)
+		s.current.push(entry)
 	} else {
-		weight := max(loadbalance.GetWeight(entry.invoker, invocation), 0)
-		entry.weight = weight
-		iwrr.next.push(entry)
+		// A queued zero-weight candidate belongs to the all-zero fallback.
+		entry.weight = max(s.weights[entry.index], 1)
+		s.next.push(entry)
+	}
+	return invokerAt(entry.index)
+}
+
+func (s *iwrrScheduler) update(count int, invokerAt func(int) base.Invoker, invocation base.Invocation) {
+	changed := len(s.weights) != count
+	if changed {
+		s.weights = make([]int64, count)
+		s.entries = make([]iwrrEntry, count)
 	}
 
-	return entry.invoker
+	now := time.Now().Unix()
+	for index := range s.weights {
+		weight := loadbalance.GetWeightAt(invokerAt(index), invocation, now)
+		changed = changed || s.weights[index] != weight
+		s.weights[index] = weight
+	}
+	if changed {
+		s.reset()
+	}
+}
+
+func (s *iwrrScheduler) reset() {
+	s.current, s.next = iwrrQueue{}, iwrrQueue{}
+	s.step = 0
+	for _, weight := range s.weights {
+		s.step = gcdInt(s.step, weight)
+	}
+
+	allZero := s.step == 0
+	if allZero {
+		s.step = 1
+	}
+
+	offset := rand.Intn(len(s.weights)) //NOSONAR
+	for i := range s.entries {
+		index := (i + offset) % len(s.entries)
+		weight := s.weights[index]
+		if allZero {
+			weight = 1
+		}
+		if weight > 0 {
+			entry := &s.entries[index]
+			*entry = iwrrEntry{index: index, weight: weight}
+			s.current.push(entry)
+		}
+	}
 }
 
 func gcdInt(a, b int64) int64 {

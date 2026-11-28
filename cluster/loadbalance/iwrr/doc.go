@@ -17,5 +17,6 @@
 
 // Package iwrr implements Interleaved Weighted Round Robin load balance strategy.
 // Interleaved Weighted Round Robin: https://en.wikipedia.org/wiki/Weighted_round_robin#Interleaved_WRR
-// It needs O(n log maxWeight) time and O(n) memory to initialize and O(1) time to generate a random number.
+// A selection scans candidate weights before an O(1) queue step. A new
+// candidate view also sorts the candidates by provider identity.
 package iwrr
