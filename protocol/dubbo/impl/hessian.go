@@ -72,7 +72,10 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	return bs, nil
 }
 
-func encodeResponse(encoder *hessian.Encoder, p DubboPackage, response *ResponsePayload) error {
+type valueEncoder interface{ Encode(any) error }
+type valueDecoder interface{ Decode() (any, error) }
+
+func encodeResponse(encoder valueEncoder, p DubboPackage, response *ResponsePayload) error {
 	if p.Header.ResponseStatus != Response_OK {
 		if response.Exception != nil {
 			return encodeHessianValue(encoder, response.Exception.Error(), "response exception message")
@@ -99,7 +102,7 @@ func encodeResponse(encoder *hessian.Encoder, p DubboPackage, response *Response
 	return nil
 }
 
-func encodeResponsePayload(encoder *hessian.Encoder, response *ResponsePayload, resWithException, resValue, resNullValue int32) error {
+func encodeResponsePayload(encoder valueEncoder, response *ResponsePayload, resWithException, resValue, resNullValue int32) error {
 	if response.Exception != nil {
 		return encodeExceptionResponse(encoder, response.Exception, resWithException)
 	}
@@ -119,7 +122,10 @@ func responseTypes(withAttachments bool) (int32, int32, int32) {
 	return RESPONSE_WITH_EXCEPTION, RESPONSE_VALUE, RESPONSE_NULL_VALUE
 }
 
-func encodeResponseException(encoder *hessian.Encoder, exception error) error {
+func encodeResponseException(encoder valueEncoder, exception error) error {
+	if generic, ok := encoder.(interface{ EncodeException(error) error }); ok {
+		return generic.EncodeException(exception)
+	}
 	var value any
 	switch ex := exception.(type) {
 	case *hessian.GenericException:
@@ -134,14 +140,14 @@ func encodeResponseException(encoder *hessian.Encoder, exception error) error {
 	return encodeHessianValue(encoder, value, "response exception")
 }
 
-func encodeExceptionResponse(encoder *hessian.Encoder, exception error, responseType int32) error {
+func encodeExceptionResponse(encoder valueEncoder, exception error, responseType int32) error {
 	if err := encodeHessianValue(encoder, responseType, "response exception type"); err != nil {
 		return err
 	}
 	return encodeResponseException(encoder, exception)
 }
 
-func encodeHessianValue(encoder *hessian.Encoder, value any, description string) error {
+func encodeHessianValue(encoder valueEncoder, value any, description string) error {
 	if err := encoder.Encode(value); err != nil {
 		return fmt.Errorf("failed to encode %s: %w", description, err)
 	}
@@ -149,38 +155,44 @@ func encodeHessianValue(encoder *hessian.Encoder, value any, description string)
 }
 
 func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
+	if err := encodeRequest(encoder, p); err != nil {
+		return nil, err
+	}
+	return encoder.Buffer(), nil
+}
+func encodeRequest(encoder valueEncoder, p DubboPackage) error {
 	service := p.Service
 	request := EnsureRequestPayload(p.Body)
 	if err := encodeHessianValue(encoder, DEFAULT_DUBBO_PROTOCOL_VERSION, "dubbo protocol version"); err != nil {
-		return nil, err
+		return err
 	}
 	if err := encodeHessianValue(encoder, service.Path, "service path"); err != nil {
-		return nil, err
+		return err
 	}
 	if err := encodeHessianValue(encoder, service.Version, "service version"); err != nil {
-		return nil, err
+		return err
 	}
 	if err := encodeHessianValue(encoder, service.Method, "service method"); err != nil {
-		return nil, err
+		return err
 	}
 
 	args, ok := request.Params.([]any)
 
 	if !ok {
 		logger.Infof("[Dubbo] request args, params=%v", request.Params)
-		return nil, fmt.Errorf("@params is not of type: []any")
+		return fmt.Errorf("@params is not of type: []any")
 	}
 	types, err := GetArgsTypeList(args)
 	if err != nil {
-		return nil, fmt.Errorf(" PackRequest(args:%+v): %w", args, err)
+		return fmt.Errorf(" PackRequest(args:%+v): %w", args, err)
 	}
 	err = encodeHessianValue(encoder, types, "argument types")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, v := range args {
 		if e := encoder.Encode(v); e != nil {
-			return nil, fmt.Errorf("failed to encode argument: %v: %w", v, e)
+			return fmt.Errorf("failed to encode argument: %v: %w", v, e)
 		}
 	}
 
@@ -197,7 +209,7 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	}
 
 	err = encoder.Encode(request.Attachments)
-	return encoder.Buffer(), err
+	return err
 }
 
 // https://github.com/apache/dubbo/blob/dubbo-2.7.1/dubbo-common/src/main/java/org/apache/dubbo/common/Version.java#L96
@@ -236,10 +248,12 @@ func version2Int(version string) int {
 }
 
 func unmarshalRequestBody(body []byte, p *DubboPackage) error {
+	return unmarshalRequestFrom(hessian.NewDecoder(body), p)
+}
+func unmarshalRequestFrom(decoder valueDecoder, p *DubboPackage) error {
 	if p.Body == nil {
 		p.SetBody(make([]any, 7))
 	}
-	decoder := hessian.NewDecoder(body)
 	var (
 		err                                                     error
 		dubboVersion, target, serviceVersion, method, argsTypes any
@@ -279,7 +293,11 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	}
 	req[4] = argsTypes
 
-	ats := hessian.DescRegex.FindAllString(argsTypes.(string), -1)
+	descriptor, ok := argsTypes.(string)
+	if !ok {
+		return fmt.Errorf("invalid argument descriptor %T", argsTypes)
+	}
+	ats := hessian.DescRegex.FindAllString(descriptor, -1)
 	var arg any
 	for range ats {
 		arg, err = decoder.Decode()
@@ -309,7 +327,9 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 }
 
 func unmarshalResponseBody(body []byte, p *DubboPackage) error {
-	decoder := hessian.NewDecoder(body)
+	return unmarshalResponseFrom(hessian.NewDecoder(body), p)
+}
+func unmarshalResponseFrom(decoder valueDecoder, p *DubboPackage) error {
 	rspType, err := decoder.Decode()
 	if p.Body == nil {
 		p.SetBody(&ResponsePayload{})

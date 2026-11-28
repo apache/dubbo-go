@@ -55,6 +55,11 @@ type Options struct {
 	port int
 	// protocol is the protocol used to export the MetadataService, default value is dubbo.
 	protocol string
+	// dubboCodec is the remoting codec configured on the shared Dubbo endpoint.
+	dubboCodec string
+	// serializationConfigs is the serialization configuration scope owned by the
+	// shared Dubbo endpoint.
+	serializationConfigs map[string]any
 }
 
 // defaultOptions returns a default Options instance.
@@ -127,6 +132,21 @@ func WithPort(port int) Option {
 func WithMetadataProtocol(protocol string) Option {
 	return func(options *Options) {
 		options.protocol = protocol
+	}
+}
+
+// WithDubboCodec sets the remoting codec name shared with the Dubbo endpoint.
+func WithDubboCodec(codec string) Option {
+	return func(options *Options) {
+		options.dubboCodec = codec
+	}
+}
+
+// WithSerializationConfigs sets the serialization configuration scope shared
+// with the Dubbo endpoint.
+func WithSerializationConfigs(configs map[string]any) Option {
+	return func(options *Options) {
+		options.serializationConfigs = configs
 	}
 }
 

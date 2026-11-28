@@ -20,6 +20,8 @@ package dubbo
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"sort"
 	"sync"
 	"time"
 )
@@ -115,25 +117,28 @@ func (dp *DubboProtocol) Destroy() {
 }
 
 func (dp *DubboProtocol) openServer(url *common.URL) {
-	_, ok := dp.serverMap[url.Location]
-	if !ok {
-		_, ok := dp.ExporterMap().Load(url.ServiceKey())
-		if !ok {
-			panic("[DubboProtocol]" + url.Key() + "is not existing")
+	dp.serverLock.Lock()
+	defer dp.serverLock.Unlock()
+	if server, ok := dp.serverMap[url.Location]; ok {
+		if err := compatibleEndpointCodec(server.URL, url); err != nil {
+			_ = remoting.ReleaseCodec(url)
+			panic(err)
 		}
-
-		dp.serverLock.Lock()
-		_, ok = dp.serverMap[url.Location]
-		if !ok {
-			handler := func(invocation *invocation.RPCInvocation) result.RPCResult {
-				return doHandleRequest(invocation)
-			}
-			srv := remoting.NewExchangeServer(url, getty.NewServer(url, handler))
-			dp.serverMap[url.Location] = srv
-			srv.Start()
+		if err := remoting.ReuseCodec(url, server.URL); err != nil {
+			panic(err)
 		}
-		dp.serverLock.Unlock()
+		return
 	}
+	if _, ok := dp.ExporterMap().Load(url.ServiceKey()); !ok {
+		panic("[DubboProtocol]" + url.Key() + "is not existing")
+	}
+	handler := func(call *invocation.RPCInvocation) result.RPCResult { return doHandleRequest(call) }
+	// Legacy Export callers may not have run PrepareCodec. Capture the listener
+	// binding only after Getty has prepared it.
+	transport := getty.NewServer(url, handler)
+	srv := remoting.NewExchangeServer(url.Clone(), transport)
+	dp.serverMap[url.Location] = srv
+	srv.Start()
 }
 
 // GetProtocol get a single dubbo protocol.
@@ -177,18 +182,19 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) result.RPCResult {
 }
 
 func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
-	clientTmp, ok := exchangeClientMap.Load(url.Location)
+	cacheKey := exchangeCacheKey(url)
+	clientTmp, ok := exchangeClientMap.Load(cacheKey)
 	if !ok {
 		var exchangeClientTmp *remoting.ExchangeClient
 		func() {
 			// lock for NewExchangeClient and store into map.
-			_, loaded := exchangeLock.LoadOrStore(url.Location, 0x00)
+			_, loaded := exchangeLock.LoadOrStore(cacheKey, 0x00)
 			// unlock
-			defer exchangeLock.Delete(url.Location)
+			defer exchangeLock.Delete(cacheKey)
 			if loaded {
 				// retry for 5 times.
 				for i := range 5 {
-					if clientTmp, ok = exchangeClientMap.Load(url.Location); ok {
+					if clientTmp, ok = exchangeClientMap.Load(cacheKey); ok {
 						break
 					} else {
 						// if cannot get, sleep a while.
@@ -205,7 +211,7 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 			}), 3*time.Second, false)
 			// input store
 			if exchangeClientTmp != nil {
-				exchangeClientMap.Store(url.Location, exchangeClientTmp)
+				exchangeClientMap.Store(cacheKey, exchangeClientTmp)
 			}
 		}()
 		if exchangeClientTmp != nil {
@@ -237,4 +243,80 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 		ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.TracingRemoteSpanCtx), spanCtx)
 	}
 	return ctx
+}
+
+func (dp *DubboProtocol) PrepareCodec(url *common.URL, side string) error {
+	if side == "provider" {
+		dp.serverLock.Lock()
+		defer dp.serverLock.Unlock()
+		if server, ok := dp.serverMap[url.Location]; ok {
+			if err := compatibleEndpointCodec(server.URL, url); err != nil {
+				return err
+			}
+			return remoting.ReuseCodec(url, server.URL)
+		}
+	}
+	return remoting.PrepareCodec(url)
+}
+
+func exchangeCacheKey(url *common.URL) string {
+	if binding, ok := url.GetAttribute(remoting.CodecAttribute); ok {
+		return fmt.Sprintf("%s/%p", url.Location, binding)
+	}
+	return url.Location
+}
+
+func (dp *DubboProtocol) ReleaseCodec(url *common.URL, _ string) error {
+	return remoting.ReleaseCodec(url)
+}
+
+// Recheck under the listener lock when concurrently prepared services export.
+func compatibleEndpointCodec(listener, url *common.URL) error {
+	oldConfig, _ := listener.GetAttribute(extension.SerializationConfigAttribute)
+	newConfig, _ := url.GetAttribute(extension.SerializationConfigAttribute)
+	// Legacy exports omit the snapshot; high-level exports create an empty map
+	// when no codec configuration is active. Both use the default codec scope.
+	if configs, ok := oldConfig.(map[string]any); ok && len(configs) == 0 {
+		oldConfig = nil
+	}
+	if configs, ok := newConfig.(map[string]any); ok && len(configs) == 0 {
+		newConfig = nil
+	}
+	if fmt.Sprintf("%p", oldConfig) != fmt.Sprintf("%p", newConfig) {
+		return fmt.Errorf("dubbo endpoint %s has a different codec configuration scope; use a separate endpoint", url.Location)
+	}
+	if listener.GetParam(constant.SerializationKey, constant.Hessian2Serialization) != url.GetParam(constant.SerializationKey, constant.Hessian2Serialization) {
+		return fmt.Errorf("dubbo endpoint %s has a different serialization; use a separate endpoint", url.Location)
+	}
+	if !reflect.DeepEqual(effectiveReceiveSet(listener), effectiveReceiveSet(url)) {
+		return fmt.Errorf("dubbo endpoint %s has a different serialization receive set; use a separate endpoint", url.Location)
+	}
+	if listener.GetParam("codec", "dubbo") != url.GetParam("codec", "dubbo") {
+		return fmt.Errorf("dubbo endpoint %s has a different codec", url.Location)
+	}
+	return nil
+}
+
+// effectiveReceiveSet resolves the serialization IDs an endpoint actually
+// accepts. An omitted list falls back to the default provider policy, so an
+// absent list and an explicit one naming the same formats stay compatible.
+func effectiveReceiveSet(url *common.URL) []string {
+	names, explicit := extension.AcceptedSerializations(url)
+	if !explicit {
+		names = []string{constant.Hessian2Serialization, url.GetParam(constant.SerializationKey, constant.Hessian2Serialization)}
+	}
+	seen := make(map[string]struct{}, len(names))
+	set := make([]string, 0, len(names))
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		set = append(set, name)
+	}
+	sort.Strings(set)
+	return set
 }

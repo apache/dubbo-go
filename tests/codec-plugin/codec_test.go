@@ -262,11 +262,20 @@ func TestUnknownAndDisabledPlugin(t *testing.T) {
 
 func TestBuiltinsAndCorruptPayload(t *testing.T) {
 	defer extension.GetProtocol(constant.TriProtocol).Destroy()
-	for _, format := range []string{"hessian2", "msgpack", "corrupt"} {
+	defer extension.GetProtocol("dubbo").Destroy()
+	for _, format := range []string{"hessian2", "msgpack", "default-dubbo", "corrupt"} {
 		for _, wire := range []string{"grpc", "triple"} {
+			if format == "default-dubbo" && wire == "triple" {
+				continue
+			}
 			t.Run(format+"/"+wire, func(t *testing.T) {
 				port := freePort(t)
+				scheme := "tri"
 				serverProtocol := protocol.WithTriple()
+				if format == "default-dubbo" {
+					scheme = "dubbo"
+					serverProtocol = protocol.WithDubbo()
+				}
 				serverOpts := []server.ServerOption{server.WithServerProtocol(serverProtocol, protocol.WithIp("127.0.0.1"), protocol.WithPort(port))}
 				if format == "corrupt" {
 					serverOpts = append(serverOpts, server.WithExtension(tagOption("RIGHT:")))
@@ -278,7 +287,7 @@ func TestBuiltinsAndCorruptPayload(t *testing.T) {
 				serviceOpts := []server.ServiceOption{server.WithNotRegister(), server.WithGroup(strconv.Itoa(port))}
 				if format == "corrupt" {
 					serviceOpts = append(serviceOpts, server.WithSerialization("test-tagged-json"))
-				} else {
+				} else if format != "default-dubbo" {
 					serviceOpts = append(serviceOpts, server.WithSerialization(format))
 				}
 				if err = srv.RegisterService(&Echo{}, serviceOpts...); err != nil {
@@ -286,7 +295,10 @@ func TestBuiltinsAndCorruptPayload(t *testing.T) {
 				}
 				export(t, srv)
 				ready(t, port)
-				clientOpts := []client.ClientOption{client.WithClientURL("tri://127.0.0.1:" + strconv.Itoa(port)), client.WithClientProtocol(protocol.WithTriple(triple.WithWireProtocol(wire)))}
+				clientOpts := []client.ClientOption{client.WithClientURL(scheme + "://127.0.0.1:" + strconv.Itoa(port)), client.WithClientProtocol(protocol.WithTriple(triple.WithWireProtocol(wire)))}
+				if scheme == "dubbo" {
+					clientOpts = append(clientOpts, client.WithClientProtocolDubbo())
+				}
 				if format == "corrupt" {
 					clientOpts = append(clientOpts, client.WithExtension(tagOption("WRONG:")))
 				}
@@ -297,7 +309,7 @@ func TestBuiltinsAndCorruptPayload(t *testing.T) {
 				refOpts := []client.ReferenceOption{client.WithGroup(strconv.Itoa(port)), client.WithIDL(constant.NONIDL), client.WithRetries(0)}
 				if format == "corrupt" {
 					refOpts = append(refOpts, client.WithSerialization("test-tagged-json"))
-				} else {
+				} else if format != "default-dubbo" {
 					refOpts = append(refOpts, client.WithSerialization(format))
 				}
 				conn, err := cli.Dial("codec.plugin.Echo", refOpts...)
