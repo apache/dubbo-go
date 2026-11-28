@@ -128,7 +128,9 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 			result.SetError(err)
 		}
 	case constant.CallClientStream:
-		stream, err := ti.clientManager.callClientStream(ctx, method)
+		stream, err := openStream(ctx, invocation, func(ctx context.Context) (any, error) {
+			return ti.clientManager.callClientStream(ctx, method)
+		})
 		if err != nil {
 			result.SetError(err)
 		}
@@ -137,13 +139,17 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 		if inRawLen != 1 {
 			panic(fmt.Sprintf("Wrong parameter Values number for CallServerStream, want 1, but got %d", inRawLen))
 		}
-		stream, err := ti.clientManager.callServerStream(ctx, method, inRaw[0])
+		stream, err := openStream(ctx, invocation, func(ctx context.Context) (any, error) {
+			return ti.clientManager.callServerStream(ctx, method, inRaw[0])
+		})
 		if err != nil {
 			result.Err = err
 		}
 		result.SetResult(stream)
 	case constant.CallBidiStream:
-		stream, err := ti.clientManager.callBidiStream(ctx, method)
+		stream, err := openStream(ctx, invocation, func(ctx context.Context) (any, error) {
+			return ti.clientManager.callBidiStream(ctx, method)
+		})
 		if err != nil {
 			result.Err = err
 		}

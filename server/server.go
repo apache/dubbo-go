@@ -499,6 +499,7 @@ func (s *Server) exportInternalServices(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		newSvcOpts.internal = true
 		service.svcOpts = newSvcOpts
 		service.info = sd.Info
 		services = append(services, service)

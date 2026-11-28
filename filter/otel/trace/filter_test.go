@@ -621,6 +621,7 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 	invocation.EXPECT().MethodName().Return("otel").AnyTimes()
 	invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).Return().AnyTimes()
 	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
+	invocation.EXPECT().GetAttribute(constant.CallTypeKey).Return(nil, false).AnyTimes()
 
 	tests := []struct {
 		name string
@@ -730,6 +731,7 @@ func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
 	invocation.EXPECT().MethodName().Return("GetOrder").AnyTimes()
 	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
 	invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).AnyTimes()
+	invocation.EXPECT().GetAttribute(constant.CallTypeKey).Return(nil, false).AnyTimes()
 
 	filter := &otelClientFilter{
 		Propagators:      propagation.TraceContext{},
@@ -839,6 +841,7 @@ func invokeRPCAttributeFilter(t *testing.T, kind trace.SpanKind, serviceURL *com
 	invocation.EXPECT().ActualMethodName().Return("GetOrder").AnyTimes()
 	invocation.EXPECT().MethodName().Return("GetOrder").AnyTimes()
 	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
+	invocation.EXPECT().GetAttribute(constant.CallTypeKey).Return(nil, false).AnyTimes()
 
 	var got result.Result
 	switch kind {

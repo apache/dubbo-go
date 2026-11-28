@@ -75,6 +75,14 @@ These use the same labels as the existing RPC metrics (see
 or other high-cardinality labels. Total failure is incremented once alongside
 one category; Network/Codec failures do not also increment Unknown.
 
+Framework services exported by dubbo-go itself, the gRPC health check
+(`grpc.health.v1.Health`) and server reflection, are not application RPCs. The
+provider runs them without the metrics filter and the OTel server trace filter,
+as Dubbo Java runs its Triple builtin services outside the provider filter
+chain, so health watch streams and probes do not distort provider RT and
+failure rates. A dubbo-go client that calls these services itself still
+records them on the consumer side.
+
 Window Gauges reuse the current aggregation implementation. Idle-window refresh
 is a separate concern tracked by #3765, not implemented or required as a code
 dependency here. This change does not claim those windows refresh on scrape.
@@ -293,6 +301,22 @@ the callback contract and belongs in a separately designed completion change.
 The original callback Cause behavior is preserved, even where it differs from
 the decoded response error used for monitoring.
 
+## Streaming calls
+
+A Triple streaming call (client, server or bidi streaming) returns to the
+consumer as soon as its stream is open, so the consumer records it when the
+stream ends instead: the stream reaches its end, a receive or send fails, the
+consumer closes the receive side, or the call's context ends, whichever comes
+first. RT is the duration of the stream, the outcome and failure category come
+from its final status, and `requests_processing_total` counts the stream while
+it is open. A stream that fails to open is recorded at once. A stream that is
+never closed and whose context never ends is never recorded, just as its HTTP/2
+stream is never released. The client span of the OpenTelemetry trace filter
+ends the same way.
+
+A provider's streaming handler runs inside the filter chain until the stream
+ends, so the provider already records the whole stream.
+
 ## Verification
 
 Default focused tests (no external services):
@@ -347,8 +371,6 @@ or Linux/WSL; an old MinGW runtime is not a reliable race toolchain.
 
 - Provider request decoding and response encoding can occur outside the
   Metrics Filter; there is no general Provider wire-error accounting.
-- Triple later streaming messages do not share the unary Filter completion
-  boundary and are not claimed as full streaming coverage.
 - Session-only errors without a trustworthy request ID are not attributed to
   all requests sharing the connection.
 - Atomic PendingResponse claiming prevents duplicate delivery, and retired

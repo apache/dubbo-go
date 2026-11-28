@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal/grpcserialization"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -82,6 +83,7 @@ func (s *Server) SetBufferSize(n int) {
 
 // Start gRPC server with @url
 func (s *Server) Start(url *common.URL) {
+	grpcserialization.Freeze()
 	var (
 		addr string
 		err  error
