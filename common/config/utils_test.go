@@ -236,3 +236,26 @@ func TestMergeObservabilityFilters(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeObservabilityFiltersProvider(t *testing.T) {
+	enabled := true
+	metrics := global.DefaultMetricsConfig()
+	metrics.Enable = &enabled
+	metrics.Histogram.Enabled = &enabled
+	tracing := &global.OtelTraceConfig{Enable: &enabled}
+
+	for _, scenario := range []struct {
+		name, configured, want string
+		exemplars              bool
+	}{
+		{"tracing wraps provider filters", "custom", "otelServerTrace,custom,metrics", false},
+		{"exemplars keep tracing first", "custom", "otelServerTrace,custom,metrics", true},
+		{"explicit order is preserved", "metrics,otelServerTrace", "metrics,otelServerTrace", true},
+		{"tracing can be suppressed", "custom,-otelServerTrace", "custom,metrics", true},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			metrics.Histogram.Exemplars = scenario.exemplars
+			assert.Equal(t, scenario.want, MergeObservabilityFilters(scenario.configured, "", constant.OTELServerTraceKey, metrics, tracing))
+		})
+	}
+}
