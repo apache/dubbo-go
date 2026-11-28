@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -32,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestFilterInvokeIgnored(t *testing.T) {
@@ -49,22 +51,45 @@ func TestFilterInvokeIgnored(t *testing.T) {
 	assert.NoError(t, result.Error())
 }
 
+// countingInvoker counts the calls that reach the service.
+type countingInvoker struct {
+	*base.BaseInvoker
+	calls int
+}
+
+func (c *countingInvoker) Invoke(context.Context, base.Invocation) result.Result {
+	c.calls++
+	return &result.RPCResult{Rest: "OK"}
+}
+
+// TestFilterInvokeConfigureError checks that an invalid execute.limit fails the
+// call with an error naming the configuration, without invoking the service.
 func TestFilterInvokeConfigureError(t *testing.T) {
-	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []any{"OK"}, make(map[string]any))
+	for _, tc := range []struct {
+		name   string
+		key    string
+		target string
+	}{
+		{name: "service level", key: constant.ExecuteLimitKey, target: "greet.GreetService"},
+		{name: "method level", key: "methods.Greet." + constant.ExecuteLimitKey, target: "greet.GreetService#Greet"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			invoc := invocation.NewRPCInvocation("Greet", []any{"OK"}, make(map[string]any))
+			invokeURL := common.NewURLWithOptions(
+				common.WithParams(url.Values{}),
+				common.WithParamsValue(constant.InterfaceKey, "greet.GreetService"),
+				common.WithParamsValue(tc.key, "13a"),
+			)
+			invoker := &countingInvoker{BaseInvoker: base.NewBaseInvoker(invokeURL)}
 
-	invokeUrl := common.NewURLWithOptions(
-		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.InterfaceKey, methodName),
-		common.WithParamsValue(constant.ExecuteLimitKey, "13a"),
-	)
+			res := newFilter().Invoke(context.Background(), invoker, invoc)
 
-	limitFilter := newFilter()
-
-	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
-
-	assert.NotNil(t, result)
-	assert.NoError(t, result.Error())
+			require.Error(t, res.Error())
+			assert.Equal(t, "the configuration of execute.limit is invalid, target="+tc.target, res.Error().Error())
+			assert.NotContains(t, res.Error().Error(), "13a", "the configured value stays out of the consumer error")
+			assert.Zero(t, invoker.calls)
+		})
+	}
 }
 
 func TestFilterInvoke(t *testing.T) {
