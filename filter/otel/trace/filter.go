@@ -143,8 +143,38 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(rpcSpanAttributes(invoker.GetURL(), invocation.MethodName())...),
 	)
+	if base.IsStreamingCall(invocation) {
+		return f.invokeStream(ctx, span, invoker, invocation)
+	}
 	defer span.End()
 
+	f.inject(ctx, invocation)
+	res := invoker.Invoke(ctx, invocation)
+	setClientSpanStatus(span, res.Error())
+	return res
+}
+
+// invokeStream ends the span of an open stream when the stream ends.
+func (f *otelClientFilter) invokeStream(ctx context.Context, span trace.Span, invoker base.Invoker, invocation base.Invocation) result.Result {
+	ctx, streamClaimed := base.WatchStream(ctx, invocation, func(err error) {
+		setClientSpanStatus(span, err)
+		span.End()
+	})
+	defer func() {
+		if !streamClaimed() {
+			span.End()
+		}
+	}()
+
+	f.inject(ctx, invocation)
+	res := invoker.Invoke(ctx, invocation)
+	if !streamClaimed() {
+		setClientSpanStatus(span, res.Error())
+	}
+	return res
+}
+
+func (f *otelClientFilter) inject(ctx context.Context, invocation base.Invocation) {
 	attachments := invocation.Attachments()
 	if attachments == nil {
 		attachments = map[string]any{}
@@ -153,12 +183,12 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	for k, v := range attachments {
 		invocation.SetAttachment(k, v)
 	}
-	res := invoker.Invoke(ctx, invocation)
+}
 
-	if res.Error() != nil {
-		recordSpanError(span, res.Error(), errorType(res.Error()))
+func setClientSpanStatus(span trace.Span, err error) {
+	if err != nil {
+		recordSpanError(span, err, errorType(err))
 	} else {
 		span.SetStatus(codes.Ok, codes.Ok.String())
 	}
-	return res
 }
