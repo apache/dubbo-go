@@ -678,6 +678,9 @@ type ServiceOptions struct {
 	exportersLock   sync.Mutex
 	exporters       []base.Exporter
 	adaptiveService bool
+	// internal marks a framework service such as the health check, which is
+	// not an application RPC
+	internal bool
 
 	// for triple non-IDL mode
 	// consider put here or global.ServiceConfig

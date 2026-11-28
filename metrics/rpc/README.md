@@ -75,6 +75,14 @@ These use the same labels as the existing RPC metrics (see
 or other high-cardinality labels. Total failure is incremented once alongside
 one category; Network/Codec failures do not also increment Unknown.
 
+Framework services exported by dubbo-go itself, the gRPC health check
+(`grpc.health.v1.Health`) and server reflection, are not application RPCs. The
+provider runs them without the metrics filter and the OTel server trace filter,
+as Dubbo Java runs its Triple builtin services outside the provider filter
+chain, so health watch streams and probes do not distort provider RT and
+failure rates. A dubbo-go client that calls these services itself still
+records them on the consumer side.
+
 Window Gauges reuse the current aggregation implementation. Idle-window refresh
 is a separate concern tracked by #3765, not implemented or required as a code
 dependency here. This change does not claim those windows refresh on scrape.
